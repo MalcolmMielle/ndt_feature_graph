@@ -1,0 +1,172 @@
+** FLIRTLib - Fast Laser Interest Region Transform Library
+** Gian Diego Tipaldi, Kai O. Arras.
+** Copyright (C) 2009-2010 Gian Diego Tipaldi and Kai O. Arras
+
+FLIRTLib implements the Fast Laser Interest Region Transform introduced by
+Tipaldi and Arras. 
+The library implements four different multi-scale feature detectors and two
+feature descriptors for 2D range data. 
+It is written in C++ and comes with an API reference (written using Doxygen) and
+a set of example binaries to visualize the detector results and the descriptors,
+as well as perform scan to scan matching.
+
+
+Detectors
+=============================================
+
+The library implements the following detectors: range, normal edge, normal blob
+and curvature. All detectors apply the scale-space theory (see References) to
+the range data. The first three detectors apply the theory to the
+monodimensional signal defined by the laser scanner, while the last one applies
+the theory to the continuous geodesic coordinate of the curve that better
+approximate the point cloud.
+
+Range detector. It finds interest points in scale-space with a blob detector
+applied on the raw range information in the laser scan.
+Normal Edge detector. It finds interest points in scale-space with an edge
+detector applied on a local approximation of the normal direction.
+Normal Blob detector. It finds interest points in scale-space with a blob
+detector applied on a local approximation of the normal direction.
+Curvature detector. It finds interest points using the scale space theory for
+curves introduced by Unnikrishnan and Hebert.
+
+
+Descriptors
+=============================================
+
+Shape Context. It implements a local and linear version of teh Shape Context
+introduced by Belongie and Malik.
+Beta-Grid. It implements a linear-polar occupancy grid. It extends the Shape
+Context with the notion of free space.
+
+
+Structure
+=============================================
+
+The archive has the following structure:
+
+src/ : the source files
+data/ : the log files used in the paper.
+doc/ : the doxygen configuration file. Run doxygen in this directory and you
+will obtain a local copy of this html documentaion and the latex reference
+manual.
+The src/ directory has the following structure:
+
+mainpage.h : dummy header file for generating the documentation.
+README : this file
+INSTALL : installation notes.
+COPYING and COPYING.LESSER : the software license. See License for further details.
+CMakeLists.txt : the cmake configuration script.
+build_tools/ : the directory containing the cmake modules.
+feature/ : the directory with the main features code.
+gemometry/ : the directory with the code for points.
+gui/ : the directory with the code for teh gui and the flirtDemo.
+sensors/ : the directory with the code for the sensors abstraction.
+sensorstream/ : the directory with the code for the sensor streams abstraction.
+utils/ : the directory with the code for utility function such as convolution,
+regression, pose estimation and histogram distances.
+applications/ : the directory with the code for generating the binaries to test the library.
+
+
+Install
+=============================================
+
+The library relies on cmake to generate the Makefiles.
+
+Run
+mkdir build
+cd build
+cmake ../
+make 
+
+For a more verbose output do Run
+VERBOSE=1 cmake ../ 
+VERBOSE=1 make 
+
+Install the library using
+make install
+
+
+Dependencies
+=============================================
+
+The software depends on the following external libraries
+
+Boost >= 1.36 (submodules math and graph)
+Qt4 (for the gui)
+Qwt5 for Qt4 (for the gui)
+OpenGL (for the gui)
+Cairo (for drwaing the ransac results)
+
+
+Usage
+=============================================
+
+The library comes with some demo binaries and an API interface.
+Look at the example binaries in applications/
+
+
+Binaries
+=============================================
+
+They package provide the following binaries in <lib_root>/bin/ 
+
+flirtDemo. It is a simple graphical frontend for visualizing the effect of the
+different detector and descriptors when changing the parameters. To visualize
+the descriptors simply click on the corresponding interest points in the viewer.
+
+ransacLoopClosureTest. It performs scan to scan matching with ransac. It
+generates a file with the number of succesful matches for the three different
+strategies. See the paper for more detail about the ransac experiment.
+
+ransacLoopClosureDraw. It performs scan to scan matching with ransac. It
+generates a directory with images showing the matching results. It can used to
+generate animations.
+
+
+Using the library
+=============================================
+
+The library is compiled as a collection of shared objects and are available in
+
+<lib_root>/lib/ 
+
+The header files are located in 
+
+<lib_root>/include 
+
+See the class list on the doxygen documentation for a more detailed API
+reference. 
+
+
+How to cite
+=============================================
+Choose one of the following publications:
+
+[1] Gian Diego Tipaldi, Manuel Braun, Kai O. Arras. 
+    FLIRT: Interest Regions for 2D Range Data with Applications to Robot Navigation. 
+    In Proceedings of the International Symposium on Experimental Robotics (ISER). 2010
+
+[2] Gian Diego Tipaldi, Kai O. Arras. 
+    FLIRT -- Interest Regions for 2D Range Data.
+    In Proceedings of the IEEE International Conference on Robotics and Automation (ICRA). 2010.
+
+
+License
+=============================================
+
+FLIRTLib - Fast Laser Interesting Region Transform Library 
+Copyright (C) 2009-2010 Gian Diego Tipaldi and Kai O. Arras
+
+FLIRTLib is free software: you can redistribute it and/or modify it under the
+terms of the GNU Lesser General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+FLIRTLib is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE. See the GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License along
+with FLIRTLib. If not, see http://www.gnu.org/licenses/ .
+

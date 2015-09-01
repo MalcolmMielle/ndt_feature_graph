@@ -1,0 +1,19 @@
+The library relies on cmake to generate the Makefiles.
+
+Go to the src/ directory. Do
+
+cmake . 
+make 
+
+For a more verbose output do 
+
+VERBOSE=1 cmake . 
+VERBOSE=1 make 
+
+The software depends on the following external libraries
+
+    * Boost >= 1.36 (submodules math and graph)
+    * Qt4 (for the gui)
+    * Qwt5 for Qt4 (for the gui)
+    * OpenGL (for the gui)
+    * Cairo (for drwaing the ransac results)

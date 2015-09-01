@@ -1,0 +1,17 @@
+<launch>    
+
+   <include file="$(find ndt_feature)/launch/replay_arla.launch"/>
+
+    <node pkg="ndt_feature" type="ndt_feature2d_view" name="ndt_feature2d_view" output="screen">
+      <param name="laser_topic" value="laserscan"/>
+      <param name="resolution" value="1"/>
+    </node>
+
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ndt_feature)/launch/ndt_feature_vis.rviz" />
+
+     <node pkg="tf" type="static_transform_publisher" name="world_map_frame" args="0 0 0 0 0 0 /world /map 10"/>
+     <!--node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="0 0 0 0 0 0 /world /base_laser_link 10"/-->
+    <node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="1.641 0.122 0 0 0 0.017 /odom_base_link /base_laser_link 10"/>  
+
+
+</launch>

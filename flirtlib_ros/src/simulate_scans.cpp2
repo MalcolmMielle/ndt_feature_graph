@@ -1,0 +1,155 @@
+00001 /*
+00002  * Copyright (c) 2008, Willow Garage, Inc.
+00003  * All rights reserved.
+00004  *
+00005  * Redistribution and use in source and binary forms, with or without
+00006  * modification, are permitted provided that the following conditions are met:
+00007  *
+00008  *     * Redistributions of source code must retain the above copyright
+00009  *       notice, this list of conditions and the following disclaimer.
+00010  *     * Redistributions in binary form must reproduce the above copyright
+00011  *       notice, this list of conditions and the following disclaimer in the
+00012  *       documentation and/or other materials provided with the distribution.
+00013  *     * Neither the name of the Willow Garage, Inc. nor the names of its
+00014  *       contributors may be used to endorse or promote products derived from
+00015  *       this software without specific prior written permission.
+00016  *
+00017  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+00018  * AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+00019  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+00020  * ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+00021  * LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+00022  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+00023  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+00024  * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+00025  * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+00026  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+00027  * POSSIBILITY OF SUCH DAMAGE.
+00028  *
+00029  */
+00030 
+00048 #include <sensor_msgs/LaserScan.h>
+00049 #include <occupancy_grid_utils/ray_tracer.h>
+00050 #include <occupancy_grid_utils/file.h>
+00051 #include <tf/transform_listener.h>
+00052 #include <ros/ros.h>
+00053 #include <boost/foreach.hpp>
+00054 #include <boost/lexical_cast.hpp>
+00055 
+00056 namespace flirtlib_ros
+00057 {
+00058 
+00059 namespace sm=sensor_msgs;
+00060 namespace gu=occupancy_grid_utils;
+00061 namespace nm=nav_msgs;
+00062 namespace gm=geometry_msgs;
+00063 
+00064 using std::string;
+00065 using std::vector;
+00066 
+00067 class ScanSimulator
+00068 {
+00069 public:
+00070   ScanSimulator ();
+00071   void publishScan (const ros::TimerEvent& e);
+00072 
+00073 private:
+00074 
+00075   ros::NodeHandle nh_;
+00076   
+00077   const double cycle_time_;
+00078   const string global_frame_;
+00079   const unsigned num_lasers_;
+00080   const sm::LaserScan scanner_params_;
+00081   const string map_file_;
+00082   const double resolution_;
+00083 
+00084   nm::OccupancyGrid::Ptr grid_;
+00085 
+00086   tf::TransformListener tf_;
+00087   ros::Timer timer_;
+00088   vector<ros::Publisher> scan_pubs_;
+00089   ros::Publisher grid_pub_;
+00090 };
+00091 
+00092 sm::LaserScan getScannerParams ()
+00093 {
+00094   sm::LaserScan params;
+00095   const double PI = 3.14159265;
+00096   params.angle_min = -PI/2;
+00097   params.angle_max = PI/2;
+00098   params.angle_increment = PI/180;
+00099   params.range_max = 10;
+00100 
+00101   return params;
+00102 }
+00103 
+00104 template <class T>
+00105 T getPrivateParam (const string& name)
+00106 {
+00107   ros::NodeHandle nh("~");
+00108   T val;
+00109   const bool found = nh.getParam(name, val);
+00110   ROS_ASSERT_MSG (found, "Could not find parameter %s", name.c_str());
+00111   ROS_DEBUG_STREAM_NAMED ("init", "Initialized " << name << " to " << val);
+00112   return val;
+00113 }
+00114 
+00115 
+00116 ScanSimulator::ScanSimulator () :
+00117   cycle_time_(0.1), global_frame_("/map"),
+00118   num_lasers_(getPrivateParam<int>("num_lasers")),
+00119   scanner_params_(getScannerParams()),
+00120   map_file_(getPrivateParam<string>("map_file")),
+00121   resolution_(getPrivateParam<double>("resolution")),
+00122   grid_(gu::loadGrid(map_file_, resolution_)),
+00123   timer_(nh_.createTimer(ros::Duration(cycle_time_),
+00124                          &ScanSimulator::publishScan, this)),
+00125   grid_pub_(nh_.advertise<nm::OccupancyGrid>("grid", 10, true))
+00126 {
+00127   grid_pub_.publish(grid_);
+00128   scan_pubs_.resize(num_lasers_);
+00129   for (unsigned i=0; i<num_lasers_; i++)
+00130   {
+00131     const string topic = "scan" + boost::lexical_cast<string>(i);
+00132     scan_pubs_[i] = nh_.advertise<sm::LaserScan>(topic, 10);
+00133   }
+00134 }
+00135 
+00136 
+00137 void ScanSimulator::publishScan (const ros::TimerEvent& e)
+00138 {
+00139   for (unsigned i=0; i<num_lasers_; i++)
+00140   {
+00141     try
+00142     {
+00143       const string laser_frame = "pose" + boost::lexical_cast<string>(i);
+00144       tf::StampedTransform trans;
+00145       tf_.lookupTransform(global_frame_, laser_frame, ros::Time(), trans);
+00146       gm::Pose pose;
+00147       tf::poseTFToMsg(trans, pose);
+00148       sm::LaserScan::Ptr scan = gu::simulateRangeScan(*grid_, pose,
+00149                                                       scanner_params_, true);
+00150       scan->header.frame_id = laser_frame;
+00151       scan->header.stamp = ros::Time::now();
+00152       scan_pubs_[i].publish(scan);
+00153     }
+00154     catch (tf::TransformException& e)
+00155     {
+00156       ROS_INFO ("Not publishing scan due to transform exception");
+00157     }
+00158   }
+00159 }
+00160 
+00161 
+00162 
+00163 
+00164 } // namespace
+00165 
+00166 int main (int argc, char** argv)
+00167 {
+00168   ros::init(argc, argv, "simulate_scans");
+00169   flirtlib_ros::ScanSimulator node;
+00170   ros::spin();
+00171   return 0;
+00172 }

@@ -1,0 +1,50 @@
+<launch>    
+
+   <include file="$(find ndt_feature)/launch/replay_arla.launch"/>
+
+    <node pkg="ndt_feature" type="ndt_feature2d_fuser" name="ndt_feature2d_fuser" output="screen">
+
+	<param name="laser_topic" value="/laserscan" />
+	<param name="matchLaser" value="true" />
+	
+	<param name="size_x_meters" value="100" />
+	<param name="size_y_meters" value="100" />
+	<param name="size_z_meters" value="0.8" />
+	<param name="resolution" value="0.4" />
+	<param name="laser_variance_z" value="0.02" />
+	
+	<param name="sensor_range" value="20." />
+	<param name="min_laser_range" value="0.5" />
+	
+	<!-- Specific sensor offset parameters for the example file -->
+	<param name="sensor_pose_x" value="1.641" />
+	<param name="sensor_pose_y" value="0.122" />
+	<param name="sensor_pose_t" value="0.017" />
+	
+	<param name="pose_init_x" value="0" />
+	<param name="pose_init_y" value="0" />
+	<param name="pose_init_t" value="0" />
+
+	<param name="map_directory" value="$(find ndt_fuser)/maps/" />	
+	<param name="map_name_prefix" value="basement2d" />
+
+	<param name="beHMT" value="false" />
+	<param name="useOdometry" value="false" />
+	<param name="odometry_topic" value="/odom" />
+	<param name="visualize" value="true" />
+	<param name="plotGTTrack" value="true" />
+	<param name="initPoseFromGT" value="false" />
+	<param name="gt_topic" value="/state" />
+
+	<param name="offline_nb_readings" value="400"/>
+    </node>
+
+    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ndt_feature)/launch/fuser_laser2d.rviz" />
+
+    <node pkg="tf" type="static_transform_publisher" name="world_map_frame" args="0 0 0 0 0 0 /world /map 10"/>
+    <node pkg="tf" type="static_transform_publisher" name="laser_scan_frame" args="0 0 0 0 0 0 /base_laser_link /laserscan 10"/>  
+
+    <node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="1.641 0.122 0 0.017 0 0 /state_base_link /base_laser_link 10"/>
+
+
+</launch>
