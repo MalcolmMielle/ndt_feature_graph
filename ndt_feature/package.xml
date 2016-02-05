@@ -40,7 +40,8 @@
   <build_depend>libpcl-all-dev</build_depend>
   <build_depend>flirtlib_ros</build_depend>
   <build_depend>eigen_conversions</build_depend>
-
+  <build_depend>semrob_generic</build_depend>
+  
   <!-- Dependencies needed after this package is compiled. -->
   <run_depend>ndt_registration</run_depend>
   <run_depend>ndt_map</run_depend>
@@ -51,7 +52,7 @@
   <run_depend>libpcl-all-dev</run_depend>
   <run_depend>flirtlib_ros</run_depend>
   <run_depend>eigen_conversions</run_depend>
-
+  <run_depend>semrob_generic</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

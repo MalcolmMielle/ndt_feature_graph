@@ -1,5 +1,4 @@
-#ifndef NDT_RVIZ_HH
-#define NDT_RVIZ_HH
+#pragma once
 
 #include <ndt_map/ndt_map.h>
 #include <ros/ros.h>
@@ -96,7 +95,7 @@ namespace ndt_visualisation {
       for (size_t i = 0; i < cells.size(); i++)	{
 	if(!cells[i]->hasGaussian_) continue;
 
-	cells[i]->rescaleCovariance(); // needed?
+        //	cells[i]->rescaleCovariance(); // needed?
 
 	Eigen::Vector3d mean = cells[i]->getMean();
 	Eigen::Matrix3d evecs = cells[i]->getEvecs();
@@ -131,16 +130,20 @@ namespace ndt_visualisation {
       return markerNDTCells(cells, m);
     }
 
-  inline visualization_msgs::Marker markerNDTCells (lslgeneric::NDTMap &map, int id) 
-  {
+inline visualization_msgs::Marker markerNDTCells( lslgeneric::NDTMap &map, int id, const std::string &name) {
     visualization_msgs::Marker m;
     assignDefault(m);
     assignColor(m, id);
     m.id = id;
-    m.ns = "NDTMap";
+    m.ns = name;
     return  markerNDTCells(map.getAllCells(), m);
-  }
 
+}
+
+  inline visualization_msgs::Marker markerNDTCells (lslgeneric::NDTMap &map, int id) 
+  {
+    return  markerNDTCells(map, id, std::string("NDTMap"));
+  }
 
   //! Draw correspondance lines between the NDTCells
   inline visualization_msgs::Marker markerCellVectorCorrespondances (lslgeneric::NDTMap &map1, lslgeneric::NDTMap &map2, const std::vector<std::pair<int, int> > &corr) 
@@ -172,4 +175,3 @@ namespace ndt_visualisation {
 
 } // namespace
 
-#endif

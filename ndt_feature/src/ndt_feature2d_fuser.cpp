@@ -62,6 +62,7 @@ class NDTFeatureFuserNode {
 	tf::TransformBroadcaster tf_;
 	ros::Publisher output_pub_;
         ros::Publisher pointcloud_pub_;
+  ros::Publisher pointcloud2_pub_;
 	Eigen::Affine3d pose_, T, sensor_pose_;
 
         tf::TransformListener listener;
@@ -182,13 +183,28 @@ class NDTFeatureFuserNode {
 	    param_nh.param("matchLaser",matchLaser,false);
             
             param_nh.param<int>("offline_nb_readings", offline_nb_readings, 0);
+
+            ndt_feature::NDTFeatureFuserHMT::Params fuser_params;
+            param_nh.param<bool>("fuser_useNDT", fuser_params.useNDT, true);
+            param_nh.param<bool>("fuser_useFeat", fuser_params.useFeat, true);
+            param_nh.param<bool>("fuser_useOdom", fuser_params.useOdom, true);
+            param_nh.param<int>("fuser_neighbours", fuser_params.neighbours, 2);
+            param_nh.param<bool>("fuser_stepcontrol", fuser_params.stepcontrol, true);
+            param_nh.param<int>("fuser_ITR_MAX", fuser_params.ITR_MAX, 30);
+            param_nh.param<double>("fuser_DELTA_SCORE", fuser_params.DELTA_SCORE, 0.0001);
+            param_nh.param<bool>("fuser_globalTransf", fuser_params.globalTransf, true);
+            param_nh.param<bool>("fuser_loadCentroid", fuser_params.loadCentroid, true);
+            param_nh.param<bool>("fuser_forceOdomAsEst", fuser_params.forceOdomAsEst, false);
+            param_nh.param<bool>("fuser_visualizeLocalCloud", fuser_params.visualizeLocalCloud, false);
+            param_nh.param<bool>("fuser_fusion2d", fuser_params.fusion2d, false);
+
             offline = false;
             if (offline_nb_readings > 0)
                 offline = true;
             offline_ctr = 0;
 
 
-	    pose_ =  Eigen::Translation<double,3>(pose_init_x,pose_init_y,pose_init_z)*
+            pose_ =  Eigen::Translation<double,3>(pose_init_x,pose_init_y,pose_init_z)*
 		Eigen::AngleAxis<double>(pose_init_r,Eigen::Vector3d::UnitX()) *
 		Eigen::AngleAxis<double>(pose_init_p,Eigen::Vector3d::UnitY()) *
 		Eigen::AngleAxis<double>(pose_init_t,Eigen::Vector3d::UnitZ()) ;
@@ -203,6 +219,16 @@ class NDTFeatureFuserNode {
 		    sensor_range, visualize,match2D, false, false, 30, map_name, beHMT, map_dir, true);
 
 	    fuser->setSensorPose(sensor_pose_);
+            fuser->setParams(fuser_params);
+            
+            semrob_generic::MotionModel2d::Params motion_params;
+            motion_params.Cd = 0.001;
+            motion_params.Ct = 0.001;
+            motion_params.Dd = 0.005;
+            motion_params.Dt = 0.005;
+            motion_params.Td = 0.001;
+            motion_params.Tt = 0.001;
+            fuser->setMotionParams(motion_params);
 
 	    if(!matchLaser) {
 		points2_sub_ = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh_,points_topic,1);
@@ -232,8 +258,8 @@ class NDTFeatureFuserNode {
 	    initPoseSet = false;
             marker_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
             pointcloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("offline_map", 1000);
-
-	}
+            pointcloud2_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 1000);
+        }
 
 	~NDTFeatureFuserNode()
 	{
@@ -318,6 +344,7 @@ class NDTFeatureFuserNode {
 	// Callback
 	void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg_in)
 	{
+          //          ROS_ERROR("laserCallback()");
 	    sensor_msgs::PointCloud2 cloud;
 	    pcl::PointCloud<pcl::PointXYZ> pcl_cloud, pcl_cloud_unfiltered;
 	    Eigen::Affine3d Tm;
@@ -343,6 +370,7 @@ class NDTFeatureFuserNode {
                 }
                 catch (tf::TransformException ex){
                     ROS_ERROR("%s",ex.what());
+                    return;
                 }
                 tf::transformTFToEigen( transform, this_odom);
             }
@@ -359,6 +387,7 @@ class NDTFeatureFuserNode {
                 }
                 catch (tf::TransformException ex){
                     ROS_ERROR("%s",ex.what());
+                    return;
                 }
                 tf::transformTFToEigen( transform, Tgt );
             }
@@ -371,7 +400,7 @@ class NDTFeatureFuserNode {
 	    } else {
                 Tm = last_odom.inverse()*this_odom;
 
-                if (Tm.translation().norm() < 0.1 && Tm.rotation().eulerAngles(0,1,2).norm() < 0.2)
+                if (Tm.translation().norm() < 0.02 && Tm.rotation().eulerAngles(0,1,2).norm() < 0.2)
                     return;
             }
             
@@ -442,6 +471,12 @@ class NDTFeatureFuserNode {
             else {
                 this->processFeatureFrame(pcl_cloud,pts, Tm, frame_time);
             }
+            {
+              sensor_msgs::PointCloud2 cloud_msg; 
+              pcl::toROSMsg(fuser->pointcloud_vis, cloud_msg );
+              cloud_msg.header.frame_id = std::string("/world");
+              pointcloud2_pub_.publish(cloud_msg );
+            }
 	};
 	
 	// Callback
@@ -449,6 +484,7 @@ class NDTFeatureFuserNode {
 		  const nav_msgs::Odometry::ConstPtr& odo_in)
 	{
 
+          //          ROS_ERROR("laserOdomCallback()");
   
 
 	    Eigen::Quaterniond qd;

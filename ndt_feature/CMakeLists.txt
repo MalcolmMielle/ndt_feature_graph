@@ -14,6 +14,7 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs 
   flirtlib_ros 
   eigen_conversions
+  semrob_generic
 )
 
 catkin_package(
@@ -26,6 +27,7 @@ catkin_package(
 add_executable(ndt_feature2d_view src/ndt_feature2d_view.cpp)
 add_executable(ndt_feature2d_fuser src/ndt_feature2d_fuser.cpp)
 add_executable(ndt_feature_debug src/ndt_feature_debug.cpp)
+add_executable(ndt_odom_debug src/ndt_odom_debug.cpp)
 add_executable(ndt_feature_pcl_eval src/ndt_feature_pcl_eval.cpp)
 #add_executable(narf_keypoint_extractor src/narf_keypoint_extractor.cpp)
 add_executable(correspondence_grouping src/correspondence_grouping.cpp)
@@ -58,6 +60,7 @@ target_link_libraries(ndt_feature2d_view ${Boost_LIBRARIES} ${catkin_LIBRARIES} 
 target_link_libraries(ndt_feature2d_fuser ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt /usr/local/lib/libisam.a -lcholmod)
 
 target_link_libraries(ndt_feature_debug ${Boost_LIBRARIES} ${catkin_LIBRARIES})
+target_link_libraries(ndt_odom_debug ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 
 
 target_link_libraries(ndt_feature_pcl_eval ${Boost_LIBRARIES} ${catkin_LIBRARIES} libvtkCommon.so libvtkFiltering.so libvtkRendering.so)

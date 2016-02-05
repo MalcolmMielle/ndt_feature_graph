@@ -1,3 +1,5 @@
+#pragma once
+
 #include <ndt_registration/ndt_matcher_d2d_2d.h>
 #include <ndt_registration/ndt_matcher_d2d_feature.h>
 
@@ -10,23 +12,24 @@ namespace lslgeneric {
 		    NDTMap& sourceNDT_feat,
 		    const std::vector<std::pair<int, int> > &corr_feat,
 		    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T ,
-		    bool useInitialGuess, bool useNDT, bool useFeat, bool step_control)
+		    bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4)
 {
+  std::cerr << "matchFusion()" << " useNDT : " << useNDT << " useFeat : " << useFeat << " step_control : " << step_control << std::endl;
+
   // Combines two different NDT maps at once. One which holds NDT derrived from features with known correspondance (obtained earlier through RANSAC or similar) with two standard NDT maps (target could very well be obtained from the fuser).
   
-  // Create matching objects. The matching is done below but this are only used to get access to compute derrivatives etc.
-  //NDTMatcherD2D_2D matcher_d2d;
+  // Create matching objects. The matching is done below but this is only used to get access to compute derrivatives etc.
   NDTMatcherD2D matcher_d2d;
   NDTMatcherFeatureD2D matcher_feat_d2d(corr_feat);
 
+  matcher_d2d.n_neighbours = n_neighbours;
 
     //locals
     bool convergence = false;
     //double score=0;
     double score_best = INT_MAX;
     //    double DELTA_SCORE = 0.0005;
-    double DELTA_SCORE = 0.0000000005;
-    int ITR_MAX = 30;
+    //int ITR_MAX = 30;
     //    bool step_control = true;
     //double NORM_MAX = current_resolution, ROT_MAX = M_PI/10; //
     int itr_ctr = 0;
@@ -52,11 +55,11 @@ namespace lslgeneric {
     std::vector<NDTCell*> nextNDT_feat = sourceNDT_feat.pseudoTransformNDT(T);
 
     //std::cout<<"pose(:,"<<1<<") = ["<<T.translation().transpose()<<" "<<T.rotation().eulerAngles(0,1,2).transpose()<<"]';\n";
-    std::cout << "score_best : " << score_best << std::endl;
+    //    std::cout << "score_best : " << score_best << std::endl;
 
     while(!convergence)
     {
-      std::cout << "itr_ctr : " << itr_ctr << std::endl;
+      //      std::cout << "itr_ctr : " << itr_ctr << std::endl;
       
         TR.setIdentity();
         Hessian.setZero();
@@ -81,9 +84,9 @@ namespace lslgeneric {
 	  score_gradient += score_gradient_feat;
 	}
 
-	std::cout << "score_gradient_ndt : " << score_gradient_ndt << std::endl;
-	std::cout << "score_gradient_feat : " << score_gradient_feat << std::endl;
-	std::cout << "score_gradient : " << score_gradient << std::endl;
+        //	std::cout << "score_gradient_ndt : " << score_gradient_ndt << std::endl;
+        //	std::cout << "score_gradient_feat : " << score_gradient_feat << std::endl;
+        //	std::cout << "score_gradient : " << score_gradient << std::endl;
 
         //derivativesNDT(nextNDT,targetNDT,score_gradient,Hessian,true);
         scg = score_gradient;
@@ -95,10 +98,10 @@ namespace lslgeneric {
 	    std::cout<<"best score "<<score_best<<" at "<<itr_ctr<<std::endl;
 	}
 
-		std::cout<<"T translation "<<T.translation().transpose()
-			 <<" (norm) "<<T.translation().norm()<<std::endl;
-		std::cout<<"T rotation "<<T.rotation().eulerAngles(0,1,2).transpose()
-			 <<" (norm) "<<T.rotation().eulerAngles(0,1,2).norm()<<std::endl;
+        //		std::cout<<"T translation "<<T.translation().transpose()
+        //			 <<" (norm) "<<T.translation().norm()<<std::endl;
+        //		std::cout<<"T rotation "<<T.rotation().eulerAngles(0,1,2).transpose()
+        //			 <<" (norm) "<<T.rotation().eulerAngles(0,1,2).norm()<<std::endl;
 	
 
 
@@ -123,7 +126,13 @@ namespace lslgeneric {
 	    //            std::cerr<<"regularizing\n";
         }
 	//	std::cout<<"s("<<itr_ctr+1<<") = "<<score_here<<";\n";
-	//	std::cout<<"H(:,:,"<<itr_ctr+1<<")  =  ["<< Hessian<<"];\n"<<std::endl;				  //
+        // std::cout<<"H(:,:,"<<itr_ctr+1<<")  =  ["<< Hessian<<"];\n"<<std::endl;				  //
+        // std::cout<<"H_ndt(:,:,"<<itr_ctr+1<<")  =  ["<< Hessian_ndt<<"];\n"<<std::endl;				  //
+        // std::cout<<"H_feat(:,:,"<<itr_ctr+1<<")  =  ["<< Hessian_feat<<"];\n"<<std::endl;				  //
+        // std::cout<<"H_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian.inverse()<< "];\n"<<std::endl;
+        // std::cout<<"H*H_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian*Hessian.inverse()<< "];\n"<<std::endl;
+        // std::cout<<"H_ndt_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian_ndt.inverse()<< "];\n"<<std::endl;
+        
 	//	std::cout<<"grad (:,"<<itr_ctr+1<<")= ["<<score_gradient.transpose()<<"];"<<std::endl;         //
 
         if (score_gradient.norm()<= DELTA_SCORE)
@@ -298,6 +307,31 @@ namespace lslgeneric {
 
     return ret;
 }
+
+
+
+  bool matchFusion2d( NDTMap& targetNDT,
+                      NDTMap& sourceNDT,
+                      NDTMap& targetNDT_feat,
+                      NDTMap& sourceNDT_feat,
+                      const std::vector<std::pair<int, int> > &corr_feat,
+                      Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T ,
+                      bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4)
+  {
+    std::cerr << "matchFusion2d()" << " useNDT : " << useNDT << " useFeat : " << useFeat << " step_control : " << step_control << std::endl;
+    
+    // Only use the standard NDT mapping to start with.
+    NDTMatcherD2D_2D matcher_d2d_2d;
+    matcher_d2d_2d.n_neighbours = n_neighbours;
+    matcher_d2d_2d.step_control = step_control;
+    matcher_d2d_2d.ITR_MAX = ITR_MAX;
+    matcher_d2d_2d.DELTA_SCORE = DELTA_SCORE;
+    return matcher_d2d_2d.match(targetNDT, sourceNDT, T, useInitialGuess);
+}
+
+
+
+
 
 
 } // namespace

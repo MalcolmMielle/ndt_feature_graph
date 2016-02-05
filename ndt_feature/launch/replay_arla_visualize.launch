@@ -10,8 +10,9 @@
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ndt_feature)/launch/ndt_feature_vis.rviz" />
 
      <node pkg="tf" type="static_transform_publisher" name="world_map_frame" args="0 0 0 0 0 0 /world /map 10"/>
-     <!--node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="0 0 0 0 0 0 /world /base_laser_link 10"/-->
-    <node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="1.641 0.122 0 0 0 0.017 /odom_base_link /base_laser_link 10"/>  
+     <!-- Draw the features and the raw laserdata in the same frame. -->
+    <node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="0 0 0 0 0 0 /world /base_laser_link 10"/>
+    <!-- node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="1.641 0.122 0 0 0 0.017 /odom_base_link /base_laser_link 10"/ -->  
 
 
 </launch>

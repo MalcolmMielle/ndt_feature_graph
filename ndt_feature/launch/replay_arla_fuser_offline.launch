@@ -1,6 +1,8 @@
 <launch>    
 
-   <include file="$(find ndt_feature)/launch/replay_arla.launch"/>
+   <include file="$(find ndt_feature)/launch/replay_arla.launch">
+     <arg name="rate" value="4." />
+   </include>
 
     <node pkg="ndt_feature" type="ndt_feature2d_fuser" name="ndt_feature2d_fuser" output="screen">
 
@@ -36,12 +38,15 @@
 	<param name="initPoseFromGT" value="false" />
 	<param name="gt_topic" value="/state" />
 
-	<param name="offline_nb_readings" value="400"/>
+	<param name="offline_nb_readings" value="1000"/>
     </node>
 
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ndt_feature)/launch/fuser_laser2d.rviz" />
 
-    <node pkg="tf" type="static_transform_publisher" name="world_map_frame" args="0 0 0 0 0 0 /world /map 10"/>
+
+    <!-- only to draw a GT map -->
+    <node pkg="tf" type="static_transform_
+publisher" name="world_map_frame" args="0 0 0 0 0 0 /world /map 10"/>
     <node pkg="tf" type="static_transform_publisher" name="laser_scan_frame" args="0 0 0 0 0 0 /base_laser_link /laserscan 10"/>  
 
     <node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="1.641 0.122 0 0.017 0 0 /state_base_link /base_laser_link 10"/>
