@@ -60,6 +60,10 @@ class NDTFeatureFuserHMT{
   class Params {
   public:
     Params() {
+      // old params
+      checkConsistency = false;		  ///perform a check for consistency against initial estimate
+    
+      // new params
       useNDT = true;
       useFeat = true;
       useOdom = true;
@@ -72,7 +76,10 @@ class NDTFeatureFuserHMT{
       forceOdomAsEst = false;
       visualizeLocalCloud = false;
       fusion2d = false;
+      allMatchesValid = false;
     }
+    
+    bool checkConsistency;
     
     bool useNDT;
     bool useFeat;
@@ -86,6 +93,7 @@ class NDTFeatureFuserHMT{
     bool forceOdomAsEst;
     bool visualizeLocalCloud;
     bool fusion2d;
+    bool allMatchesValid;
   
     friend std::ostream& operator<<(std::ostream &os, const NDTFeatureFuserHMT::Params &obj)
     {
@@ -101,6 +109,7 @@ class NDTFeatureFuserHMT{
       os << "\nforceOdomAsEst: " << obj.forceOdomAsEst;
       os << "\nvisualizeLocalCloud : " << obj.visualizeLocalCloud;
       os << "\nfusion2d    : " << obj.fusion2d;
+      os << "\nallMatchesValid : " << obj.allMatchesValid;
       return os;
     }
   };
@@ -484,8 +493,40 @@ class NDTFeatureFuserHMT{
         match_ok = lslgeneric::matchFusion(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE) || fuseIncomplete;
       }
 
+      std::cout << "match_ok : " << match_ok << std::endl;
+      if (params_.allMatchesValid) {
+        match_ok = true;
+      }
+
       if (match_ok) {
+
+        // Recompute the covariance (based on the matching...)
+        {
+          lslgeneric::NDTMatcherD2D matcher_d2d;
+            Eigen::MatrixXd matching_cov(6,6);
+            matcher_d2d.covariance(*map, ndglobal, Tmotion_est, matching_cov);
+            semrob_generic::Pose2dCov posecov;
+            posecov.mean = semrob_generic::pose2dFromAffine3d(Tmotion_est);
+            posecov.cov = semrob_generic::cov6toCov3(matching_cov);
+            lslgeneric::printTransf2d(Tmotion_est);
+            std::cout << "matching_cov : " << matching_cov << std::endl;
+            semrob_generic::pose2dClearDependence(posecov);
+            std::cout << "posecov : " << posecov << std::endl;
+            debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(posecov.mean, posecov.cov, 100., 1, -1));
+
+            current_posecov.mean = semrob_generic::pose2dFromAffine3d(Tmotion_est);
+            Eigen::Matrix3d prev_cov = current_posecov.cov;
+            current_posecov.cov = prev_cov+posecov.cov; // Only works if the registration is done from local frame to global that is that Tmotion holds the complete motion and the covariance estimate is only the local one.
+            std::cout << "current_posecov : " << current_posecov << std::endl;
+            debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(current_posecov.mean, current_posecov.cov, 1., 2, 0));
+
+            std::cout << "relposecov : " << relposecov << std::endl;
+            
+        }
+
+
         t3 = getDoubleTime();
+
         if (!params_.globalTransf) { // Plot the nd maps in global frame...
           lslgeneric::NDTMap* ndglobal_matched = ndglobal.pseudoTransformNDTMap(Tmotion_est);
           debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndglobal_matched, 2, "ndglobal_matched"));
@@ -599,6 +640,8 @@ class NDTFeatureFuserHMT{
     lslgeneric::NDTMatcherD2D matcher;
     lslgeneric::NDTMatcherD2D_2D matcher2D;
     Eigen::Vector3d localMapSize;
+
+  semrob_generic::Pose2dCov current_posecov;
 
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

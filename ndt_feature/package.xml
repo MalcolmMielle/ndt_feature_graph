@@ -41,6 +41,9 @@
   <build_depend>flirtlib_ros</build_depend>
   <build_depend>eigen_conversions</build_depend>
   <build_depend>semrob_generic</build_depend>
+  <build_depend>semrob_conversions</build_depend>
+  <build_depend>semrob_rviz</build_depend>
+  <build_depend>semrob_geometry</build_depend>
   
   <!-- Dependencies needed after this package is compiled. -->
   <run_depend>ndt_registration</run_depend>
@@ -53,6 +56,9 @@
   <run_depend>flirtlib_ros</run_depend>
   <run_depend>eigen_conversions</run_depend>
   <run_depend>semrob_generic</run_depend>
+  <run_depend>semrob_conversions</run_depend>
+  <run_depend>semrob_rviz</run_depend>
+  <run_depend>semrob_geometry</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>

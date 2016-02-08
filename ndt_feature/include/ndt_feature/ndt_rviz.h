@@ -4,6 +4,7 @@
 #include <ros/ros.h>
 #include <tf_conversions/tf_eigen.h>
 #include <visualization_msgs/Marker.h>
+#include <semrob_rviz/semrob_rviz.h>
 
 namespace ndt_visualisation {
 
@@ -170,8 +171,22 @@ inline visualization_msgs::Marker markerNDTCells( lslgeneric::NDTMap &map, int i
       }
       return m;
   }
+
+inline visualization_msgs::Marker markerMeanCovariance2d(const Eigen::Vector3d &mean, const Eigen::Matrix3d &cov, double scale, int id, int color) {
+  visualization_msgs::Marker m;
+  assignDefault(m);
+  m.ns = "mean_cov";
+  m.id = id;
+  m.color.r = m.color.a = 1.0;
+  m.color.g = 0.2;
+  if (color >= 0) {
+    assignColor(m, color);
+  }
+  Eigen::MatrixXd cov_scaled = cov*scale;
   
-  
+  semrob_rviz::drawCovariance(mean, cov_scaled, m);
+  return m;
+}
 
 } // namespace
 

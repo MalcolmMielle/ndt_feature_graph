@@ -197,6 +197,7 @@ class NDTFeatureFuserNode {
             param_nh.param<bool>("fuser_forceOdomAsEst", fuser_params.forceOdomAsEst, false);
             param_nh.param<bool>("fuser_visualizeLocalCloud", fuser_params.visualizeLocalCloud, false);
             param_nh.param<bool>("fuser_fusion2d", fuser_params.fusion2d, false);
+            param_nh.param<bool>("fuser_allMatchesValid", fuser_params.allMatchesValid, false);
 
             offline = false;
             if (offline_nb_readings > 0)

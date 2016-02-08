@@ -15,6 +15,9 @@ find_package(catkin REQUIRED COMPONENTS
   flirtlib_ros 
   eigen_conversions
   semrob_generic
+  semrob_conversions
+  semrob_rviz
+  semrob_geometry
 )
 
 catkin_package(

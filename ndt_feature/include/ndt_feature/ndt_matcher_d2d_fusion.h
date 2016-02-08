@@ -65,7 +65,7 @@ namespace lslgeneric {
         Hessian.setZero();
         score_gradient.setZero();
 
-
+        
 	double score_here = 0.;
         double score_here_ndt = matcher_d2d.derivativesNDT(nextNDT,targetNDT,score_gradient_ndt,Hessian_ndt,true);
 	//double score_here = matcher_d2d.derivativesNDT_2d(nextNDT,targetNDT,score_gradient_ndt,Hessian,true);
@@ -125,15 +125,17 @@ namespace lslgeneric {
             Hessian = evecs*Lam*(evecs.transpose());
 	    //            std::cerr<<"regularizing\n";
         }
+
+        //        int active_cells = nexNDT.size() + nextNDT_feat.size();
 	//	std::cout<<"s("<<itr_ctr+1<<") = "<<score_here<<";\n";
         // std::cout<<"H(:,:,"<<itr_ctr+1<<")  =  ["<< Hessian<<"];\n"<<std::endl;				  //
         // std::cout<<"H_ndt(:,:,"<<itr_ctr+1<<")  =  ["<< Hessian_ndt<<"];\n"<<std::endl;				  //
         // std::cout<<"H_feat(:,:,"<<itr_ctr+1<<")  =  ["<< Hessian_feat<<"];\n"<<std::endl;				  //
         // std::cout<<"H_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian.inverse()<< "];\n"<<std::endl;
         // std::cout<<"H*H_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian*Hessian.inverse()<< "];\n"<<std::endl;
-        // std::cout<<"H_ndt_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian_ndt.inverse()<< "];\n"<<std::endl;
+        std::cout<<"H_ndt_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian_ndt.inverse()<< "];\n"<<std::endl;
         
-	//	std::cout<<"grad (:,"<<itr_ctr+1<<")= ["<<score_gradient.transpose()<<"];"<<std::endl;         //
+        //        std::cout<<"grad (:,"<<itr_ctr+1<<")= ["<<score_gradient.transpose()<<"];"<<std::endl;         //
 
         if (score_gradient.norm()<= DELTA_SCORE)
         {

@@ -119,4 +119,5 @@ Eigen::Vector3d computeLocalCentroid(const Eigen::Vector3d &map_centroid, const 
 }
 
 
+
 } // namespace
