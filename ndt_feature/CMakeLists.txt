@@ -36,6 +36,11 @@ add_executable(ndt_feature_pcl_eval src/ndt_feature_pcl_eval.cpp)
 add_executable(correspondence_grouping src/correspondence_grouping.cpp)
 add_executable(shot_test src/shot_test.cpp)
 
+add_executable(laser2d_extrinsic_calibration src/laser2d_extrinsic_calibration.cpp)
+add_executable(ndt_feature_graph_opt src/ndt_feature_graph_opt.cpp)
+add_executable(ndt_feature_map_test src/ndt_feature_map_test.cpp)
+add_executable(ndt_feature_node_test src/ndt_feature_node_test.cpp)
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -72,3 +77,12 @@ target_link_libraries(ndt_feature_pcl_eval ${Boost_LIBRARIES} ${catkin_LIBRARIES
 
 target_link_libraries(correspondence_grouping ${Boost_LIBRARIES} ${catkin_LIBRARIES} libvtkCommon.so libvtkFiltering.so libvtkRendering.so)
 target_link_libraries(shot_test ${Boost_LIBRARIES} ${catkin_LIBRARIES})
+
+
+target_link_libraries(laser2d_extrinsic_calibration ${Boost_LIBRARIES} ${catkin_LIBRARIES})
+
+target_link_libraries(ndt_feature_graph_opt ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)
+
+target_link_libraries(ndt_feature_map_test ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)
+
+target_link_libraries(ndt_feature_node_test ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)

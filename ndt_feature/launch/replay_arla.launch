@@ -2,7 +2,7 @@
 
 
     <arg name="file" default="$(find ndt_feature)/data/Kyl1.bag" />
-    <arg name="rate" default="1" />
+    <arg name="rate" default="2" />
 
     <param name="/use_sim_time" value="true" />
     <node pkg="rosbag" type="play" name="rosbag_data" args="-r $(arg rate) --clock $(arg file)" />

@@ -12,7 +12,7 @@ namespace lslgeneric {
 		    NDTMap& sourceNDT_feat,
 		    const std::vector<std::pair<int, int> > &corr_feat,
 		    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T ,
-		    bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4)
+		    bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4, bool optimizeOnlyYaw = false)
 {
   std::cerr << "matchFusion()" << " useNDT : " << useNDT << " useFeat : " << useFeat << " step_control : " << step_control << std::endl;
 
@@ -70,7 +70,7 @@ namespace lslgeneric {
         double score_here_ndt = matcher_d2d.derivativesNDT(nextNDT,targetNDT,score_gradient_ndt,Hessian_ndt,true);
 	//double score_here = matcher_d2d.derivativesNDT_2d(nextNDT,targetNDT,score_gradient_ndt,Hessian,true);
         double score_here_feat = matcher_feat_d2d.derivativesNDT(nextNDT_feat,targetNDT_feat,score_gradient_feat,Hessian_feat,true);
-	//	std::cerr << "score_here_ndt : " << score_here_ndt << "\t score_here_feat : " << score_here_feat << std::endl;
+        //std::cerr << "score_here_ndt : " << score_here_ndt << "\t score_here_feat : " << score_here_feat << std::endl;
 
 	// Sum them up...
 	if (useNDT) {
@@ -133,7 +133,7 @@ namespace lslgeneric {
         // std::cout<<"H_feat(:,:,"<<itr_ctr+1<<")  =  ["<< Hessian_feat<<"];\n"<<std::endl;				  //
         // std::cout<<"H_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian.inverse()<< "];\n"<<std::endl;
         // std::cout<<"H*H_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian*Hessian.inverse()<< "];\n"<<std::endl;
-        std::cout<<"H_ndt_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian_ndt.inverse()<< "];\n"<<std::endl;
+        //        std::cout<<"H_ndt_inv(:,:,"<<itr_ctr+1<<") = [" << Hessian_ndt.inverse()<< "];\n"<<std::endl;
         
         //        std::cout<<"grad (:,"<<itr_ctr+1<<")= ["<<score_gradient.transpose()<<"];"<<std::endl;         //
 
@@ -158,7 +158,7 @@ namespace lslgeneric {
                     delete nextNDT_feat[i];
             }
 
-	    std::cout<<"itr "<<itr_ctr<<" dScore "<< 0 <<std::endl;
+            //	    std::cout<<"itr "<<itr_ctr<<" dScore "<< 0 <<std::endl;
             return true;
         }
         pose_increment_v = -Hessian.ldlt().solve(score_gradient);
@@ -191,12 +191,21 @@ namespace lslgeneric {
 	//	std::cout<<"score("<<itr_ctr+1<<") = "<<score_here<<";\n";
 
 	if(step_control) {
-	  // TODO - add feat?
-	  step_size = 0.;
-	  if (useNDT)
-	    step_size += matcher_d2d.lineSearchMT(pose_increment_v,nextNDT,targetNDT);
-	  if (useFeat)
-	    step_size += matcher_feat_d2d.lineSearchMT(pose_increment_v,nextNDT_feat, targetNDT_feat);
+          double step_size_ndt = 0.;
+          double step_size_feat = 0.;
+	  if (useNDT) {
+	    step_size_ndt = matcher_d2d.lineSearchMT(pose_increment_v,nextNDT,targetNDT);
+          }
+	  if (useFeat) {
+	    step_size_feat = matcher_feat_d2d.lineSearchMT(pose_increment_v,nextNDT_feat, targetNDT_feat);
+          }
+          if (step_size_ndt != 0. && step_size_feat != 0.) {
+            step_size = std::min(step_size_ndt, step_size_feat);
+          }
+          else {
+            step_size = std::max(step_size_ndt, step_size_feat);
+          }
+          //          std::cout << "step_size_ndt : " << step_size_ndt << " step_size_feat : " << step_size_feat << std::endl;
 	} else {
 	    step_size = 1;
 	}
@@ -209,11 +218,53 @@ namespace lslgeneric {
               Eigen::AngleAxis<double>(pose_increment_v(4),Eigen::Vector3d::UnitY()) *
               Eigen::AngleAxis<double>(pose_increment_v(5),Eigen::Vector3d::UnitZ()) ;
 
+        if (optimizeOnlyYaw) {
+          TR.setIdentity();
+          // Use rotation and y offset
+          // Recreate the hessian...
+          double H00 = Hessian(0,0);
+          double H01 = Hessian(0,1);
+          double H10 = Hessian(1,0);
+          double H11 = Hessian(1,1);
+          double H05 = Hessian(0,5);
+          double H50 = Hessian(5,0);
+          double H15 = Hessian(1,5);
+          double H51 = Hessian(5,1);
+          double H55 = Hessian(5,5);
+          Hessian.setIdentity();
+          Hessian(0,0) = H00;
+          Hessian(0,1) = H01;
+          Hessian(1,0) = H10;
+          Hessian(1,1) = H11;
+          Hessian(0,5) = H05;
+          Hessian(5,0) = H50;
+          Hessian(1,5) = H15;
+          Hessian(5,1) = H51;
+          Hessian(5,5) = H55;
+          
+          //          std::cout << "Hessian : " << Hessian << std::endl;
+
+          pose_increment_v = -Hessian.ldlt().solve(score_gradient);
+          //pose_increment_v(0) = 0.;
+          //          pose_increment_v(1) = 0.;
+          pose_increment_v(2) = 0.;
+          pose_increment_v(3) = 0.;
+          pose_increment_v(4) = 0.;
+          pose_increment_v = step_size*pose_increment_v;
+          //          std::cout<<"\%iteration "<<itr_ctr<<" pose norm "<<(pose_increment_v.norm())<< /*" score gradient : " << score_gradient << */" score "<<score_here<<" step "<<step_size<< "step_control : " << step_control << std::endl;
+
+          //          pose_increment_v(5) = -score_gradient(5)/Hessian(5,5); // Use stepsize = 1...
+          TR =  Eigen::Translation<double,3>(pose_increment_v(0),pose_increment_v(1),pose_increment_v(2))*
+              Eigen::AngleAxis<double>(pose_increment_v(3),Eigen::Vector3d::UnitX()) *
+              Eigen::AngleAxis<double>(pose_increment_v(4),Eigen::Vector3d::UnitY()) *
+              Eigen::AngleAxis<double>(pose_increment_v(5),Eigen::Vector3d::UnitZ()) ;
+        }
+
 	//        std::cout<<"incr= ["<<pose_increment_v.transpose()<<"]"<<std::endl;
         //transform source NDT
         T = TR*T;
-	//	std::cout<<"incr(:,"<<itr_ctr+1<<") = ["<<pose_increment_v.transpose()<<"]';\n";
-	//	std::cout<<"pose(:,"<<itr_ctr+2<<") = ["<<T.translation().transpose()<<" "<<T.rotation().eulerAngles(0,1,2).transpose()<<"]';\n";
+        //        std::cout<<"incr(:,"<<itr_ctr+1<<") = ["<<pose_increment_v.transpose()<<"]';\n";
+        //        std::cout<<"pose(:,"<<itr_ctr+2<<") = ["<<T.translation().transpose()<<" "<<T.rotation().eulerAngles(0,1,2).transpose()<<"]';\n";
 
         for(unsigned int i=0; i<nextNDT.size(); i++)
         {

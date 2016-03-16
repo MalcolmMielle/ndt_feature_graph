@@ -17,6 +17,7 @@
 #include <boost/circular_buffer.hpp>
 #include <laser_geometry/laser_geometry.h>
 #include <nav_msgs/Odometry.h>
+#include <nav_msgs/OccupancyGrid.h>
 #include <geometry_msgs/PoseStamped.h>
 
 #include <message_filters/subscriber.h>
@@ -34,6 +35,11 @@
 
 #include <ndt_feature/ndt_feature_frame.h>
 #include <ndt_feature/ndt_offline_mapper.h>
+
+#include <ndt_feature/ndt_feature_graph.h>
+#include <ndt_map/ndt_conversions.h>
+
+#include <ndt_feature/ros_utils.h>
 
 #ifndef SYNC_FRAMES
 #define SYNC_FRAMES 20
@@ -72,6 +78,7 @@ class NDTFeatureFuserNode {
 	
 	boost::mutex m, message_m;
 	ndt_feature::NDTFeatureFuserHMT *fuser;
+  ndt_feature::NDTFeatureGraph *graph;
 	std::string points_topic, laser_topic, map_dir, map_name, odometry_topic, 
 		    world_frame, fuser_frame, init_pose_frame, gt_topic;
 	double size_x, size_y, size_z, resolution, sensor_range, min_laser_range_;
@@ -97,6 +104,8 @@ class NDTFeatureFuserNode {
 	message_filters::Synchronizer< PointsPoseSync > *sync_pp_;
 	ros::ServiceServer save_map_;
         ros::Publisher marker_pub_;
+  ros::Publisher map_pub_;
+
 
 	Eigen::Affine3d last_odom, this_odom;
 
@@ -106,7 +115,15 @@ class NDTFeatureFuserNode {
     boost::shared_ptr<Detector> detector_;
     boost::shared_ptr<DescriptorGenerator> descriptor_;
 
-    public:
+  bool use_graph_;
+  double occ_map_resolution_;
+  bool do_pub_occ_map_;
+  std::string tf_odom_frame_;
+
+  std::ofstream gt_file_;
+  std::ofstream est_file_;
+
+public:
 	// Constructor
     NDTFeatureFuserNode(ros::NodeHandle param_nh) : nb_added_clouds_(0),
         peak_finder_(ndt_feature::createPeakFinder()),
@@ -114,6 +131,7 @@ class NDTFeatureFuserNode {
         detector_(ndt_feature::createDetector(peak_finder_.get())),
         descriptor_(ndt_feature::createDescriptor(histogram_dist_.get()))
 	{
+
 	    ///topic to wait for point clouds, if available
 	    param_nh.param<std::string>("points_topic",points_topic,"points");
 	    ///topic to wait for laser scan messages, if available
@@ -145,14 +163,15 @@ class NDTFeatureFuserNode {
 	    param_nh.param("size_x_meters",size_x,10.);
 	    param_nh.param("size_y_meters",size_y,10.);
 	    param_nh.param("size_z_meters",size_z,10.);
-	    
+            
 	    ///range to cutoff sensor measurements
 	    param_nh.param("sensor_range",sensor_range,3.);
-	    ///range to cutoff sensor measurements
+            ///range to cutoff sensor measurements
 	    param_nh.param("min_laser_range",min_laser_range_,0.1);
 	    
 	    //map resolution
 	    param_nh.param("resolution",resolution,0.10);
+            
 	    param_nh.param("laser_variance_z",varz,resolution/4);
 
 	    ///visualize in a local window
@@ -185,6 +204,7 @@ class NDTFeatureFuserNode {
             param_nh.param<int>("offline_nb_readings", offline_nb_readings, 0);
 
             ndt_feature::NDTFeatureFuserHMT::Params fuser_params;
+
             param_nh.param<bool>("fuser_useNDT", fuser_params.useNDT, true);
             param_nh.param<bool>("fuser_useFeat", fuser_params.useFeat, true);
             param_nh.param<bool>("fuser_useOdom", fuser_params.useOdom, true);
@@ -198,6 +218,29 @@ class NDTFeatureFuserNode {
             param_nh.param<bool>("fuser_visualizeLocalCloud", fuser_params.visualizeLocalCloud, false);
             param_nh.param<bool>("fuser_fusion2d", fuser_params.fusion2d, false);
             param_nh.param<bool>("fuser_allMatchesValid", fuser_params.allMatchesValid, false);
+            param_nh.param<bool>("fuser_discardCells", fuser_params.discardCells, false);
+            param_nh.param<bool>("fuser_optimizeOnlyYaw", fuser_params.optimizeOnlyYaw, false);
+
+            param_nh.param<bool>("use_graph", use_graph_, false);
+
+            ndt_feature::NDTFeatureGraph::Params graph_params;
+            param_nh.param<double>("graph_newNodeTranslDist", graph_params.newNodeTranslDist, 10.);
+            param_nh.param<double>("occ_map_resolution", occ_map_resolution_, 1.);
+            param_nh.param<bool>("do_pub_occ_map", do_pub_occ_map_, false);
+            
+            param_nh.param<std::string>("tf_odom_frame", tf_odom_frame_,  "/odom_base_link");
+            // To be able to use the evaluation scripts.
+            std::string gt_filename, est_filename;
+            param_nh.param<std::string>("output_gt_file",  gt_filename, "gt_pose.txt");
+            param_nh.param<std::string>("output_est_file", est_filename, "est_pose.txt");
+            
+            gt_file_.open(gt_filename.c_str());
+            est_file_.open(est_filename.c_str());
+            
+            if (!gt_file_.is_open() || !est_file_.is_open())
+            {
+              ROS_ERROR_STREAM("Failed to open : " << gt_file_ << " || " << est_file_); 
+            }
 
             offline = false;
             if (offline_nb_readings > 0)
@@ -216,20 +259,42 @@ class NDTFeatureFuserNode {
 		Eigen::AngleAxis<double>(sensor_pose_t,Eigen::Vector3d::UnitZ()) ;
 
 	    if(matchLaser) match2D=true;
-	    fuser = new ndt_feature::NDTFeatureFuserHMT(resolution,size_x,size_y,size_z,
-		    sensor_range, visualize,match2D, false, false, 30, map_name, beHMT, map_dir, true);
 
-	    fuser->setSensorPose(sensor_pose_);
-            fuser->setParams(fuser_params);
+            // Instead of providing all params to the constructor (which we need to maintain later on... store all params in the Param class...
+            fuser_params.resolution = resolution;
+            fuser_params.map_size_x = size_x;
+            fuser_params.map_size_y = size_y;
+            fuser_params.map_size_z = size_z;
+            fuser_params.sensor_range = sensor_range;
+            fuser_params.prefix = map_name;
+            fuser_params.beHMT = beHMT;
+            fuser_params.hmt_map_dir = map_dir;
             
+
+            
+
             semrob_generic::MotionModel2d::Params motion_params;
-            motion_params.Cd = 0.001;
-            motion_params.Ct = 0.001;
-            motion_params.Dd = 0.005;
-            motion_params.Dt = 0.005;
+            motion_params.Cd = 0.005;
+            motion_params.Ct = 0.01;
+            motion_params.Dd = 0.001;
+            motion_params.Dt = 0.01;
             motion_params.Td = 0.001;
-            motion_params.Tt = 0.001;
-            fuser->setMotionParams(motion_params);
+            motion_params.Tt = 0.005;
+
+            std::cout << "fuser params: " << fuser_params << std::endl;
+            
+            if (use_graph_) {
+              
+              graph = new ndt_feature::NDTFeatureGraph(graph_params, fuser_params);
+              std::cout << "graph created" << std::endl;
+              graph->setSensorPose(sensor_pose_);
+              graph->setMotionParams(motion_params);
+            }
+            else {
+              fuser = new ndt_feature::NDTFeatureFuserHMT(fuser_params); //resolution,size_x,size_y,size_z,		    sensor_range, visualize,match2D, false, false, 30, map_name, beHMT, map_dir, true);
+              fuser->setSensorPose(sensor_pose_);
+              fuser->setMotionParams(motion_params);
+            }
 
 	    if(!matchLaser) {
 		points2_sub_ = new message_filters::Subscriber<sensor_msgs::PointCloud2>(nh_,points_topic,1);
@@ -258,13 +323,18 @@ class NDTFeatureFuserNode {
 	    }
 	    initPoseSet = false;
             marker_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
+            map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1000);
             pointcloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("offline_map", 1000);
             pointcloud2_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 1000);
         }
 
 	~NDTFeatureFuserNode()
 	{
-	    delete fuser;
+          if (gt_file_.is_open())
+            gt_file_.close();
+          if (est_file_.is_open())
+            est_file_.close();
+          delete fuser;
 	}
 
     
@@ -283,13 +353,27 @@ class NDTFeatureFuserNode {
 		}
 		ROS_INFO("Init pose is (%lf,%lf,%lf)", pose_.translation()(0), pose_.translation()(1), 
 			pose_.rotation().eulerAngles(0,1,2)(0));
-		fuser->initialize(pose_,cloud,pts);
+                if (use_graph_) {
+                  graph->initialize(pose_,cloud,pts);
+                }
+                else {
+                  fuser->initialize(pose_,cloud,pts);
+                }
 		nb_added_clouds_++;
 	    } else {
 		nb_added_clouds_++;
-		pose_ = fuser->update(Tmotion,cloud,pts);
+                if (use_graph_) {
+                  pose_ = graph->update(Tmotion,cloud,pts);
+                }
+                else {
+                  pose_ = fuser->update(Tmotion,cloud,pts);
+                }
 	    }
 	    m.unlock();
+
+            if (est_file_.is_open()) {
+              est_file_ << frameTime << " " << lslgeneric::transformToEvalString(pose_);
+            }
 
 	    tf::Transform transform;
 #if ROS_VERSION_MINIMUM(1,9,0)
@@ -302,14 +386,42 @@ class NDTFeatureFuserNode {
 	    tf_.sendTransform(tf::StampedTransform(transform, frameTime, world_frame, fuser_frame));
 
             // Add some drawing
-            if (fuser->wasInit()) {
+            if (use_graph_) 
+            {
+              if (graph->wasInit()) {
 
-                for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
-                    fuser->debug_markers_[i].header.stamp = frameTime;
-                    marker_pub_.publish(fuser->debug_markers_[i]);
+                // Draw the debug stuff...
+                ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
+                for (size_t i = 0; i < f->debug_markers_.size(); i++) {
+                  f->debug_markers_[i].header.stamp = frameTime;
+                  marker_pub_.publish(f->debug_markers_[i]);
                 }
 
-//                marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1));
+                if (do_pub_occ_map_) {
+                  nav_msgs::OccupancyGrid omap;
+                  lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, "/world");
+                  moveOccupancyMap(omap, graph->getT());
+                  map_pub_.publish(omap);
+                }
+              }
+            }
+            else {
+              if (fuser->wasInit()) {
+                
+                for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
+                  fuser->debug_markers_[i].header.stamp = frameTime;
+                  marker_pub_.publish(fuser->debug_markers_[i]);
+                }
+                if (do_pub_occ_map_) {
+                  nav_msgs::OccupancyGrid omap;
+                  lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, "/world");
+                  map_pub_.publish(omap);
+                }
+
+                
+                
+                //                marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1));
+              }
             }
     }
 
@@ -321,7 +433,12 @@ class NDTFeatureFuserNode {
 	    bool ret = false;
 	    ROS_INFO("Saving current map to map directory %s", map_dir.c_str());
 	    m.lock();
-	    ret = fuser->saveMap(); 
+            if (use_graph_) {
+              ret = graph->saveMap();
+            } else 
+            {
+              ret = fuser->saveMap(); 
+            }
 	    m.unlock();
 
 	    return ret;
@@ -358,14 +475,15 @@ class NDTFeatureFuserNode {
             
             // Ask TF for the pose of the laser scan.
             
+            //            ROS_ERROR_STREAM("frame : " << tf_odom_frame_);
 
             // The odometry that should be provided is in vehicle coordinates - the /base_link
             {
                 tf::StampedTransform transform;
                 try {   
-                    listener.waitForTransform("/world", "/odom_base_link",
+                  listener.waitForTransform("/world", tf_odom_frame_,
                                               frame_time, ros::Duration(3.0));
-                    listener.lookupTransform("/world", "/odom_base_link",
+                  listener.lookupTransform("/world", tf_odom_frame_,
                                              frame_time, transform);
                     
                 }
@@ -401,19 +519,25 @@ class NDTFeatureFuserNode {
 	    } else {
                 Tm = last_odom.inverse()*this_odom;
 
-                if (Tm.translation().norm() < 0.02 && Tm.rotation().eulerAngles(0,1,2).norm() < 0.2)
+                if (Tm.translation().norm() < 0.02 && Tm.rotation().eulerAngles(0,1,2).norm() < 0.02)
                     return;
             }
             
-
+            if (gt_file_.is_open()) {
+              gt_file_ << frame_time << " " << lslgeneric::transformToEvalString(Tgt);
+            }
 
             last_odom = this_odom;
 
-            
+                        
             projector_.projectLaser(*msg_in, cloud);
 	    message_m.unlock();
 	    
 	    pcl::fromROSMsg (cloud, pcl_cloud_unfiltered);
+
+            if (pcl_cloud_unfiltered.points.size() == 0) {
+              ROS_ERROR("BAD LASER SCAN(!) - should never happen - check your driver / bag file");
+            }
 
 	    pcl::PointXYZ pt;
 	    //add some variance on z
@@ -425,6 +549,9 @@ class NDTFeatureFuserNode {
 		}
 	    }
           // Compute the flirt features
+
+            ROS_INFO_STREAM("processing scan - flirt");
+
             boost::shared_ptr<LaserReading> reading = flirtlib_ros::fromRos(*msg_in);
             InterestPointVec pts;
             detector_->detect(*reading, pts);
@@ -432,7 +559,9 @@ class NDTFeatureFuserNode {
             BOOST_FOREACH (InterestPoint* p, pts) 
                 p->setDescriptor(descriptor_->describe(*p, *reading));
             
+            ROS_INFO_STREAM("flirt computation - done");
 
+            
             // Get the time when the laser was taken, this is what should be published...
             if (offline) {
                 if (offline_ctr < offline_nb_readings) {
@@ -473,10 +602,18 @@ class NDTFeatureFuserNode {
                 this->processFeatureFrame(pcl_cloud,pts, Tm, frame_time);
             }
             {
-              sensor_msgs::PointCloud2 cloud_msg; 
-              pcl::toROSMsg(fuser->pointcloud_vis, cloud_msg );
-              cloud_msg.header.frame_id = std::string("/world");
-              pointcloud2_pub_.publish(cloud_msg );
+              if (use_graph_) {
+                sensor_msgs::PointCloud2 cloud_msg; 
+                pcl::toROSMsg(graph->getVisualizationCloud(), cloud_msg );
+                cloud_msg.header.frame_id = std::string("/world");
+                pointcloud2_pub_.publish(cloud_msg );
+              }
+              else {
+                sensor_msgs::PointCloud2 cloud_msg; 
+                pcl::toROSMsg(fuser->getVisualizationCloud(), cloud_msg );
+                cloud_msg.header.frame_id = std::string("/world");
+                pointcloud2_pub_.publish(cloud_msg );
+              }
             }
 	};
 	
@@ -568,8 +705,9 @@ class NDTFeatureFuserNode {
 		initPoseSet = true;
 		pose_ = gt_pose;
 		ROS_INFO("Set initial pose from GT track");
-	    }
-            if (visualize) {
+                lslgeneric::printTransf2d(pose_);
+            }
+            if (visualize && !use_graph_) {
               fuser->viewer->addTrajectoryPoint(gt_pose.translation()(0),gt_pose.translation()(1),gt_pose.translation()(2)+0.2,1,1,1);
               fuser->viewer->displayTrajectory();
               fuser->viewer->repaint();	

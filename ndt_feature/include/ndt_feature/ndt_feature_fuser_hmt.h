@@ -24,6 +24,7 @@
 #include <ndt_feature/ndt_feature_rviz.h>
 #include <ndt_feature/conversions.h>
 #include <ndt_feature/utils.h>
+#include <ndt_feature/ndt_feature_map.h>
 
 namespace ndt_feature {
   /**
@@ -33,36 +34,44 @@ namespace ndt_feature {
    */
 class NDTFeatureFuserHMT{
   public:
-    std::vector<visualization_msgs::Marker> debug_markers_;
     Eigen::Affine3d Tnow, Tlast_fuse, Todom; ///< current pose
-    //lslgeneric::NDTMapHMT *map;  ///< da map
     lslgeneric::NDTMap *map;  ///< da map
+  //    std::vector< std::vector<InterestPoint *> > featuremap;
+  NDTFeatureMap featuremap;
+
 
     NDTViz *viewer;
     FILE *fAddTimes, *fRegTimes;
 
     boost::shared_ptr<RansacFeatureSetMatcher> ransac_;
 
-    InterestPointVec ptsPrev;
+  InterestPointVec ptsPrev;
   int ctr;
   
-  // Parameters
-  
-    bool checkConsistency;		  ///perform a check for consistency against initial estimate
-    double max_translation_norm, max_rotation_norm;
-    double sensor_range;
-    bool be2D, doMultires, fuseIncomplete, beHMT;
-    std::string prefix;
-    std::string hmt_map_dir;
-
+  // Containers used for visualizations.
+  std::vector<visualization_msgs::Marker> debug_markers_;
   pcl::PointCloud<pcl::PointXYZ> pointcloud_vis;
   
+  
+  //! Parameters of the NDT - feature - class, note some parameters are free to be altered during execution. Check the initalization function.
   class Params {
   public:
     Params() {
       // old params
       checkConsistency = false;		  ///perform a check for consistency against initial estimate
-    
+      resolution = 1.;
+      map_size_x = 40.;
+      map_size_y = 40.;
+      map_size_z = 10.;
+      sensor_range = 3.;
+      max_translation_norm = 1;
+      max_rotation_norm = M_PI/4.;
+      fuseIncomplete = false;
+      beHMT = true;
+      prefix = "";
+      hmt_map_dir = "map";
+      
+      
       // new params
       useNDT = true;
       useFeat = true;
@@ -77,10 +86,23 @@ class NDTFeatureFuserHMT{
       visualizeLocalCloud = false;
       fusion2d = false;
       allMatchesValid = false;
+      discardCells = false;
+      optimizeOnlyYaw = false;
     }
     
     bool checkConsistency;
-    
+    double resolution;
+    double map_size_x;
+    double map_size_y;
+    double map_size_z;
+    double sensor_range;
+    double max_translation_norm;
+    double max_rotation_norm;
+    bool fuseIncomplete;
+    bool beHMT;
+    std::string prefix;
+    std::string hmt_map_dir;
+       
     bool useNDT;
     bool useFeat;
     bool useOdom;
@@ -94,9 +116,25 @@ class NDTFeatureFuserHMT{
     bool visualizeLocalCloud;
     bool fusion2d;
     bool allMatchesValid;
+    bool discardCells;
+    bool optimizeOnlyYaw;
   
     friend std::ostream& operator<<(std::ostream &os, const NDTFeatureFuserHMT::Params &obj)
     {
+      os << "\nresolution           : " << obj.resolution;
+      os << "\ncheckConsistency     : " << obj.checkConsistency;
+      os << "\nmap_size_x           : " << obj.map_size_x;
+      os << "\nmap_size_y           : " << obj.map_size_y;
+      os << "\nmap_size_z           : " << obj.map_size_z;
+      os << "\nsensor_range         : " << obj.sensor_range;
+      os << "\nmax_translation_norm : " << obj.max_translation_norm;
+      os << "\nmax_rotation_norm    : " << obj.max_rotation_norm;
+      os << "\nfuseIncomplete       : " << obj.fuseIncomplete;
+      os << "\nbeHMT                : " << obj.beHMT;
+      os << "\nprefix               : " << obj.prefix;
+      os << "\nhmt_map_dir          : " << obj.hmt_map_dir;
+      
+
       os << "\nuseNDT      : " << obj.useNDT;
       os << "\nuseFeat     : " << obj.useFeat;
       os << "\nuseOdom     : " << obj.useOdom;
@@ -110,6 +148,8 @@ class NDTFeatureFuserHMT{
       os << "\nvisualizeLocalCloud : " << obj.visualizeLocalCloud;
       os << "\nfusion2d    : " << obj.fusion2d;
       os << "\nallMatchesValid : " << obj.allMatchesValid;
+      os << "\ndiscardCells: " << obj.discardCells;
+      os << "\noptimizeOnlyYaw: " << obj.optimizeOnlyYaw;
       return os;
     }
   };
@@ -117,65 +157,49 @@ class NDTFeatureFuserHMT{
   Params params_;
   semrob_generic::MotionModel2d::Params motion_params_;
 
-  NDTFeatureFuserHMT(double map_resolution, double map_size_x_, double map_size_y_, double map_size_z_, double sensor_range_ = 3, 
-		     bool visualize_=false, bool be2D_=false, bool doMultires_=false, bool fuseIncomplete_=false, int max_itr=30, 
-		     std::string prefix_="", bool beHMT_=true, std::string hmt_map_dir_="map", bool _step_control=true) : 
-    ransac_(new RansacFeatureSetMatcher(0.0599, 0.9, 0.1, 0.6, 0.0499, false)) {
-    ROS_INFO_STREAM("NDTFeatureFuserHMT - constructor");
-      isInit = false;
-      resolution = map_resolution;
-      sensor_pose.setIdentity();
-      checkConsistency = false;
-      visualize = true;
-      translation_fuse_delta = 0.05;
-      rotation_fuse_delta = 0.01;
-      max_translation_norm = 1.;
-      max_rotation_norm = M_PI/4.;
-      map_size_x = map_size_x_;
-      map_size_y = map_size_y_;
-      map_size_z = map_size_z_;
-      visualize = visualize_;
-      be2D = be2D_;
-      sensor_range = sensor_range_;
-      prefix = prefix_;
-      doMultires = doMultires_;
-      ctr =0;
+  NDTFeatureFuserHMT(const NDTFeatureFuserHMT::Params &params) : 
+    ransac_(new RansacFeatureSetMatcher(0.0599, 0.9, 0.1, 0.6, 0.0499, false)), params_(params), viewer(NULL), map(NULL) {
 
-      ROS_INFO_STREAM("using NDTViz");
-        viewer = new NDTViz(visualize);
-        if (visualize) {
-          viewer->win3D->start_main_loop_own_thread(); // Very very ugly to start it here... FIX ME.
-        }
-      ROS_INFO_STREAM("using NDTViz - done");
-      localMapSize<<sensor_range_+3*resolution,sensor_range_+3*resolution,map_size_z_;
-      fuseIncomplete = fuseIncomplete_;
-      matcher.ITR_MAX = max_itr;
-      matcher2D.ITR_MAX = max_itr;
-      matcher.step_control=_step_control;
-      matcher2D.step_control=_step_control;
-      beHMT = beHMT_;
-      hmt_map_dir=hmt_map_dir_;
+    //    ROS_INFO_STREAM("NDTFeatureFuserHMT - constructor");
+    isInit = false;
 
-	    
-      char fname[1000];
-      snprintf(fname,999,"%s_addTime.txt",prefix.c_str());
-      fAddTimes = fopen(fname,"w");
+    visualize = false; // 
 
-      std::cout<<"MAP: resolution: "<<resolution<<" size "<<map_size_x<<" "<<map_size_y<<" "<<map_size_z<<" sr "<<sensor_range<<std::endl;
-    ROS_INFO_STREAM("NDTFeatureFuserHMT - constructor - done");
+    sensor_pose.setIdentity();
+    translation_fuse_delta = 0.05;
+    rotation_fuse_delta = 0.01;
+    ctr =0;
 
-    }
+    localMapSize<<params.sensor_range+3*params.resolution,params.sensor_range+3*params.resolution,params.map_size_z;
+    
+    char fname[1000];
+    snprintf(fname,999,"%s_addTime.txt",params.prefix.c_str());
+    fAddTimes = fopen(fname,"w");
+    
+    std::cout<<"MAP: resolution: "<<params.resolution<<" size "<<params.map_size_x<<" "<<params.map_size_y<<" "<<params.map_size_z<<" sr "<<params.sensor_range<<std::endl;
+  }
+
+  
+  
+
     ~NDTFeatureFuserHMT()
       {
-	delete map;
-	delete viewer;
+        std::cerr << "in HMT destructor" << std::endl;
+	std::cerr << "dest1" << std::endl;
+        if (viewer!=NULL) 
+          delete viewer;
+        std::cerr << "dest2" << std::endl;
 	if(fAddTimes!=NULL) fclose(fAddTimes);
+        std::cerr << "dest3" << std::endl;
 	if(fRegTimes!=NULL) fclose(fRegTimes);
+        std::cerr << "dest4" << std::endl;
+        std::cerr << "map : " << map << std::endl;
+        std::cerr << "map : getMyIndexStr() : " << map->getMyIndexStr() << std::endl;
+        std::cerr << "map : active cells : " << map->numberOfActiveCells() << std::endl;
+        std::cerr << "map : getAllCells.size : " << map->getAllCells().size() << std::endl;
+        delete map;
+        std::cerr << "in HMT destructor - done." << std::endl;
       }
-
-  void setParams(const Params &params) {
-    params_ = params;
-  }
 
   void setMotionParams(const semrob_generic::MotionModel2d::Params &params) {
     motion_params_ = params;
@@ -199,87 +223,113 @@ class NDTFeatureFuserHMT{
     bool saveMap() {
       if(!isInit) return false;
       if(map == NULL) return false;
-      if(beHMT) {
+      if(params_.beHMT) {
 	lslgeneric::NDTMapHMT *map_hmt = dynamic_cast<lslgeneric::NDTMapHMT*> (map);
 	if(map_hmt==NULL) return false;
 	return (map_hmt->writeTo()==0);
       } else {
 	char fname[1000];
-	snprintf(fname,999,"%s/%s_map.jff",hmt_map_dir.c_str(),prefix.c_str());
+	snprintf(fname,999,"%s/%s_map.jff",params_.hmt_map_dir.c_str(),params_.prefix.c_str());
 	return (map->writeToJFF(fname) == 0);
       }
     }
+  
+
+  bool save(const std::string &fileName) {
+    bool ret;
+    std::string nd_file = fileName + ".jff";
+    std::string feat_file = fileName + ".feat";
+    ret = (map->writeToJFF(nd_file.c_str()) == 0);
+    ret &= (featuremap.save(feat_file));
+    return ret;
+  }
+
+  bool load(const std::string &fileName) {
+    bool ret = true;
+    
+    std::string nd_file = fileName + ".jff";
+    std::string feat_file = fileName + ".feat";
+    // Do the initializations etc.
+    Eigen::Affine3d T;
+    T.setIdentity();
+    map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(params_.resolution));
+    std::cout << "loading : " << nd_file << std::endl;
+    if (map->loadFromJFF(nd_file.c_str()) != 0) {
+      std::cerr << "failed to load : " << nd_file << std::endl;
+      ret = false;
+    }
+    std::cout << "nd - loading - done." << std::endl;
+    std::cerr << "loading feature map : " << feat_file << std::endl;
+    if (featuremap.load(feat_file)) {
+      std::cerr << "failed to load : " << feat_file << std::endl;
+      ret = false;
+    }
+    std::cout << "loading feature map - done." << std::endl;
+    
+    return ret;
+  }
+
+
+  // const std::vector<visualization_msgs::Marker>& getVisualizationMarkers() const {
+  //   return debug_markers_;
+  // }
+
+  pcl::PointCloud<pcl::PointXYZ>& getVisualizationCloud() {
+    return pointcloud_vis;
+  }
+
 
     /**
      * Set the initial position and set the first scan to the map
      */
-  void initialize(Eigen::Affine3d initPos, pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts, bool preLoad=false){
+  void initialize(Eigen::Affine3d initPos, const pcl::PointCloud<pcl::PointXYZ> &cloudOrig, const InterestPointVec& pts, bool preLoad=false){
       ///Set the cloud to sensor frame with respect to base
+    
+      // Copy the points... need to transform them around
+    pcl::PointCloud<pcl::PointXYZ> cloud(cloudOrig);
+
       lslgeneric::transformPointCloudInPlace(sensor_pose, cloud);
       lslgeneric::transformPointCloudInPlace(initPos, cloud);
       Tnow = initPos;
 
       ptsPrev = pts; // pts are always given in the sensor frame...
 
-      //#ifdef BASELINE
-      //#else
-      if(beHMT) {
-	map = new lslgeneric::NDTMapHMT(resolution,
-						Tnow.translation()(0),Tnow.translation()(1),Tnow.translation()(2),
-						map_size_x,map_size_y,map_size_z,sensor_range,hmt_map_dir,true);
-	if(preLoad) {
-	  lslgeneric::NDTMapHMT *map_hmt = dynamic_cast<lslgeneric::NDTMapHMT*> (map);
-	  std::cout<<"Trying to pre-load maps at "<<initPos.translation()<<std::endl;
-	  map_hmt->tryLoadPosition(initPos.translation());
-	}
-      } else {
-	map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(resolution));
-	map->initialize(Tnow.translation()(0),Tnow.translation()(1),0./*Tnow.translation()(2)*/,map_size_x,map_size_y,map_size_z);
-      }
-      //#endif
-      map->addPointCloud(Tnow.translation(),cloud, 0.1, 100.0, 0.1);
-      //map->addPointCloudMeanUpdate(Tnow.translation(),cloud,localMapSize, 1e5, 1250, map_size_z/2, 0.06);
-      //map->addPointCloudMeanUpdate(Tnow.translation(),cloud,localMapSize, 0.1, 100.0, 0.1);
-      map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, Tnow.translation(), 0.1);
+      // Move the features to the current pose (Tnow)
+      ndt_feature::moveInterestPointVec(Tnow*sensor_pose, ptsPrev);
+      
+      featuremap.update(ptsPrev);
 
+      map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(params_.resolution));
+      map->initialize(Tnow.translation()(0),Tnow.translation()(1),0./*Tnow.translation()(2)*/,params_.map_size_x,params_.map_size_y,params_.map_size_z);
+      
+      Eigen::Affine3d Tnow_sensor = Tnow*sensor_pose; // The origin from where the sensor readings occured...
+      map->addPointCloud(Tnow_sensor.translation(),cloud, 0.1, 100.0, 0.1);
+      map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, Tnow_sensor.translation(), 0.1);
 
       isInit = true;
       Tlast_fuse = Tnow;
       Todom = Tnow;
-      if(visualize) 
-	{
-	  viewer->plotNDTSAccordingToOccupancy(-1,map);
-	  viewer->plotLocalNDTMap(cloud,resolution);
-	  viewer->addTrajectoryPoint(Tnow.translation()(0),Tnow.translation()(1),Tnow.translation()(2)+0.2,1,0,0);
-	  viewer->addTrajectoryPoint(Todom.translation()(0),Todom.translation()(1),Todom.translation()(2)+0.2,0,1,0);
-	  viewer->displayTrajectory();
-	  viewer->setCameraPointing(Tnow.translation()(0),Tnow.translation()(1),Tnow.translation()(2)+3);
-	  viewer->repaint();
-	}
     }
 
     /**
      *
-     *
+     * Clean up this function
      */
-  Eigen::Affine3d update(Eigen::Affine3d Tmotion, pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts){
-      std::cerr << "in update()" << std::endl;
-      if(!isInit){
+  Eigen::Affine3d update(Eigen::Affine3d Tmotion, const pcl::PointCloud<pcl::PointXYZ> &cloudOrig, const InterestPointVec& pts, bool updateFeatureMap = true, bool updateNDTMap = true){
+
+    if(!isInit){
 	fprintf(stderr,"NDT-FuserHMT: Call Initialize first!!\n");
 	return Tnow;
       }
 
       debug_markers_.clear();
-      pcl::PointCloud<pcl::PointXYZ> cloud_orig(cloud);
+      pcl::PointCloud<pcl::PointXYZ> cloud(cloudOrig);
+      pcl::PointCloud<pcl::PointXYZ> cloud_orig(cloudOrig);
+      
+      Eigen::Vector3d map_centroid;
+      map->getCentroid(map_centroid[0], map_centroid[1], map_centroid[2]);
 
-        Eigen::Vector3d map_centroid;
-        map->getCentroid(map_centroid[0], map_centroid[1], map_centroid[2]);
-        std::cout << "map_centroid : " << map_centroid << std::endl;
-      
-      std::cout << "Tmotion : " << std::flush; lslgeneric::printTransf2d(Tmotion);
-      // This is already given in the right frame. Add an odometry constraint by
-      // utilizing two NDT distributions that are added.
-      
+      // Odometry 'constraints'
       semrob_generic::MotionModel2d motion(motion_params_);
       semrob_generic::Pose2d relpose(Tmotion.translation()[0],
                                  Tmotion.translation()[1],
@@ -293,14 +343,10 @@ class NDTFeatureFuserHMT{
       lslgeneric::NDTCell* ndt_odom_cell_prev = new lslgeneric::NDTCell();
       ndt_odom_cell_prev->setMean(Tmotion.translation());
       ndt_odom_cell_prev->setCov(odom_cov);
-      std::cout << "covariance : " << odom_cov << std::endl;
       
-      std::cout << "fuser params : " << params_ << std::endl;
-      std::cout << "cloud.size() : " << cloud.size() << std::endl;
 
       Todom = Todom * Tmotion; //we track this only for display purposes!
 
-#if 1
       Eigen::Affine3d Tinit;
       if (params_.globalTransf) {
         
@@ -319,40 +365,20 @@ class NDTFeatureFuserHMT{
         Tmotion_est = Tnow*Tmotion;
       }
       Eigen::Affine3d global_rotation;
-      Tinit.translation()(2) = 0.;
-      Tmotion_est.translation()(2) = 0.;
-
+      
       double t0=0,t1=0,t2=0,t3=0,t4=0,t5=0,t6=0;
-      ///Set the cloud to sensor frame with respect to base
-      //+++	    lslgeneric::transformPointCloudInPlace(sensor_pose, cloud);
       Eigen::Affine3d Tinit_sensor_pose = Tinit*sensor_pose;
-      lslgeneric::transformPointCloudInPlace(Tinit_sensor_pose, cloud);
+      lslgeneric::transformPointCloudInPlace(Tinit_sensor_pose, cloud);  // Cloud -> transformed in to the vehicle origin!
       
       t0 = getDoubleTime();
       ///Create global map
-      lslgeneric::NDTMap ndglobal(new lslgeneric::LazyGrid(resolution));
+      lslgeneric::NDTMap ndglobal(new lslgeneric::LazyGrid(params_.resolution));
       
-      
-      
-      //+++ ndglobal.computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE);
-      // DEBUG THIS FUNC...!
-      
-      std::cout << "Tnow : " <<  std::endl;
-      lslgeneric::printTransf(Tnow);
-      std::cout << "Tinit : " <<  std::endl;
-      lslgeneric::printTransf(Tinit);
-      std::cout << "Tinit_sensor_pose : " <<  std::endl;
-      lslgeneric::printTransf(Tinit_sensor_pose);
-      
-      // Remove the z value...
-      Tinit_sensor_pose.translation()[2] = 0.;
-      std::cout << "Tinit_sensor_pose : " <<  std::endl;
-      lslgeneric::printTransf(Tinit_sensor_pose);
       
       if (params_.loadCentroid) {
         if (params_.globalTransf) {
           ndglobal.loadPointCloudCentroid(cloud, Tinit_sensor_pose.translation(),
-                                          map_centroid, localMapSize, sensor_range);
+                                          map_centroid, localMapSize, params_.sensor_range);
         }
         else {
           // This is more tricky...
@@ -364,29 +390,29 @@ class NDTFeatureFuserHMT{
           global_rotation.translation() = Eigen::Vector3d(0.,0.,0.);
           lslgeneric::transformPointCloudInPlace(global_rotation, cloud);
           // The new centroid... select it to be as 'close' to 0,0,0 as possible.
-          Eigen::Vector3d local_centroid = lslgeneric::computeLocalCentroid(map_centroid, Tmotion_est.translation(), resolution);
-          std::cout << "local_centroid : " << local_centroid << std::endl;
+          Eigen::Vector3d local_centroid = lslgeneric::computeLocalCentroid(map_centroid, Tmotion_est.translation(), params_.resolution);
+          //std::cout << "local_centroid : " << local_centroid << std::endl;
           ndglobal.loadPointCloudCentroid(cloud, Tinit_sensor_pose.translation(),
-                                          local_centroid, localMapSize, sensor_range);
+                                          local_centroid, localMapSize, params_.sensor_range);
         }
       }
       else {
         if (!params_.globalTransf) {
-          ndglobal.guessSize(0,0,0,sensor_range,sensor_range,map_size_z);
+          ndglobal.guessSize(0,0,0,params_.sensor_range,params_.sensor_range,params_.map_size_z);
+          // The ndglobal map is a map with a reference frame to the vehicle origin(!)
         }
-        ndglobal.loadPointCloud(cloud, sensor_range);
+        ndglobal.loadPointCloud(cloud, params_.sensor_range);
       }
       ndglobal.computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE);
       
-      debug_markers_.push_back(ndt_visualisation::markerNDTCells(ndglobal, 2, "ndglobal"));
-      {
-        std::cout << "numberOfActiveCells : " << ndglobal.numberOfActiveCells() << std::endl;
-        int size_x, size_y, size_z;
-        ndglobal.getGridSize(size_x, size_y, size_z);
-        std::cout << "x : " << size_x << "," << size_y << "," << size_z << std::endl;
-        
-        
+      if (params_.discardCells) {
+        discardCell(ndglobal, cloud.front());
+        discardCell(ndglobal, cloud.back());
       }
+
+      debug_markers_.push_back(ndt_visualisation::markerNDTCells(ndglobal, 2, "ndglobal"));
+
+      
       t1 = getDoubleTime();
       
       // The feature handling goes here...
@@ -397,35 +423,36 @@ class NDTFeatureFuserHMT{
       cov << 0.0002, 0., 0., 0., 0.0002, 0., 0., 0., 0.0001; // Feature covarance...
       
       const double score_feature = ransac_->matchSets(ptsPrev, pts, transform, matches);
-      Eigen::Affine3d Tfeat_sensor; // Local SENSOR coords...
+      Eigen::Affine3d Tfeat_sensor; // Local SENSOR coords to map coords
       ndt_feature::convertOrientedPoint2DToEigen(transform, Tfeat_sensor);
-      // Transform back to vechicle coords.
-      Eigen::Affine3d Tfeat = sensor_pose * Tfeat_sensor * sensor_pose.inverse();
+      // Transform to vechicle coords.
+      Eigen::Affine3d Tfeat = Tfeat_sensor * sensor_pose.inverse();
       
-      std::cout<<"Tmotion : "<< Tmotion.translation().transpose()<<" "<<Tmotion.rotation().eulerAngles(0,1,2).transpose()<<std::endl;
-      std::cout<<"Tfeat : "<< Tfeat.translation().transpose()<<" "<<Tfeat.rotation().eulerAngles(0,1,2).transpose()<<std::endl;
       
+      // VISUALIZATION OF FEATURE MATCHING
       bool consistent_features = true;
       {
-        geometry_msgs::Pose pose0;
-        tf::poseEigenToMsg(Tnow*sensor_pose, pose0); // PREV
-        debug_markers_.push_back(ndt_feature::interestPointMarkersFrameId(ptsPrev, pose0, 1, std::string("/world")));
+        geometry_msgs::Pose prev_pose;
+        Eigen::Affine3d Torigin;
+        Torigin.setIdentity();
+        tf::poseEigenToMsg(Torigin, prev_pose); // PREV
+        debug_markers_.push_back(ndt_feature::interestPointMarkersFrameId(/*prevPts*/featuremap.getMap(), prev_pose, 1, std::string("/world"))); // ptsPrev in the map coords already...
 	
-        geometry_msgs::Pose pose1;
-        tf::poseEigenToMsg(Tinit*sensor_pose, pose1); // CURRENT
-        debug_markers_.push_back(ndt_feature::interestPointMarkersFrameId(pts, pose1, 0, std::string("/world")));
+        geometry_msgs::Pose curr_pose;
+        tf::poseEigenToMsg(Tinit*sensor_pose, curr_pose); // CURRENT
+        debug_markers_.push_back(ndt_feature::interestPointMarkersFrameId(pts, curr_pose, 0, std::string("/world")));
 	
         if (matches.size() > 0) {
           // Seems that the order is off.
           debug_markers_.push_back(ndt_feature::correspondenceMarkers (matches, 
-                                                                       pose1,
-                                                                       pose0,
+                                                                       prev_pose,
+                                                                       curr_pose,
                                                                        std::string("/world")));
           // Check that this makes sence (not to much difference compared to the odometry...
           //		checkConsistency = true;
-          Eigen::Affine3d diff = (Tnow * Tmotion).inverse() * (Tnow * Tfeat);
-          if((diff.translation().norm() > max_translation_norm/10. || 
-              diff.rotation().eulerAngles(0,1,2).norm() > max_rotation_norm/4.) && checkConsistency){
+          Eigen::Affine3d diff = (Tnow * Tmotion).inverse() * (Tfeat);
+          if((diff.translation().norm() > params_.max_translation_norm/10. || 
+              diff.rotation().eulerAngles(0,1,2).norm() > params_.max_rotation_norm/4.) && params_.checkConsistency){
             ROS_ERROR("****  NDTFuserHMT -- feature registration failure *****");
             
             consistent_features = false;
@@ -457,7 +484,7 @@ class NDTFeatureFuserHMT{
       
       if (params_.useOdom) {
         // Add odometry (if enabled last)
-        ROS_ERROR_STREAM("adding odometry...");
+        //ROS_ERROR_STREAM("adding odometry...");
         addNDTCellToMap(ndt_feat_prev_vehicle_frame, ndt_odom_cell_prev);
         addNDTCellToMap(ndt_feat_curr_vehicle_frame, ndt_odom_cell);
         int tmp_size = corr.size(); 
@@ -482,18 +509,16 @@ class NDTFeatureFuserHMT{
       if (!params_.useOdom && !consistent_features) { // No odometry and no consistent features -> nothing to use...
         use_odom_or_features = false;
       }
-      //		if(matcher.match( *map, ndlocal,Tinit,true) || fuseIncomplete){
-      // Matching using Tmotion / Tfeat - local coords relative motion...
 
       bool match_ok = true;
       if (params_.fusion2d) {
-        match_ok = lslgeneric::matchFusion2d(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE) || fuseIncomplete;
+        match_ok = lslgeneric::matchFusion2d(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE) || params_.fuseIncomplete;
       }
       else {
-        match_ok = lslgeneric::matchFusion(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE) || fuseIncomplete;
+        match_ok = lslgeneric::matchFusion(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE, params_.optimizeOnlyYaw) || params_.fuseIncomplete;
       }
 
-      std::cout << "match_ok : " << match_ok << std::endl;
+      // std::cout << "match_ok : " << match_ok << std::endl;
       if (params_.allMatchesValid) {
         match_ok = true;
       }
@@ -509,18 +534,18 @@ class NDTFeatureFuserHMT{
             posecov.mean = semrob_generic::pose2dFromAffine3d(Tmotion_est);
             posecov.cov = semrob_generic::cov6toCov3(matching_cov);
             lslgeneric::printTransf2d(Tmotion_est);
-            std::cout << "matching_cov : " << matching_cov << std::endl;
+            //std::cout << "matching_cov : " << matching_cov << std::endl;
             semrob_generic::pose2dClearDependence(posecov);
-            std::cout << "posecov : " << posecov << std::endl;
+            //std::cout << "posecov : " << posecov << std::endl;
             debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(posecov.mean, posecov.cov, 100., 1, -1));
 
             current_posecov.mean = semrob_generic::pose2dFromAffine3d(Tmotion_est);
             Eigen::Matrix3d prev_cov = current_posecov.cov;
             current_posecov.cov = prev_cov+posecov.cov; // Only works if the registration is done from local frame to global that is that Tmotion holds the complete motion and the covariance estimate is only the local one.
-            std::cout << "current_posecov : " << current_posecov << std::endl;
+            //std::cout << "current_posecov : " << current_posecov << std::endl;
             debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(current_posecov.mean, current_posecov.cov, 1., 2, 0));
 
-            std::cout << "relposecov : " << relposecov << std::endl;
+            //std::cout << "relposecov : " << relposecov << std::endl;
             
         }
 
@@ -534,8 +559,8 @@ class NDTFeatureFuserHMT{
         // Update the motion estimation with the orientation
 
         Eigen::Affine3d diff = (Tmotion_est).inverse() * Tmotion;
-        if((diff.translation().norm() > max_translation_norm || 
-            diff.rotation().eulerAngles(0,1,2).norm() > max_rotation_norm) && checkConsistency){
+        if((diff.translation().norm() > params_.max_translation_norm || 
+            diff.rotation().eulerAngles(0,1,2).norm() > params_.max_rotation_norm) && params_.checkConsistency){
           fprintf(stderr,"****  NDTFuserHMT -- ALMOST DEFINATELY A REGISTRATION FAILURE *****\n");
           Tnow = Tnow * Tmotion;
         }else
@@ -577,7 +602,7 @@ class NDTFeatureFuserHMT{
             {
               if(ctr%20==0) {
                 viewer->plotNDTSAccordingToOccupancy(-1,map);
-                viewer->plotLocalNDTMap(cloud,resolution);
+                viewer->plotLocalNDTMap(cloud,params_.resolution);
               }
               viewer->addTrajectoryPoint(Tnow.translation()(0),Tnow.translation()(1),Tnow.translation()(2),1,0,0);
               viewer->addTrajectoryPoint(Todom.translation()(0),Todom.translation()(1),Todom.translation()(2),0,1,0);
@@ -599,9 +624,12 @@ class NDTFeatureFuserHMT{
       lslgeneric::transformPointCloudInPlace(spose, cloud_orig);
       //	    map->addPointCloudMeanUpdate(spose.translation(),cloud,localMapSize, 1e5, 1250, map_size_z/2, 0.06);
       
-      map->addPointCloud(spose.translation(),cloud_orig, 0.06, 25); // Here, keep the raw cloud and add it here!
-      map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, spose.translation(), 0.1);
+      if (updateNDTMap) {
       
+      
+        map->addPointCloud(spose.translation(),cloud_orig, 0.06, 25); // Here, keep the raw cloud and add it here! TODO - check the influence here...
+        map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, spose.translation(), 0.1);
+      }
       t5 = getDoubleTime();
       
 
@@ -611,34 +639,29 @@ class NDTFeatureFuserHMT{
         pointcloud_vis = cloud_orig;
       
       ptsPrev = pts;
+      // Move the features to the current pose (Tnow)
+      if (updateFeatureMap) {
+        ndt_feature::moveInterestPointVec(Tnow*sensor_pose, ptsPrev);
+        featuremap.update(ptsPrev);
+      }
       return Tnow;
-      
-      
-
-
-
-
-	    //########################################################################
-	    //#######################################################
-#endif 
-
     }
+
+  NDTFeatureMap& getFeatureMap() {
+    return featuremap;
+  }
+
+  const NDTFeatureMap& getFeatureMap() const {
+    return featuremap;
+  }
+
 
   private:
     bool isInit;
-
-    double resolution; ///< resolution of the map
-    double map_size;
-	
     double translation_fuse_delta, rotation_fuse_delta;
-    double map_size_x;
-    double map_size_y;
-    double map_size_z;
     bool visualize;
 
     Eigen::Affine3d sensor_pose;
-    lslgeneric::NDTMatcherD2D matcher;
-    lslgeneric::NDTMatcherD2D_2D matcher2D;
     Eigen::Vector3d localMapSize;
 
   semrob_generic::Pose2dCov current_posecov;
@@ -648,5 +671,45 @@ class NDTFeatureFuserHMT{
 
       };
 } // namespace
+
+// Forward declaration of class boost::serialization::access
+namespace boost {
+  namespace serialization {
+    class access;
+    
+    // Serialization of Eigen::Vector2d
+    template<typename Archive>
+    void serialize(Archive& ar, ndt_feature::NDTFeatureFuserHMT::Params& o, const unsigned int version) {
+      ar & o.checkConsistency 
+        & o.resolution
+        & o.map_size_x
+        & o.map_size_y
+        & o.map_size_z
+        & o.sensor_range
+        & o.max_translation_norm
+        & o.max_rotation_norm
+        & o.fuseIncomplete
+        & o.beHMT
+        & o.prefix
+        & o.hmt_map_dir
+        & o.useNDT
+        & o.useFeat
+        & o.useOdom
+        & o.neighbours
+        & o.stepcontrol
+        & o.ITR_MAX
+        & o.DELTA_SCORE
+        & o.globalTransf
+        & o.loadCentroid
+        & o.forceOdomAsEst
+        & o.visualizeLocalCloud
+        & o.fusion2d
+        & o.allMatchesValid
+        & o.discardCells
+        & o.optimizeOnlyYaw;
+    }
+  }
+}
+  
 
 #endif

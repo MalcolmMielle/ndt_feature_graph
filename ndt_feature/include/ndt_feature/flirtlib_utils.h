@@ -4,7 +4,7 @@
 #include <flirtlib_ros/flirtlib.h>
 #include <flirtlib_ros/conversions.h>
 #include <tf_conversions/tf_eigen.h>
-
+#include <boost/foreach.hpp>
 
 typedef std::vector<InterestPoint*> InterestPointVec;
 typedef std::pair<InterestPoint*, InterestPoint*> Correspondence;
@@ -50,6 +50,22 @@ DescriptorGenerator* createDescriptor (HistogramDistance<double>* dist)
     T = Eigen::Translation3d(pt.x, pt.y, 0.) * qd;
   }
   
+void convertEigenToOrientedPoint2D(const Eigen::Affine3d &T, OrientedPoint2D &pt) {
+  pt.x = T.translation()[0];
+  pt.y = T.translation()[1];
+  pt.theta = T.rotation().eulerAngles(0,1,2)[2];
+}
+
+void moveInterestPointVec(const Eigen::Affine3d &T, InterestPointVec &pts) {
+  // Move the interest points to T.
+  BOOST_FOREACH (InterestPoint* p, pts) {
+    Eigen::Affine3d pt;
+    convertOrientedPoint2DToEigen(p->getPosition(), pt);
+    OrientedPoint2D t;
+    convertEigenToOrientedPoint2D(T*pt, t);
+    p->setPosition(t);
+  }
+}
 
 
 

@@ -8,7 +8,6 @@
 #include <ndt_feature/ndt_feature_frame.h>
 #include <eigen_conversions/eigen_msg.h>
 
-
 namespace ndt_feature {
 
 /* geometry_msgs::Point toPoint (const tf::Vector3& p) */
@@ -22,7 +21,7 @@ namespace ndt_feature {
 
 // Generate markers to visualize correspondences between two scans
 visualization_msgs::Marker correspondenceMarkers (const Correspondences& correspondences,
-						  const geometry_msgs::Pose& p0, const geometry_msgs::Pose& p1,
+						  const geometry_msgs::Pose& ref, const geometry_msgs::Pose& curr,
 						  const std::string &frame_id)
 {
   visualization_msgs::Marker m;
@@ -34,44 +33,58 @@ visualization_msgs::Marker correspondenceMarkers (const Correspondences& corresp
   m.scale.x = 0.05;
   m.color.r = m.color.a = 1.0;
   m.color.g = 0.65;
-  tf::Pose pose0, pose1;
-  tf::poseMsgToTF(p0, pose0);
-  tf::poseMsgToTF(p1, pose1);
+  tf::Pose pose_ref, pose_curr;
+  tf::poseMsgToTF(ref, pose_ref);
+  tf::poseMsgToTF(curr, pose_curr);
 
   BOOST_FOREACH (const Correspondence& c, correspondences) 
   {
-    const tf::Vector3 pt0(c.first->getPosition().x, c.first->getPosition().y, 0.0);
-    const tf::Vector3 pt1(c.second->getPosition().x, c.second->getPosition().y, 0.0);
+    const tf::Vector3 curr_pt(c.first->getPosition().x, c.first->getPosition().y, 0.0); // Current
+    const tf::Vector3 ref_pt(c.second->getPosition().x, c.second->getPosition().y, 0.0); // Ref
     //    std::cout << "pt0 : " << pt0 << "\t pt1 : " << pt1 << std::endl;
-    m.points.push_back(ndt_visualisation::toPointFromTF(pose0*pt0));
-    m.points.push_back(ndt_visualisation::toPointFromTF(pose1*pt1));
+    m.points.push_back(ndt_visualisation::toPointFromTF(pose_curr*curr_pt));
+    m.points.push_back(ndt_visualisation::toPointFromTF(pose_ref*ref_pt));
   }
 
   return m;
 }
 
+visualization_msgs::Marker correspondenceMarkers (const Correspondences& correspondences,
+						  const std::string &frame_id)
+{
+  geometry_msgs::Pose pose;
+  pose.position.x = pose.position.y = pose.position.z = 0.;
+  pose.orientation.x = pose.orientation.y = pose.orientation.z = 0.;
+  pose.orientation.w = 1.;
+  
+  return correspondenceMarkers(correspondences, pose, pose, frame_id);
+}
+
+
 // Generate visualization markers for the interest points
 // id is 0 or 1, and controls color and orientation to distinguish between
 // the two scans
- visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const geometry_msgs::Pose& pose, const unsigned id, const std::string &frame_id)
+visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const Eigen::Affine3d &T, const unsigned id, const std::string &frame_id)
 {
   visualization_msgs::Marker m;
   ndt_visualisation::assignDefault(m);
   ndt_visualisation::assignColor(m,id);
   tf::Transform trans;
-  tf::poseMsgToTF(pose, trans);
+  tf::transformEigenToTF(T, trans);
+  //  tf::poseMsgToTF(pose, trans);
   m.header.frame_id = frame_id;
   m.header.stamp = ros::Time::now();
   m.ns = "flirtlib";
   m.id = id;
   m.type = visualization_msgs::Marker::LINE_LIST;
   m.scale.x = 0.02;
-  
+  int i = 0; 
   BOOST_FOREACH (const InterestPoint* p, pts) 
   {
     const double x0 = p->getPosition().x;
     const double y0 = p->getPosition().y;
     const double d = 0.1;
+    
     double dx[4];
     double dy[4];
     if (id==0)
@@ -99,9 +112,34 @@ visualization_msgs::Marker correspondenceMarkers (const Correspondences& corresp
       m.points.push_back(ndt_visualisation::toPointFromTF(trans*pt1));
     }
   }
-
+    
   return m;
 }
+
+visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const geometry_msgs::Pose& pose, const unsigned id, const std::string &frame_id) {
+  Eigen::Quaterniond qd;
+    Eigen::Affine3d T;
+    qd.x() = pose.orientation.x;
+    qd.y() = pose.orientation.y;
+    qd.z() = pose.orientation.z;
+    qd.w() = pose.orientation.w;
+    
+    T = Eigen::Translation3d (pose.position.x,
+                              pose.position.y,
+                              pose.position.z) * qd;
+
+    return interestPointMarkersFrameId(pts, T, id, frame_id);
+}
+
+
+ visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const unsigned id, const std::string &frame_id)
+{
+  Eigen::Affine3d T;
+  T.setIdentity();
+  return interestPointMarkersFrameId (pts, T, id, frame_id);
+}
+
+
 
 
 visualization_msgs::Marker interestPointSupportMarkers (const InterestPointVec& pts, const geometry_msgs::Pose& pose, const unsigned id)
@@ -227,6 +265,7 @@ void publishMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFram
      
  }
  
+
 
 
 

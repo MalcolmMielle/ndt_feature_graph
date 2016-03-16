@@ -118,6 +118,31 @@ Eigen::Vector3d computeLocalCentroid(const Eigen::Vector3d &map_centroid, const 
   return local_centroid;
 }
 
+bool discardCell(NDTMap &map, const pcl::PointXYZ &pt) {
+  NDTCell *cell;
+  if (map.getCellAtPoint(pt, cell)) {
+    cell->hasGaussian_ = false;
+    return true;
+  }
+  return false;
+}
+
+int discardDistantCells(NDTMap &map, const pcl::PointCloud<pcl::PointXYZ> &pts, double max_dist) {
+  for (size_t i = 0; i < pts.size(); i++) {
+    NDTCell *cell;
+    if (map.getCellAtPoint(pts[i], cell)) {
+      
+    }
+    
+  }
+}
+
+std::string transformToEvalString(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
+  std::ostringstream stream;
+  Eigen::Quaternion<double> tmp(T.rotation());
+  stream << T.translation().transpose() << " " << tmp.x() << " " << tmp.y() << " " << tmp.z() << " " << tmp.w() << std::endl; 
+  return stream.str();
+}
 
 
 } // namespace

@@ -19,7 +19,7 @@ ADD_DEFINITIONS(-DLINUX_OS)
 include_directories(include)
 
 ## System dependencies are found with CMake's conventions
- find_package(Boost REQUIRED COMPONENTS system)
+ find_package(Boost REQUIRED COMPONENTS system serialization)
 
 
 ## Uncomment this if the package has a setup.py. This macro ensures
@@ -106,6 +106,7 @@ catkin_package(
 ## Your package locations should be listed before other locations
 # include_directories(include)
 include_directories(
+  ${Boost_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
   /usr/local/include/flirtlib
   include
@@ -119,11 +120,13 @@ add_library(flirtlib_ros
 ## Declare a cpp executable
 add_executable(flirtlib_ros_test src/flirtlib_ros_test.cpp)
 add_executable(flirtlib_ros_test2 src/flirtlib_ros_test2.cpp)
+add_executable(flirt_serialization_test src/serialization_test.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
 add_dependencies(flirtlib_ros_test flirtlib_ros_generate_messages_cpp flirtlib_ros)
 add_dependencies(flirtlib_ros_test2 flirtlib_ros_generate_messages_cpp flirtlib_ros)
+
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(flirtlib_ros_test
@@ -133,6 +136,13 @@ target_link_libraries(flirtlib_ros_test
 )
 
 target_link_libraries(flirtlib_ros_test2
+   ${catkin_LIBRARIES}
+   flirtlib_ros
+   -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt
+)
+
+target_link_libraries(flirt_serialization_test
+  ${Boost_LIBRARIES} 
    ${catkin_LIBRARIES}
    flirtlib_ros
    -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt
