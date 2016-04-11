@@ -80,7 +80,7 @@ class NDTFeatureFuserNode {
 	ndt_feature::NDTFeatureFuserHMT *fuser;
   ndt_feature::NDTFeatureGraph *graph;
 	std::string points_topic, laser_topic, map_dir, map_name, odometry_topic, 
-		    world_frame, fuser_frame, init_pose_frame, gt_topic;
+          world_frame, fuser_frame, init_pose_frame, gt_topic, gt_frame;
 	double size_x, size_y, size_z, resolution, sensor_range, min_laser_range_;
 	bool visualize, match2D, matchLaser, beHMT, useOdometry, plotGTTrack, 
 	     initPoseFromGT, initPoseFromTF, initPoseSet;
@@ -119,6 +119,7 @@ class NDTFeatureFuserNode {
   bool use_graph_;
   double occ_map_resolution_;
   bool do_pub_occ_map_;
+  bool skip_features_;
   std::string tf_odom_frame_;
 
   std::ofstream gt_file_;
@@ -193,7 +194,7 @@ public:
 	    //get it from TF?
 	    param_nh.param("initPoseFromTF",initPoseFromTF,false);
 	    //the frame to initialize to
-	    param_nh.param<std::string>("init_pose_frame",init_pose_frame,"/state_base_link");
+            param_nh.param<std::string>("gt_frame",gt_frame,std::string(""));
 	    //the world frame
 	    param_nh.param<std::string>("world_frame",world_frame,"/world");
 	    //our frame
@@ -205,6 +206,8 @@ public:
             param_nh.param<int>("offline_nb_readings", offline_nb_readings, 0);
             param_nh.param<double>("min_incr_dist", min_incr_dist, 0.02);
             param_nh.param<double>("min_incr_rot", min_incr_rot, 0.02);
+
+            param_nh.param<bool>("skip_features", skip_features_, false);
 
             ndt_feature::NDTFeatureFuserHMT::Params fuser_params;
 
@@ -225,7 +228,7 @@ public:
             param_nh.param<bool>("fuser_optimizeOnlyYaw", fuser_params.optimizeOnlyYaw, false);
 
             param_nh.param<bool>("use_graph", use_graph_, false);
-
+            
             ndt_feature::NDTFeatureGraph::Params graph_params;
             param_nh.param<double>("graph_newNodeTranslDist", graph_params.newNodeTranslDist, 10.);
             param_nh.param<bool>("graph_storePtsInNodes", graph_params.storePtsInNodes, true);
@@ -501,12 +504,13 @@ public:
             }
 
             // Ground truth
+            if (gt_frame != std::string(""))
             {
                 tf::StampedTransform transform;
                 try {   
-                    listener.waitForTransform("/world", "/state_base_link",
+                  listener.waitForTransform(world_frame, gt_frame, /*"/world", "/state_base_link",*/
                                               frame_time, ros::Duration(3.0));
-                    listener.lookupTransform("/world", "/state_base_link",
+                  listener.lookupTransform(world_frame, gt_frame, /*"/world", "/state_base_link",*/
                                              frame_time, transform);
                     
                 }
@@ -558,55 +562,57 @@ public:
 	    }
           // Compute the flirt features
 
-            ROS_INFO_STREAM("processing scan - flirt");
-
-            boost::shared_ptr<LaserReading> reading = flirtlib_ros::fromRos(*msg_in);
             InterestPointVec pts;
-            detector_->detect(*reading, pts);
-            // Descriptor computation
-            BOOST_FOREACH (InterestPoint* p, pts) 
+            if (!skip_features_) {
+              ROS_INFO_STREAM("processing scan - flirt");
+              
+              boost::shared_ptr<LaserReading> reading = flirtlib_ros::fromRos(*msg_in);
+              detector_->detect(*reading, pts);
+              // Descriptor computation
+              BOOST_FOREACH (InterestPoint* p, pts) 
                 p->setDescriptor(descriptor_->describe(*p, *reading));
-            
-            ROS_INFO_STREAM("flirt computation - done");
-
-            
-            // Get the time when the laser was taken, this is what should be published...
-            if (offline) {
-                if (offline_ctr < offline_nb_readings) {
-                    ndt_feature::NDTFeatureFrame f;
-                    f.pc = pcl_cloud;
-                    f.pts = pts;
-                    f.odom = this_odom;
-                    f.gt = Tgt;
-                    offline_frames.push_back(f);
-                    ROS_INFO_STREAM(" number of frames : " << offline_frames.size());
-                    ndt_feature::publishMarkerNDTFeatureFrames(offline_frames, marker_pub_);
-
-                    offline_ctr++;
-                    if (offline_ctr >= offline_nb_readings) {
-                        // Run the matcher(!)
-                        ROS_INFO("RUNNING OFFLINE MATCHER");
-                        ndt_feature::mapBuilderISAMOffline(offline_frames, sensor_pose_, offline_matches);
-                    }
-                }
-                else {
-                    ROS_INFO(".");
-//                    ndt_feature::publishMarkerNDTFeatureFrames(offline_frames, marker_pub_);
-                    marker_pub_.publish(ndt_feature::posePointsMarkerNDTFeatureFrames(offline_frames, 1, 1, std::string("pose_est"), false));
-//                    marker_pub_.publish(ndt_feature::posePointsMarkerNDTFeatureFrames(offline_frames, 1, 1, std::string("pose_odom"), true));
-
-                    pcl::PointCloud<pcl::PointXYZ> cloud;
-                    ndt_feature::getEstimatedCloudNDTFeatureFrames(offline_frames, sensor_pose_, cloud);
-                    sensor_msgs::PointCloud2 cloud_msg; 
-                    pcl::toROSMsg(cloud, cloud_msg );
-                    cloud_msg.header.frame_id = std::string("/world");
-                    pointcloud_pub_.publish(cloud_msg );
-                    marker_pub_.publish(ndt_feature::featureMatchesMarkerNDTFeatureFrames(offline_frames, offline_matches, 0, 1, std::string("matches"), false));
-//                    marker_pub_.publish(ndt_feature::featureMatchesMarkerNDTFeatureFrames(offline_frames, offline_matches, 1, 2, std::string("matches_odom"), true));
-
-                }
+              
+              ROS_INFO_STREAM("flirt computation - done");
             }
-            else {
+            
+//             // Get the time when the laser was taken, this is what should be published...
+//             if (offline) {
+//                 if (offline_ctr < offline_nb_readings) {
+//                     ndt_feature::NDTFeatureFrame f;
+//                     f.pc = pcl_cloud;
+//                     f.pts = pts;
+//                     f.odom = this_odom;
+//                     f.gt = Tgt;
+//                     offline_frames.push_back(f);
+//                     ROS_INFO_STREAM(" number of frames : " << offline_frames.size());
+//                     ndt_feature::publishMarkerNDTFeatureFrames(offline_frames, marker_pub_);
+
+//                     offline_ctr++;
+//                     if (offline_ctr >= offline_nb_readings) {
+//                         // Run the matcher(!)
+//                         ROS_INFO("RUNNING OFFLINE MATCHER");
+//                         ndt_feature::mapBuilderISAMOffline(offline_frames, sensor_pose_, offline_matches);
+//                     }
+//                 }
+//                 else {
+//                     ROS_INFO(".");
+// //                    ndt_feature::publishMarkerNDTFeatureFrames(offline_frames, marker_pub_);
+//                     marker_pub_.publish(ndt_feature::posePointsMarkerNDTFeatureFrames(offline_frames, 1, 1, std::string("pose_est"), false));
+// //                    marker_pub_.publish(ndt_feature::posePointsMarkerNDTFeatureFrames(offline_frames, 1, 1, std::string("pose_odom"), true));
+
+//                     pcl::PointCloud<pcl::PointXYZ> cloud;
+//                     ndt_feature::getEstimatedCloudNDTFeatureFrames(offline_frames, sensor_pose_, cloud);
+//                     sensor_msgs::PointCloud2 cloud_msg; 
+//                     pcl::toROSMsg(cloud, cloud_msg );
+//                     cloud_msg.header.frame_id = std::string("/world");
+//                     pointcloud_pub_.publish(cloud_msg );
+//                     marker_pub_.publish(ndt_feature::featureMatchesMarkerNDTFeatureFrames(offline_frames, offline_matches, 0, 1, std::string("matches"), false));
+// //                    marker_pub_.publish(ndt_feature::featureMatchesMarkerNDTFeatureFrames(offline_frames, offline_matches, 1, 2, std::string("matches_odom"), true));
+
+//                 }
+//             }
+//             else
+            {
                 this->processFeatureFrame(pcl_cloud,pts, Tm, frame_time);
             }
             {
