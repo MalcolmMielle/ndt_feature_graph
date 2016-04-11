@@ -184,21 +184,11 @@ class NDTFeatureFuserHMT{
 
     ~NDTFeatureFuserHMT()
       {
-        std::cerr << "in HMT destructor" << std::endl;
-	std::cerr << "dest1" << std::endl;
         if (viewer!=NULL) 
           delete viewer;
-        std::cerr << "dest2" << std::endl;
 	if(fAddTimes!=NULL) fclose(fAddTimes);
-        std::cerr << "dest3" << std::endl;
 	if(fRegTimes!=NULL) fclose(fRegTimes);
-        std::cerr << "dest4" << std::endl;
-        std::cerr << "map : " << map << std::endl;
-        std::cerr << "map : getMyIndexStr() : " << map->getMyIndexStr() << std::endl;
-        std::cerr << "map : active cells : " << map->numberOfActiveCells() << std::endl;
-        std::cerr << "map : getAllCells.size : " << map->getAllCells().size() << std::endl;
         delete map;
-        std::cerr << "in HMT destructor - done." << std::endl;
       }
 
   void setMotionParams(const semrob_generic::MotionModel2d::Params &params) {
@@ -258,14 +248,11 @@ class NDTFeatureFuserHMT{
       std::cerr << "failed to load : " << nd_file << std::endl;
       ret = false;
     }
-    std::cout << "nd - loading - done." << std::endl;
     std::cerr << "loading feature map : " << feat_file << std::endl;
-    if (featuremap.load(feat_file)) {
+    if (featuremap.load(feat_file) == false) {
       std::cerr << "failed to load : " << feat_file << std::endl;
       ret = false;
     }
-    std::cout << "loading feature map - done." << std::endl;
-    
     return ret;
   }
 

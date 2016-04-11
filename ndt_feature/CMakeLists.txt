@@ -41,6 +41,10 @@ add_executable(ndt_feature_graph_opt src/ndt_feature_graph_opt.cpp)
 add_executable(ndt_feature_map_test src/ndt_feature_map_test.cpp)
 add_executable(ndt_feature_node_test src/ndt_feature_node_test.cpp)
 
+add_executable(utils_affine_test src/utils_affine_test.cpp)
+add_executable(ndt_fusion_test src/ndt_fusion_test.cpp)
+
+
 ## System dependencies are found with CMake's conventions
 # find_package(Boost REQUIRED COMPONENTS system)
 
@@ -81,8 +85,11 @@ target_link_libraries(shot_test ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 
 target_link_libraries(laser2d_extrinsic_calibration ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 
-target_link_libraries(ndt_feature_graph_opt ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)
+target_link_libraries(ndt_feature_graph_opt ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt  /usr/local/lib/libisam.a -lcholmod)
 
 target_link_libraries(ndt_feature_map_test ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)
 
 target_link_libraries(ndt_feature_node_test ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)
+
+target_link_libraries(utils_affine_test  ${Boost_LIBRARIES} ${catkin_LIBRARIES})
+target_link_libraries(ndt_fusion_test ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)

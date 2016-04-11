@@ -245,6 +245,7 @@ Eigen::Affine3d Told,Todo;
 
 std::string tf_odo_topic = "odom_base_link";
 std::string tf_state_topic = "state_base_link";
+std::string tf_world_frame = "world";
 ros::Time last_message;
 void callback(const sensor_msgs::LaserScan::ConstPtr& scan)
 {
@@ -260,9 +261,9 @@ void callback(const sensor_msgs::LaserScan::ConstPtr& scan)
 	
 	///Get state information
 	tf::StampedTransform transform;
-	tf_listener.waitForTransform("world", tf_state_topic, scan->header.stamp,ros::Duration(1.0));
+	tf_listener.waitForTransform(tf_world_frame, tf_state_topic, scan->header.stamp,ros::Duration(1.0));
 	try{
-		tf_listener.lookupTransform("world", tf_state_topic, scan->header.stamp, transform);
+		tf_listener.lookupTransform(tf_world_frame, tf_state_topic, scan->header.stamp, transform);
 		gyaw = tf::getYaw(transform.getRotation());  
 	  gx = transform.getOrigin().x();
 	  gy = transform.getOrigin().y();
@@ -272,7 +273,7 @@ void callback(const sensor_msgs::LaserScan::ConstPtr& scan)
 		return;
 	}
 	try{
-		tf_listener.lookupTransform("world", tf_odo_topic, scan->header.stamp, transform);
+		tf_listener.lookupTransform(tf_world_frame, tf_odo_topic, scan->header.stamp, transform);
 		yaw = tf::getYaw(transform.getRotation());  
 	  x = transform.getOrigin().x();
 	  y = transform.getOrigin().y();
@@ -375,11 +376,14 @@ int main(int argc, char **argv){
 	//////////////////////////////////////////////////////////
 	/////////////////////////////////////////////////////////
 	paramHandle.param<std::string>("input_laser_topic", input_laser_topic, std::string("/base_scan"));
-	
+        paramHandle.param<std::string>("tf_odo_topic", tf_odo_topic, std::string("odom_base_link"));
+        paramHandle.param<std::string>("tf_state_topic", tf_state_topic, std::string("state_base_link"));
+        paramHandle.param<std::string>("tf_world_frame", tf_world_frame, std::string("world"));
+
 	double sensor_pose_x, sensor_pose_y, sensor_pose_th;
 	paramHandle.param<double>("sensor_pose_x", sensor_pose_x, 0.);
 	paramHandle.param<double>("sensor_pose_y", sensor_pose_y, 0.);
-	paramHandle.param<double>("sensor_pose_th", sensor_pose_th, 0.);
+	paramHandle.param<double>("sensor_pose_t", sensor_pose_th, 0.);
 	int nb_pairs;
 	double x_s, y_s, yaw_s, xy_i, yaw_i;
 	paramHandle.param<int>("nb_pairs", nb_pairs, 70);

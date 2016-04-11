@@ -67,6 +67,16 @@ void moveInterestPointVec(const Eigen::Affine3d &T, InterestPointVec &pts) {
   }
 }
 
+bool validOrientedPoint2D(const OrientedPoint2D &p) {
+  if (std::isnan(p.x))
+    return false;
+  if (std::isnan(p.y))
+    return false;
+  if (std::isnan(p.theta))
+    return false;
+
+  return true;
+}
 
 
 } // namespace

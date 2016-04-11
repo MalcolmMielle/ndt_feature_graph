@@ -1,4 +1,5 @@
 #include <ndt_feature/ndt_feature_frame.h>
+#include <ndt_feature/utils.h>
 #include <isam/isam.h>
 
 
@@ -7,7 +8,9 @@ namespace ndt_feature {
   isam::Pose2d convertEigenAffine3dToIsamPose2d(const Eigen::Affine3d &a) {
     isam::Pose2d p(a.translation()(0),
 		   a.translation()(1),
-		   a.rotation().eulerAngles(0,1,2)(2));
+		   //a.rotation().eulerAngles(0,1,2)(2)
+                   lslgeneric::getRobustYawFromAffine3d(a)
+                   );
     return p;
   }
 
@@ -26,7 +29,7 @@ namespace ndt_feature {
     std::vector<size_t> indices;
     for (size_t i = 0; i < currIdx; i++) {
       double dist, angular_dist;
-      distanceBetweenAffine3d(p, frames[i].gt, dist, angular_dist);
+      lslgeneric::distanceBetweenAffine3d(p, frames[i].gt, dist, angular_dist);
       if (dist < maxDist && angular_dist < maxAngularDist) {
 	indices.push_back(i);
       }
@@ -34,7 +37,77 @@ namespace ndt_feature {
     return indices;
   }
 
-  //! Quick check how the map looks using GT information to do DA.
+void optimizeGraphUsingISAM(NDTFeatureGraphInterface &graph) {
+  isam::Slam slam; 
+
+  std::vector<isam::Pose2d_Node*> pose_nodes;
+    
+  isam::Noise noise3 = isam::Information(100. * isam::eye(3));
+  isam::Noise noise2 = isam::Information(100. * isam::eye(2));
+  
+  // Add the nodes...
+  
+  // create a first pose (a node)
+  isam::Pose2d_Node* new_pose_node = new isam::Pose2d_Node();
+  // add it to the graph
+  slam.add_node(new_pose_node);
+  // also remember it locally
+  pose_nodes.push_back(new_pose_node);
+  
+  // create a prior measurement (a factor)
+  isam::Pose2d origin(0., 0., 0.);
+  origin = convertEigenAffine3dToIsamPose2d(graph.getNodeInterface(0).getPose());
+
+  isam::Pose2d_Factor* prior = new isam::Pose2d_Factor(pose_nodes[0], origin, noise3);
+  // add it to the graph
+  slam.add_factor(prior);
+  
+  
+  for (size_t i = 1; i < graph.getNbNodes(); i++) {
+    isam::Pose2d_Node* new_pose_node = new isam::Pose2d_Node();
+    slam.add_node(new_pose_node);
+    pose_nodes.push_back(new_pose_node);
+  }
+
+  ROS_INFO_STREAM("Offline Map buliding - adding odometry/fused estimates");
+  
+  for (size_t i = 0; i < graph.getNbLinks(); i++) {
+    const NDTFeatureLinkInterface &link = graph.getLinkInterface(i);
+    if (link.getScore() < 0.) {
+      Eigen::Affine3d Tincr_odom = link.getRelPose();
+      isam::Pose2d odometry = convertEigenAffine3dToIsamPose2d(Tincr_odom);
+      isam::Pose2d_Pose2d_Factor* constraint = new isam::Pose2d_Pose2d_Factor(pose_nodes[link.getRefIdx()], pose_nodes[link.getMovIdx()], odometry, noise3);
+      slam.add_factor(constraint);
+    }
+  }
+
+  ROS_INFO_STREAM("Offline Map buliding - adding DA estimates");
+
+  for (size_t i = 0; i < graph.getNbLinks(); i++) {
+    const NDTFeatureLinkInterface &link = graph.getLinkInterface(i);
+    Eigen::Affine3d Tincr_odom = link.getRelPose();
+    isam::Pose2d meassure = convertEigenAffine3dToIsamPose2d(Tincr_odom);
+    isam::Pose2d_Pose2d_Factor* constraint = new isam::Pose2d_Pose2d_Factor(pose_nodes[link.getRefIdx()], pose_nodes[link.getMovIdx()], meassure, noise3);
+    slam.add_factor(constraint);
+    
+  }
+
+  ROS_INFO_STREAM("Offline Map buliding - optimizing...");
+  
+  slam.batch_optimization();
+  
+  ROS_INFO_STREAM("Offline Map buliding - updating pose est");
+  
+  for (size_t i = 0; i < graph.getNbNodes(); i++) {
+    std::cout << pose_nodes[i]->value() << std::endl;
+    graph.getNodeInterface(i).setPose(convertIsamPose2dToEigenAffine3d(pose_nodes[i]->value()));
+  }
+  
+   
+}
+
+
+//! Quick check how the map looks using GT information to do DA.
   void mapBuilderISAMOffline(std::vector<ndt_feature::NDTFeatureFrame> &frames, const Eigen::Affine3d &sensorPose, std::vector<std::pair<size_t, size_t> > &matches) {
     ROS_INFO_STREAM("Offline Map buliding - start, # frames:" << frames.size());
     
@@ -88,7 +161,7 @@ namespace ndt_feature {
 	Eigen::Affine3d Tfeat = sensorPose * Tfeat_sensor_frame * sensorPose.inverse();
 
 	double dist, angular_dist;
-	distanceBetweenAffine3d(frames[i].gt*Tfeat, frames[indices[j]].gt, dist, angular_dist);
+        lslgeneric::distanceBetweenAffine3d(frames[i].gt*Tfeat, frames[indices[j]].gt, dist, angular_dist);
 	// This is very much cheating here for now...
 	if (dist < 0.1 && angular_dist < 0.1) {
 	  // Good, add this as a factor.

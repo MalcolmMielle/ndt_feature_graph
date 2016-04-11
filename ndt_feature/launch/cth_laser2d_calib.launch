@@ -1,0 +1,25 @@
+<launch>
+   <include file="$(find ndt_feature)/launch/replay_without_clock.launch">
+     <arg name="file" value="$(find ndt_feature)/data/cthsurvey1.bag" />
+     <arg name="rate" value="4" />
+   </include>
+
+<!-- x=1.88 y=-0.22 a=0.015 -->
+<!-- x=1.9 y=-0.14 a=0.03 -->
+<!-- 1.860000 -0.060000 -0.005000 -->
+<!-- 1.870000 0.000000 0.010000 -->
+<!-- 1.870000 0.015000 0.017000 -->
+<!-- 1.870000 0.013000 0.014000 -->
+   <node pkg="ndt_feature" type="laser2d_extrinsic_calibration" name="laser2d_extrinsic_calibration" output="screen">
+       	<param name="input_laser_topic" value="/laserscan" />
+	      <param name="sensor_pose_x" value="0.230" />
+	      <param name="sensor_pose_y" value="0.000" />
+	      <param name="sensor_pose_th" value="0.0021" />
+	      <param name="nb_pairs" value="16" /> 
+	      <param name="x_search_offset" value="0.05" />
+	      <param name="y_search_offset" value="0.05" />
+	      <param name="yaw_search_offset" value="0.01" />
+	      <param name="xy_incr" value="0.001" /> 
+	      <param name="yaw_incr" value="0.001" />
+	</node>   
+</launch>

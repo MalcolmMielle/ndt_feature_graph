@@ -10,6 +10,54 @@
 
 namespace lslgeneric {
 
+
+
+inline double getRobustYawFromAffine3d(const Eigen::Affine3d &a) {
+  // To simply get the yaw from the euler angles is super sensitive to numerical errors which will cause roll and pitch to have angles very close to PI...
+  Eigen::Vector3d v1(1,0,0);
+  Eigen::Vector3d v2 = a.rotation()*v1;
+  double dot = v1(0)*v2(0)+v1(1)*v2(1); // Only compute the rotation in xy plane...
+  double angle = acos(dot);
+  // Need to find the sign
+  if (v1(0)*v2(1)-v1(1)*v2(0) > 0)
+    return angle;
+  return -angle;
+}
+
+inline void distanceBetweenAffine3d(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2, double &dist, double &angularDist) {
+  Eigen::Affine3d tmp = (p1.inverse() * p2);
+  dist = tmp.translation().norm();
+  //  angularDist = tmp.rotation().eulerAngles(0,1,2).norm();
+  angularDist = fabs(getRobustYawFromAffine3d(tmp));
+}
+
+inline Eigen::Affine2d eigenAffine3dTo2d(const Eigen::Affine3d &a3d) {
+  return Eigen::Translation2d(a3d.translation().topRows<2>()) *
+    Eigen::Rotation2D<double>(getRobustYawFromAffine3d(a3d));//a3d.linear().topLeftCorner<2,2>();
+    
+}
+
+inline Eigen::Affine3d eigenAffine2dTo3d(const Eigen::Affine2d &a2d) {
+  //  Eigen::Rotation2D<double> rot = Eigen::Rotation2D<double>::fromRotationMatrix(a2d.rotation());//Eigen::fromRotationMatrix(a2d.translation());
+  double angle = atan2(a2d.rotation()(1,0), a2d.rotation()(0,0));//rot.angle();//acosa2d.rotation()(0,1)/a2d.rotation()(0,0);
+  return Eigen::Translation3d(a2d.translation()(0), a2d.translation()(1), 0.) *
+    Eigen::AngleAxisd(angle, Eigen::Vector3d::UnitZ());
+}
+
+inline Eigen::Affine3d forceEigenAffine3dTo2d(const Eigen::Affine3d &a3d) {
+  return eigenAffine2dTo3d(eigenAffine3dTo2d(a3d));
+}
+
+inline void forceEigenAffine3dTo2dInPlace(Eigen::Affine3d &a3d) {
+  Eigen::Affine3d t = a3d;
+  a3d = forceEigenAffine3dTo2d(a3d);
+}
+
+inline Eigen::Affine2d getAffine2d(double x, double y, double th) {
+  return Eigen::Translation2d(x,y) *
+    Eigen::Rotation2D<double>(th);
+}
+
 Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> ICPwithCorrMatch(lslgeneric::NDTMap &targetNDT, lslgeneric::NDTMap &sourceNDT, const std::vector<std::pair<int,int> > &corresp) {
     Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> T;
     T.setIdentity();
@@ -90,8 +138,9 @@ void printTransf(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> 
 void printTransf2d(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
   std::cout << "["<<T.translation()[0] << "," 
             << T.translation()[1] << "]("
-            << T.rotation().eulerAngles(0,1,2)[2] << ")" << std::endl;
-}
+    //<< T.rotation().eulerAngles(0,1,2)[2] << ")" << std::endl;
+            << lslgeneric::getRobustYawFromAffine3d(T) << ")" << std::endl;
+    }
 
 
 void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
@@ -100,8 +149,36 @@ void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
     NDTCell* nd = (NDTCell*)cell->clone();
     idx->addNDTCell(cell);
   }
+  else {
+    std::cerr << "Only cellvector implemented" << std::endl;
+  }
 }
 
+//! Note: this will overwrite any existing cells
+void setNDTCellToMap(NDTMap *map, NDTCell* cell) {
+  LazyGrid* lz = dynamic_cast<LazyGrid*> (map->getMyIndex());
+  if (lz != NULL) {
+    NDTCell* nd = (NDTCell*)cell->clone();
+    // Is there already a cell here?
+    NDTCell* c = NULL;
+    
+    Eigen::Vector3d mean = cell->getMean();
+    pcl::PointXYZ pt_mean;
+    pt_mean.x = mean[0]; pt_mean.y = mean[1]; pt_mean.z = mean[2];
+    //    lz->getCellAt(pt_mean,c);
+    c = lz->getCellForPoint(pt_mean);
+    if (c == NULL) {
+      // Needs some means to create it... do this by adding a point the returned cell will be an nice an allocated one.
+      c = lz->addPoint(pt_mean);
+    }
+    //    c->setParameters(0.1, 8*M_PI/18, 1000); //Increase how small the covariance could be.
+    c->setMean(cell->getMean());
+    c->setCov(cell->getCov());
+  }
+  else {
+    std::cerr << "Only lazygrid implemented..." << std::endl;
+  }
+}
 
 Eigen::Vector3d computeLocalCentroid(const Eigen::Vector3d &map_centroid, const Eigen::Vector3d &local_pos, double resolution) {
   Eigen::Vector3d diff = map_centroid - local_pos;

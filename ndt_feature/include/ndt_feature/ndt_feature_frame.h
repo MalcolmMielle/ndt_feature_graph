@@ -1,3 +1,6 @@
+// REMOVE / FUSE THIS INTO THE NODE!
+
+
 #ifndef NDT_FEATURE_FRAME_HH
 #define NDT_FEATURE_FRAME_HH
 
@@ -7,6 +10,7 @@
 #include <flirtlib_ros/flirtlib.h>
 #include <ndt_feature/flirtlib_utils.h>
 #include <ndt_feature/conversions.h>
+#include <ndt_feature/utils.h>
 #include <ndt_map/pointcloud_utils.h>
 
 namespace ndt_feature {
@@ -26,11 +30,6 @@ namespace ndt_feature {
     double accu_dist;
   };
 
-  inline void distanceBetweenAffine3d(const Eigen::Affine3d &p1, const Eigen::Affine3d &p2, double &dist, double &angularDist) {
-    Eigen::Affine3d tmp = (p1.inverse() * p2);
-    dist = tmp.translation().norm();
-    angularDist = tmp.rotation().eulerAngles(0,1,2).norm();
-  }
 
   //! Matching (sensor coords).
   inline double ndtFeatureFrameMatchingFLIRT(const NDTFeatureFrame &fixed, const NDTFeatureFrame &moving, Eigen::Affine3d &T) {

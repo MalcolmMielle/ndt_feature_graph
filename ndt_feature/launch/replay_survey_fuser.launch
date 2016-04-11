@@ -8,8 +8,8 @@
 	<param name="laser_topic" value="/laserscan" />
 	<param name="matchLaser" value="true" />
 	
-	<param name="size_x_meters" value="200" />
-	<param name="size_y_meters" value="200" />
+	<param name="size_x_meters" value="80" />
+	<param name="size_y_meters" value="80" />
 	<param name="size_z_meters" value="0.5" />
 	<param name="resolution" value="0.5" />
 	<param name="laser_variance_z" value="0.02" />
@@ -27,7 +27,7 @@
 	<param name="pose_init_t" value="0" />
 
 	<param name="map_directory" value="$(find ndt_fuser)/maps/" />	
-	<param name="map_name_prefix" value="surveyS300" />
+	<param name="map_name_prefix" value="surveyS300_4_0.2" />
 
 	<param name="beHMT" value="false" />
 	<param name="useOdometry" value="false" />
@@ -36,10 +36,10 @@
 	<param name="plotGTTrack" value="true" />
 	<param name="initPoseFromGT" value="true" />
 	<param name="gt_topic" value="/state" />
-	<param name="fuser_useNDT" value="true" />
-	<param name="fuser_useFeat" value="false" />
+	<param name="fuser_useNDT" value="false" />
+	<param name="fuser_useFeat" value="true" />
 	<param name="fuser_useOdom" value="false" />
-	<param name="fuser_neighbours" value="0" />
+	<param name="fuser_neighbours" value="2" />
 	<param name="fuser_stepcontrol" value="true" />
 	<param name="fuser_ITR_MAX" value="100" />
 	<param name="fuser_DELTA_SCORE" value="0.0001" />
@@ -50,11 +50,17 @@
 	<param name="fuser_allMatchesValid" value="true" />
 	<param name="fuser_optimizeOnlyYaw" value="false" />
 
+	<param name="motion_params_Cd" value="1" />
+	<param name="motion_params_Ct" value="1" />
+	<param name="motion_params_Dd" value="1" />
+	<param name="motion_params_Dt" value="1" />
+	<param name="motion_params_Td" value="1" />
+	<param name="motion_params_Tt" value="1" />
 
 	<param name="use_graph" value="true" />
 
-	<param name="graph_newNodeTranslDist" value="8." />
-	<param name="occ_map_resolution" value="0.5" />
+	<param name="graph_newNodeTranslDist" value="2." />
+	<param name="occ_map_resolution" value="0.2" />
 	<param name="do_pub_occ_map" value="true" />
 
     </node>

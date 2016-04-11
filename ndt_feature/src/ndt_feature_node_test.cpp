@@ -47,17 +47,19 @@ void publishMarkerNDTFeatureNode(const ndt_feature::NDTFeatureNode &node, int id
 
 int main(int argc, char** argv)
 {
-  ros::init(argc, argv, "ndt_feature_graph_opt");
+  ros::init(argc, argv, "ndt_feature_node_test");
   
   po::options_description desc("Allowed options");
   
   string file_name;
   int ref_idx, mov_idx;
+  int nb_neighbours;
   desc.add_options()
     ("help", "produce help message")
     ("file_name", po::value<std::string>(&file_name)->default_value(std::string("")), "input graph file")
     ("ref_index", po::value<int>(&ref_idx)->default_value(0), "reference node index value")
     ("mov_index", po::value<int>(&mov_idx)->default_value(1), "moving node index value")
+    ("nb_neighbours", po::value<int>(&nb_neighbours)->default_value(0), "number of neighbours used in the ndt matching search")
     ("skip_ndt", "skip ndt match step")
     ;
   
@@ -75,7 +77,9 @@ int main(int argc, char** argv)
 
   ros::NodeHandle nh;
   ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 10);
-
+  ros::Publisher pcref_pub = nh.advertise<sensor_msgs::PointCloud2>("pc_ref", 10);
+  ros::Publisher pcmov_pub = nh.advertise<sensor_msgs::PointCloud2>("pc_mov", 10);
+  
 
   ndt_feature::NDTFeatureGraph graph;
   
@@ -108,9 +112,9 @@ int main(int argc, char** argv)
   lslgeneric::printTransf2d(T);
   std::cout << "overlap score (feat) : " << ndt_feature::overlapNDTOccupancyScore(ref_node, mov_node, T) << std::endl;
 
-  if (skip_ndt) {
+  if (!skip_ndt) {
     lslgeneric::NDTMatcherD2D matcher_d2d;
-    matcher_d2d.n_neighbours = 0;
+    matcher_d2d.n_neighbours = nb_neighbours;
     
     matcher_d2d.match(ref_node.getNDTMap(), mov_node.getNDTMap(), T,true);
     std::cout << "T (feat, then ndt) : "; 
@@ -123,6 +127,16 @@ int main(int argc, char** argv)
   std::vector<lslgeneric::NDTCell*> ndt_mov = mov_node.map->map->pseudoTransformNDT(T);
   lslgeneric::NDTMap* ndt_mov2 = mov_node.map->map->pseudoTransformNDTMap(T);
 
+  sensor_msgs::PointCloud2 cloud_msg_ref; 
+  pcl::toROSMsg(ref_node.getLocalPointCloud(), cloud_msg_ref );
+  cloud_msg_ref.header.frame_id = std::string("/world");
+  
+  sensor_msgs::PointCloud2 cloud_msg_mov; 
+  pcl::PointCloud<pcl::PointXYZ> pc_mov = mov_node.getLocalPointCloud();
+  lslgeneric::transformPointCloudInPlace(T, pc_mov);
+  pcl::toROSMsg(pc_mov, cloud_msg_mov );
+  cloud_msg_mov.header.frame_id = std::string("/world");
+  
 
   while (ros::ok()) {
     ros::spinOnce();
@@ -132,6 +146,9 @@ int main(int argc, char** argv)
     marker_pub.publish(ndt_feature::interestPointMarkersFrameId(mov_node.map->featuremap.map, T, 2, std::string("/world")));
     marker_pub.publish(ndt_visualisation::markerNDTCells(ndt_mov));
     marker_pub.publish(ndt_visualisation::markerNDTCells(*ndt_mov2, 2, "mov"));
+
+    pcref_pub.publish(cloud_msg_ref);
+    pcmov_pub.publish(cloud_msg_mov);
     
     // marker_pub.publish(ndt_visualisation::markerNDTCells(*(ref_node).map->map, 1, "ref"));
     

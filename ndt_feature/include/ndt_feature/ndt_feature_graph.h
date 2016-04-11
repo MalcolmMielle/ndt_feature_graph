@@ -1,52 +1,54 @@
 #pragma once
 
+//#include <ndt_feature/interfaces.h>
+#include <ndt_feature/ndt_feature_link.h>
 #include <ndt_feature/ndt_feature_node.h>
+//#include <ndt_feature/serialization.h>
 
 namespace ndt_feature {
-
-class NDTFeatureNodeLink {
-public:
-  NDTFeatureNodeLink(size_t ref, size_t mov) : ref_idx(ref), mov_idx(mov) { }
-  size_t ref_idx; // Vector idx...
-  size_t mov_idx;
-  Eigen::Affine3d T; // From ref->mov.
-  Eigen::MatrixXd cov;
-  double score;
-
-  friend std::ostream& operator<<(std::ostream &os, const NDTFeatureNodeLink &obj)
-  {
-    os << "\n[" << obj.ref_idx << "<->" << obj.mov_idx << "] T: " << "["<<obj.T.translation()[0] << "," 
-            << obj.T.translation()[1] << "]("
-       << obj.T.rotation().eulerAngles(0,1,2)[2] << ")";
-    os << "\n score : " << obj.score;
-    return os;
-    }
-  
-};
 
 // This class has the same interface as the fuser class but also has an optimization function.
 // initialize (first step, called once)
 // for each new reading call
 // update()
 // whenever the optimization of the map should be done call optimize
-class NDTFeatureGraph {
+class NDTFeatureGraph : public NDTFeatureGraphInterface {
 
 public:
 
   class Params {
   public:
     Params() {
+    
+      newNodeTranslDist = 1.;
+      storePtsInNodes = false;
+      storePtsInNodesIncr = 8;
     }
     double newNodeTranslDist;
+    bool storePtsInNodes;
+    int storePtsInNodesIncr;
     
     friend std::ostream& operator<<(std::ostream &os, const NDTFeatureGraph::Params &obj)
     {
       os << "\nnewNodeTranslDist : " << obj.newNodeTranslDist << std::endl;
+      os << "\nstorePtsInNodes   : " << obj.storePtsInNodes << std::endl;
+      os << "\nstorePtsInNodesIncr : " << obj.storePtsInNodesIncr << std::endl;
       return os;
     }
     
   };
   
+
+  // Interfaces.
+  virtual size_t getNbNodes() const { return nodes_.size(); }
+  virtual NDTFeatureNodeInterface& getNodeInterface(size_t idx) { return nodes_[idx]; }
+  virtual const NDTFeatureNodeInterface& getNodeInterface(size_t idx) const { return nodes_[idx]; }
+
+  virtual size_t getNbLinks() const { return links_.size(); }
+  virtual NDTFeatureLinkInterface& getLinkInterface(size_t idx) { return links_[idx]; }
+  virtual const NDTFeatureLinkInterface& getLinkInterface(size_t idx) const { return links_[idx]; }
+
+
   NDTFeatureGraph() : distance_moved_in_last_node_(0.) {
     
   }
@@ -56,7 +58,7 @@ public:
     fuser_params_ = fuserParams;
   }
   
-  ~NDTFeatureGraph()
+  virtual ~NDTFeatureGraph()
   {
     std::vector<NDTFeatureNode>::iterator it;
     for (it = nodes_.begin(); it != nodes_.end(); ++it) {
@@ -81,6 +83,13 @@ public:
     // Keep each map in it's own ref frame (that is node.T)
     initPose.setIdentity();
     node.map->initialize(initPose, cloud, pts, preLoad);
+
+    // Add the cloud...
+    if (params_.storePtsInNodes) {
+      Eigen::Affine3d Tnow_local_sensor = initPose*sensor_pose_;
+      node.addCloud(Tnow_local_sensor, cloud);
+    }
+
     nodes_.push_back(node);
     std::cout << "initialize -> done" << std::endl;
   }
@@ -88,8 +97,11 @@ public:
   // Update the map with new readings, return the current pose in global coordinates.
   Eigen::Affine3d update(Eigen::Affine3d Tmotion, pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts){
 
-    std::cout << "---update---" << std::endl;
     NDTFeatureNode &node = nodes_.back();
+    std::cout << "---update--- # " << node.nbUpdates << " node # " << nodes_.size() << std::endl;
+    std::cout << " odom : " << std::flush; lslgeneric::printTransf2d(node.Tlocal_odom);
+
+
     distance_moved_in_last_node_ += Tmotion.translation().norm();
     
     // Check if we should start on a new map?
@@ -100,6 +112,8 @@ public:
       
       Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts, false, false);
       Tnow = node.T*Tnow_local;
+      node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+      node.Tlocal_fuse = Tnow_local;
       
       // New map (one option is to add the last reading to the previous map and then create a new map with the first reading only). This to make sure that the initial pose estimate of the map is using as much information as possible and that not only odometry readings are used. Possible this could be done without adding the readings to the current active map.
       
@@ -114,15 +128,34 @@ public:
       Eigen::Affine3d init_pose;
       init_pose.setIdentity();
       new_node.map->initialize(init_pose, cloud, pts, false);
+
+      // Add the cloud...
+      if (params_.storePtsInNodes) {
+        Eigen::Affine3d Tnow_local_sensor = init_pose*sensor_pose_;
+        new_node.addCloud(Tnow_local_sensor, cloud);
+      }
+      
       nodes_.push_back(new_node);
       std::cout << "update -> done" << std::endl;
       return Tnow;
     }
-    else {
-      // The returned pose is the local map coord.
-      Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts);
-      Tnow = node.T*Tnow_local;
+
+    // The returned pose is the local map coord.
+    Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts);
+    Tnow = node.T*Tnow_local;
+    node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+    node.Tlocal_fuse = Tnow_local;
+    
+    node.nbUpdates++;
+
+    // Add the cloud...
+    if (params_.storePtsInNodes) {
+      if (node.nbUpdates % params_.storePtsInNodesIncr == 0) {
+        Eigen::Affine3d Tnow_local_sensor = Tnow_local*sensor_pose_;
+        node.addCloud(Tnow_local_sensor, cloud);
+      }
     }
+
     std::cout << "nodes_.size() : " << nodes_.size() << std::endl;
     std::cout << "update -> done" << std::endl;
     return Tnow;
@@ -144,11 +177,14 @@ public:
     return T;
   }
 
-  NDTFeatureNodeLink computeLink(size_t idx_ref, size_t idx_mov) {
-    NDTFeatureNodeLink m(idx_ref, idx_mov);
+  NDTFeatureLink computeLink(size_t idx_ref, size_t idx_mov) {
+    NDTFeatureLink m(idx_ref, idx_mov);
     Correspondences matches;
     
     std::cout << "computeLink : " << idx_ref << ", " << idx_mov << std::endl;
+
+    std::cout << "#feature ref : " << nodes_[idx_ref].map->featuremap.map.size() << std::endl;
+    std::cout << "#feature mov : " << nodes_[idx_mov].map->featuremap.map.size() << std::endl;
 
     double feature_score = matchNodesUsingFeatureMap(nodes_[idx_ref], nodes_[idx_mov], matches, m.T);
     //m.score = feature_score;
@@ -158,8 +194,95 @@ public:
     return m;
   }
 
-  std::vector<NDTFeatureNodeLink> computeAllPossibleLinks() {
-    std::vector<NDTFeatureNodeLink> ret;
+  
+  std::vector<NDTFeatureLink> getIncrementalLinks() const {
+    std::vector<NDTFeatureLink> ret;
+    for (size_t i = 0; i < nodes_.size()-1; i++) {
+      NDTFeatureLink m(i, i+1);
+      //m.T = nodes_[i].T.rotation()*nodes_[i].T.inverse()*nodes_[i+1].T;;
+      //m.T = Eigen::Translation<double,3>(nodes_[i+1].T.translation()-nodes_[i].T.translation())*nodes_[i+1].T.rotation();
+      m.T = nodes_[i].T.inverse()*nodes_[i+1].T;
+
+      std::cout << "---" << std::endl;
+      std::cout << "incr : " << std::flush; lslgeneric::printTransf(m.T);
+      std::cout << "T  : " << std::flush; lslgeneric::printTransf(nodes_[i].T);
+      std::cout << "T+1  : " << std::flush; lslgeneric::printTransf(nodes_[i+1].T);
+      std::cout << "T*incr : " << std::flush; lslgeneric::printTransf(nodes_[i].T*m.T);
+      
+      std::cout << "m.T.rotation() : " << m.T.rotation() << std::endl;
+      std::cout << "m.T.rotation().eulerAngles(0,1,2) : " <<
+        m.T.rotation().eulerAngles(0,1,2) << std::endl;
+
+      m.score = -1.;
+      ret.push_back(m);
+    }
+    return ret;
+  
+  }
+
+  void updateLinkUsingNDTRegistration(NDTFeatureLink &link, int nb_neighbours, bool keepScore) {
+    lslgeneric::NDTMatcherD2D matcher_d2d;
+    matcher_d2d.n_neighbours = nb_neighbours;
+    
+    matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T,true);
+    if (!keepScore) {
+      link.score = ndt_feature::overlapNDTOccupancyScore(nodes_[link.getRefIdx()],
+                                                         nodes_[link.getMovIdx()], 
+                                                         link.T);
+      std::cout << "new link.score : " << link.score << std::endl;
+    }
+  }
+
+  void updateLinksUsingNDTRegistration(std::vector<NDTFeatureLink> &links, int nb_neighbours, bool keepScore) {
+
+    for (size_t i = 0; i < links.size(); i++) {
+      std::cout << "updating link : " << i << " (" << links.size() << ")" << std::endl;
+      updateLinkUsingNDTRegistration(links[i], nb_neighbours, keepScore);
+    }
+  }
+
+
+  std::vector<NDTFeatureLink> getAllIncrementalFuseLinks() const {
+    std::vector<NDTFeatureLink> ret;
+    for (size_t i = 0; i < nodes_.size()-1; i++) {
+      NDTFeatureLink m(i, i+1);
+      m.T = nodes_[i].Tlocal_fuse;
+      m.score = -1.;
+      ret.push_back(m);
+    }
+    return ret;
+  }
+
+    std::vector<NDTFeatureLink> getAllIncrementalOdomLinks() const {
+    std::vector<NDTFeatureLink> ret;
+    for (size_t i = 0; i < nodes_.size()-1; i++) {
+      NDTFeatureLink m(i, i+1);
+      m.T = nodes_[i].Tlocal_odom;
+      m.score = -1.;
+      ret.push_back(m);
+    }
+    return ret;
+  }
+
+  std::vector<Eigen::Affine3d> getNodePosesFromOdometry() const {
+    std::vector<Eigen::Affine3d> ret;
+    if (nodes_.empty())
+      return ret;
+    // Return all node poses based on odometry
+    std::vector<NDTFeatureLink> incr_odom = getAllIncrementalOdomLinks();
+    if (incr_odom.empty())
+      return ret;
+    Eigen::Affine3d T = nodes_[0].T;
+    ret.push_back(T);
+    for (size_t i = 0; i < incr_odom.size(); i++) {
+      T = T*incr_odom[i].getRelPose();
+      ret.push_back(T);
+    }
+    return ret;
+  }
+
+  std::vector<NDTFeatureLink> computeAllPossibleLinks() {
+    std::vector<NDTFeatureLink> ret;
     // Step through the graph and find links between nodes...
     size_t i = 0; 
     for (size_t i = 0; i < nodes_.size(); i++) {
@@ -169,10 +292,26 @@ public:
     }
     return ret;
   }
+
+  void clearAllLinks() {
+    links_.clear();
+  }
   
+  void setLinks(const std::vector<ndt_feature::NDTFeatureLink> &links) {
+    links_ = links;
+  }
+
+  void appendLinks(const std::vector<ndt_feature::NDTFeatureLink> &links) {
+    links_.insert(links_.end(), links.begin(), links.end());
+  }
+
   // Optimize the map.
   void optimize() {
     // For now do nothing, for the future updates nodes_.node.T.
+
+    // Formulate a graph optimizaion problem...
+    
+
   }
 
   // Fuse the nodes, that is decreasing the number of nodes_ by combining them. Note that this doesn't have to be to make them larger but simply to avoid that the number of maps grows when the robot is "re-visiting" areas.
@@ -250,7 +389,34 @@ public:
       }
       nodes_.push_back(new_node);
     }
+
+    if (!loadLinkFile(".links")) {
+      std::cerr << "failed to load : " << fuser_params_.hmt_map_dir + fuser_params_.prefix + std::string(".links") << std::endl;
+    }
     return ret;
+  }
+
+  bool saveLinkFile(const std::string &fileName) const {
+    std::string filename = fuser_params_.hmt_map_dir + fuser_params_.prefix + fileName;
+    std::ofstream ofs(filename.c_str());
+    boost::archive::text_oarchive ar(ofs);
+    ar & links_;
+    ofs.close();
+    return true;
+  }
+
+   bool loadLinkFile(const std::string &fileName) {
+    bool ret = true;
+    std::string filename = fuser_params_.hmt_map_dir + fuser_params_.prefix + fileName;
+    std::cout << "loading linkfile : " << filename << std::endl;
+    std::ifstream ifs(filename.c_str());
+    if (ifs) {
+      boost::archive::text_iarchive ar(ifs);
+      ar & links_;
+      ifs.close();
+      return true;
+    }
+    return false;
   }
 
   void setFeatureDistFunction(const HistogramDistance<double>* distFunction) {
@@ -283,7 +449,59 @@ public:
   }
 
   
-  
+  NDTFeatureNode& getNode(size_t idx) {
+    return nodes_[idx];
+  }
+
+  const NDTFeatureNode& getNode(size_t idx) const {
+    return nodes_[idx];
+  }
+
+  void force2D() {
+    for (size_t i = 0; i < nodes_.size(); i++) {
+      nodes_[i].force2D();
+    }
+    for (size_t i = 0; i < links_.size(); i++) {
+      links_[i].force2D();
+    }
+  }
+
+  std::vector<NDTFeatureLink> getValidLinks(const std::vector<NDTFeatureLink> &links, double maxScore, double maxDist, double maxAngularDist, int minIdxDist) const
+  {
+    std::vector<NDTFeatureLink> ret;
+    for (size_t i = 0; i < links.size(); i++) {
+      if (links[i].getScore() > maxScore) {
+        continue;
+      }
+      
+      if (abs((int)links[i].getMovIdx() - (int)links[i].getRefIdx()) < minIdxDist) {
+        continue;
+      }
+      std::cout << "here" << std::endl;
+
+      const NDTFeatureNode &ref_node = nodes_[links[i].getRefIdx()];
+      const NDTFeatureNode &mov_node = nodes_[links[i].getMovIdx()];
+      
+      Eigen::Affine3d Tlink = ref_node.T*links[i].T;
+      double dist, angular_dist;
+      lslgeneric::distanceBetweenAffine3d(mov_node.T, Tlink, dist, angular_dist);
+      
+      std::cout << "dist : " << dist << std::endl;
+      std::cout << "angular_dist : " << angular_dist << std::endl;
+
+      if (dist < maxDist && angular_dist < maxAngularDist) {
+        ret.push_back(links[i]);
+      }
+
+    }
+    return ret;
+  }
+
+
+  const std::vector<NDTFeatureLink>& getCurrentLinks() {
+    return links_;
+  }
+
   NDTViz *viewer;
   
   NDTFeatureGraph::Params params_;
@@ -296,15 +514,10 @@ public:
   pcl::PointCloud<pcl::PointXYZ> pointcloud_vis;
 
 
-  NDTFeatureNode& getNode(size_t idx) {
-    return nodes_[idx];
-  }
-
-  size_t getNbNodes() const { return nodes_.size(); }
-
 private:
   // A set of ndt_feature_fuser maps are utilized, they are encoded into graph nodes.
   std::vector<NDTFeatureNode> nodes_;
+  std::vector<NDTFeatureLink> links_;
 
 
   double distance_moved_in_last_node_;
@@ -312,7 +525,6 @@ private:
   // set of visualization markers (the possiblity to draw a NDT set of cells for each map).
 
 };
-
 
 
 

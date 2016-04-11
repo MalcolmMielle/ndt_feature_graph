@@ -97,15 +97,19 @@ double matchFeatureMap(const NDTFeatureMap &ref, const NDTFeatureMap &mov, Corre
 {
   boost::shared_ptr<RansacFeatureSetMatcher> ransac_(new RansacFeatureSetMatcher(0.0599, 0.9, 0.1, 0.6, 0.0499, false));
 
+  if (ref.map.empty() || mov.map.empty()) {
+    return std::numeric_limits<double>::max();
+  }
+
   //  RansacFeatureSetMatcher ransac(0.0599, 0.9, 0.1, 0.6, 0.0499, false);
-  std::cerr << "matcheFeatureMap() -1" << std::endl;
   OrientedPoint2D transform;
-  std::cerr << "matcheFeatureMap() -1.5" << std::endl;
-  std::cerr << "ransac_ : " << ransac_ << std::endl;
   double score = ransac_->matchSets(ref.map, mov.map, transform, matches);
-  
-  std::cerr << "matcheFeatureMap() -2" << std::endl;
+
+  if (!validOrientedPoint2D(transform)) { // the transform could be nan
+    return std::numeric_limits<double>::max();
+  }
   ndt_feature::convertOrientedPoint2DToEigen(transform, T);
+  lslgeneric::printTransf(T);
   return score;
 }
 

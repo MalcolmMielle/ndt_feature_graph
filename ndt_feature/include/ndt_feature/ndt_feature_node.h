@@ -1,12 +1,17 @@
 #pragma once
 
+#include <ndt_feature/interfaces.h>
 #include <ndt_feature/ndt_feature_fuser_hmt.h>
+#include <pcl/point_cloud.h>
+#include <ndt_map/pointcloud_utils.h>
+
 
 // For serialization...
 #include <iostream>
 #include <semrob_generic/serialization.h>
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
+#include <pcl/io/pcd_io.h>
 
 namespace ndt_feature {
 
@@ -30,11 +35,35 @@ bool loadAffine3d(Eigen::Affine3d &T, const std::string& fileName) {
 }
 
 //! Class to hold a node - a fused map with features along with a global pose offset estimate. To be used in an optimization framework
-class NDTFeatureNode {
+class NDTFeatureNode : public NDTFeatureNodeInterface {
 
 public:
+  NDTFeatureNode() : nbUpdates(0), map(NULL) {
+    T.setIdentity();
+    Tlocal_odom.setIdentity();
+    Tlocal_fuse.setIdentity();
+  }
+
   NDTFeatureFuserHMT* map;
   Eigen::Affine3d T;
+  Eigen::Matrix3d cov;
+
+  Eigen::Affine3d Tlocal_odom; // Incremental odometry between successive local maps.
+  Eigen::Affine3d Tlocal_fuse; // Incremental fuse estimates between sucessive local maps.
+  pcl::PointCloud<pcl::PointXYZ> pts; // Only for visualizaion purposes...
+  int nbUpdates;
+
+void addCloud(Eigen::Affine3d &T, const pcl::PointCloud<pcl::PointXYZ> &pc) {
+    this->pts += lslgeneric::transformPointCloud(T,pc);
+}
+
+pcl::PointCloud<pcl::PointXYZ> getGlobalPointCloud() {
+return lslgeneric::transformPointCloud<pcl::PointXYZ>(this->T, this->pts);
+}
+
+pcl::PointCloud<pcl::PointXYZ> getLocalPointCloud() {
+return this->pts;
+}
 
   // Specific save function, use the ndt map saving function.
   bool save(const std::string &fileName) {
@@ -46,14 +75,44 @@ public:
     if (!saveAffine3d(T, T_file)) {
       return false;
     }
+    std::string Tlocal_odom_file = fileName + "local_odom.T";
+    if (!saveAffine3d(Tlocal_odom, Tlocal_odom_file)) {
+      return false;
+    }
+    std::string Tlocal_fuse_file = fileName + "local_fuse.T";
+    if (!saveAffine3d(Tlocal_fuse, Tlocal_fuse_file)) {
+      return false;
+    }
+
+    std::string pc_file = fileName + ".pcd";
+    pcl::io::savePCDFileASCII (pc_file, this->pts);
+    return true;
   }
   
   bool load(const std::string &fileName) {
-    if (!map->load(fileName)) {
+
+if (!map->load(fileName)) {
       return false;
     }
+
     std::string T_file = fileName + ".T";
     if (!loadAffine3d(T, T_file)) {
+      return false;
+    }
+    std::string Tlocal_odom_file = fileName + "local_odom.T";
+    if (!loadAffine3d(Tlocal_odom, Tlocal_odom_file)) {
+      return false;
+    }
+    std::string Tlocal_fuse_file = fileName + "local_fuse.T";
+    if (!loadAffine3d(Tlocal_fuse, Tlocal_fuse_file)) {
+      return false;
+    }
+    
+
+    std::string pc_file = fileName + ".pcd";
+
+    if (pcl::io::loadPCDFile<pcl::PointXYZ> (pc_file, this->pts) == -1)
+    {
       return false;
     }
     return true;
@@ -79,6 +138,23 @@ public:
     assert(map != NULL);
     assert(map->map != NULL);
     return *(map->map);
+  }
+
+  // Interface
+  virtual const Eigen::Affine3d& getPose() const {
+    return T;
+  }
+  virtual const Eigen::Matrix3d& getCov() const {
+    return cov;
+  }
+
+  void setPose(const Eigen::Affine3d &pose) { T = pose; }
+  void setCov(const Eigen::Matrix3d &cov_) { cov = cov_; }
+
+  void force2D() {
+    lslgeneric::forceEigenAffine3dTo2dInPlace(this->T);
+    lslgeneric::forceEigenAffine3dTo2dInPlace(this->Tlocal_odom);
+    lslgeneric::forceEigenAffine3dTo2dInPlace(this->Tlocal_fuse);
   }
 };
 
@@ -111,7 +187,6 @@ double overlapNDTOccupancyScore(NDTFeatureNode &ref, NDTFeatureNode &mov, const 
         if (ref_occ != 0.5) {
           nb_sum++;
           double diff = (mov_occ - ref_occ);
-          //std::cout << "mov_occ : " << mov_occ << " ref_occ : " << cell->getOccupancyRescaled() << std::endl;
           diff_sum += diff*diff;
         }
       }

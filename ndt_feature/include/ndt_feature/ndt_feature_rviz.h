@@ -1,6 +1,7 @@
 #ifndef NDT_FEATURE_RVIZ_H
 #define NDT_FEATURE_RVIZ_H
 
+#include <ndt_feature/interfaces.h>
 #include <ndt_feature/ndt_rviz.h>
 #include <ndt_feature/flirtlib_utils.h>
 #include <visualization_msgs/Marker.h>
@@ -180,13 +181,14 @@ visualization_msgs::Marker poseArrowMarker(const geometry_msgs::Pose& pose, cons
   visualization_msgs::Marker m;
   ndt_visualisation::assignDefault(m);
   ndt_visualisation::assignColor(m,color);
+  m.header.stamp = ros::Time::now();
   m.pose = pose;
   m.type = visualization_msgs::Marker::ARROW;
   m.ns = frame;
   m.id = id;
-  m.scale.x = 0.5;
-  m.scale.y = 0.02;
-  m.scale.z = 0.02;
+  m.scale.x = 1.0;
+  m.scale.y = 0.2;
+  m.scale.z = 0.1;
   return m;
 }
 
@@ -196,6 +198,8 @@ visualization_msgs::Marker poseArrowMarkerEigen(const Eigen::Affine3d &pose, con
   tf::poseEigenToMsg(pose, p);
   return poseArrowMarker(p, id, color, frame);
 }
+
+
 
  visualization_msgs::Marker posePointsMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFrame> &frames, const int id, const int color, const std::string &frame, bool useOdom)  {
   visualization_msgs::Marker m;
@@ -265,8 +269,52 @@ void publishMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFram
      
  }
  
+void publishMarkerNDTFeatureNodes(const NDTFeatureGraphInterface &graph, ros::Publisher &marker_pub) {
+  
+  int id = 0;
+  for (size_t i = 0; i < graph.getNbNodes(); i++)
+  {
+    marker_pub.publish(poseArrowMarkerEigen(graph.getNodeInterface(i).getPose(), id, 2, std::string("nodes_pose")));
+    id++;
+  }
+}
 
+visualization_msgs::Marker markerNDTFeatureLinks(const NDTFeatureGraphInterface &graph, const int id, const int color, const std::string &frame, bool skipOdom) {
+   visualization_msgs::Marker m;
+   ndt_visualisation::assignDefault(m);
+   ndt_visualisation::assignColor(m,color);
+   m.ns = frame;
+   m.id = id;
+   m.type = visualization_msgs::Marker::LINE_LIST;
+   m.scale.x = 0.02;
+   m.color.r = m.color.a = 1.0;
+   m.color.g = 0.65;
+   
+   geometry_msgs::Pose pose;
+   for (size_t i = 0; i < graph.getNbLinks(); i++) {
+     if (skipOdom) {
+       if (graph.getLinkInterface(i).getScore() < 0) {
+         continue;
+       }
+     }
+     geometry_msgs::Pose pose1, pose2;
+     size_t ref_idx = graph.getLinkInterface(i).getRefIdx();
+     size_t mov_idx = graph.getLinkInterface(i).getMovIdx();
+     
+     tf::poseEigenToMsg(graph.getNodeInterface(ref_idx).getPose(), pose1);
+     tf::poseEigenToMsg(graph.getNodeInterface(mov_idx).getPose(), pose2);
+   
+     m.points.push_back(pose1.position);
+     m.points.push_back(pose2.position);
+   }
+   
+   return m;
+     
+}
 
+void publishMarkerNDTFeatureLinks(const NDTFeatureGraphInterface &graph, ros::Publisher &marker_pub) {
+  marker_pub.publish(markerNDTFeatureLinks(graph, 0, 1, std::string("links"), true));
+}
 
 
 } // namespace

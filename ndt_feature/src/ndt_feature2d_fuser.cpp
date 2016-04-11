@@ -87,6 +87,7 @@ class NDTFeatureFuserNode {
 
     bool offline;
     int offline_nb_readings;
+  double min_incr_dist, min_incr_rot;
     std::vector<ndt_feature::NDTFeatureFrame> offline_frames;
     int offline_ctr;
     std::vector<std::pair<size_t, size_t> > offline_matches;
@@ -202,6 +203,8 @@ public:
 	    param_nh.param("matchLaser",matchLaser,false);
             
             param_nh.param<int>("offline_nb_readings", offline_nb_readings, 0);
+            param_nh.param<double>("min_incr_dist", min_incr_dist, 0.02);
+            param_nh.param<double>("min_incr_rot", min_incr_rot, 0.02);
 
             ndt_feature::NDTFeatureFuserHMT::Params fuser_params;
 
@@ -225,10 +228,22 @@ public:
 
             ndt_feature::NDTFeatureGraph::Params graph_params;
             param_nh.param<double>("graph_newNodeTranslDist", graph_params.newNodeTranslDist, 10.);
+            param_nh.param<bool>("graph_storePtsInNodes", graph_params.storePtsInNodes, true);
+            param_nh.param<int>("graph_storePtsInNodesIncr", graph_params.storePtsInNodesIncr, 2);
+
             param_nh.param<double>("occ_map_resolution", occ_map_resolution_, 1.);
             param_nh.param<bool>("do_pub_occ_map", do_pub_occ_map_, false);
             
             param_nh.param<std::string>("tf_odom_frame", tf_odom_frame_,  "/odom_base_link");
+
+            semrob_generic::MotionModel2d::Params motion_params;
+            param_nh.param<double>("motion_params_Cd", motion_params.Cd, 0.005);
+            param_nh.param<double>("motion_params_Ct", motion_params.Ct, 0.01);
+            param_nh.param<double>("motion_params_Dd", motion_params.Dd, 0.001);
+            param_nh.param<double>("motion_params_Dt", motion_params.Dt, 0.01);
+            param_nh.param<double>("motion_params_Td", motion_params.Td, 0.001);
+            param_nh.param<double>("motion_params_Tt", motion_params.Tt, 0.005);
+
             // To be able to use the evaluation scripts.
             std::string gt_filename, est_filename;
             param_nh.param<std::string>("output_gt_file",  gt_filename, "gt_pose.txt");
@@ -271,18 +286,9 @@ public:
             fuser_params.hmt_map_dir = map_dir;
             
 
-            
-
-            semrob_generic::MotionModel2d::Params motion_params;
-            motion_params.Cd = 0.005;
-            motion_params.Ct = 0.01;
-            motion_params.Dd = 0.001;
-            motion_params.Dt = 0.01;
-            motion_params.Td = 0.001;
-            motion_params.Tt = 0.005;
-
             std::cout << "fuser params: " << fuser_params << std::endl;
-            
+            std::cout << "motion_params: " << motion_params << std::endl;
+
             if (use_graph_) {
               
               graph = new ndt_feature::NDTFeatureGraph(graph_params, fuser_params);
@@ -481,9 +487,9 @@ public:
             {
                 tf::StampedTransform transform;
                 try {   
-                  listener.waitForTransform("/world", tf_odom_frame_,
+                  listener.waitForTransform(world_frame, tf_odom_frame_,
                                               frame_time, ros::Duration(3.0));
-                  listener.lookupTransform("/world", tf_odom_frame_,
+                  listener.lookupTransform(world_frame, tf_odom_frame_,
                                              frame_time, transform);
                     
                 }
@@ -519,8 +525,10 @@ public:
 	    } else {
                 Tm = last_odom.inverse()*this_odom;
 
-                if (Tm.translation().norm() < 0.02 && Tm.rotation().eulerAngles(0,1,2).norm() < 0.02)
-                    return;
+                if (Tm.translation().norm() < min_incr_dist /*0.02*/ && Tm.rotation().eulerAngles(0,1,2).norm() < min_incr_rot/*0.02*/) {
+                  message_m.unlock();
+                  return;
+                }
             }
             
             if (gt_file_.is_open()) {
@@ -647,10 +655,10 @@ public:
 	    } else {
 		Tm = last_odom.inverse()*this_odom;
 		//std::cout<<"delta from last update: "<<Tm.translation().transpose()<<" "<<Tm.rotation().eulerAngles(0,1,2)[2] << std::endl;
-		//if(Tm.translation().norm()<0.2 && fabs(Tm.rotation().eulerAngles(0,1,2)[2])<(5*M_PI/180.0)) {
-		//    message_m.unlock();
-		//    return;
-		//}
+                if (Tm.translation().norm() < min_incr_dist /*0.02*/ && Tm.rotation().eulerAngles(0,1,2).norm() < min_incr_rot/*0.02*/) {
+                  message_m.unlock();
+                  return;
+		}
 	    }
 	    last_odom = this_odom;
 
