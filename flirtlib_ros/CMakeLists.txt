@@ -124,6 +124,7 @@ add_executable(flirt_serialization_test src/serialization_test.cpp)
 
 ## Add cmake target dependencies of the executable/library
 ## as an example, message headers may need to be generated before nodes
+add_dependencies(flirtlib_ros flirtlib_ros_gencpp flirtlib_ros_generate_messages_cpp)
 add_dependencies(flirtlib_ros_test flirtlib_ros_generate_messages_cpp flirtlib_ros)
 add_dependencies(flirtlib_ros_test2 flirtlib_ros_generate_messages_cpp flirtlib_ros)
 

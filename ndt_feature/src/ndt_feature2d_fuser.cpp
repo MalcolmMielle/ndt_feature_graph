@@ -66,8 +66,7 @@ class NDTFeatureFuserNode {
 
 	// Components for publishing
 	tf::TransformBroadcaster tf_;
-	ros::Publisher output_pub_;
-        ros::Publisher pointcloud_pub_;
+	ros::Publisher pointcloud_pub_;
   ros::Publisher pointcloud2_pub_;
 	Eigen::Affine3d pose_, T, sensor_pose_;
 
@@ -119,6 +118,8 @@ class NDTFeatureFuserNode {
   bool use_graph_;
   double occ_map_resolution_;
   bool do_pub_occ_map_;
+  bool do_pub_debug_markers_;
+  bool do_pub_visualization_clouds_;
   bool skip_features_;
   std::string tf_odom_frame_;
 
@@ -236,7 +237,9 @@ public:
 
             param_nh.param<double>("occ_map_resolution", occ_map_resolution_, 1.);
             param_nh.param<bool>("do_pub_occ_map", do_pub_occ_map_, false);
-            
+            param_nh.param<bool>("do_pub_debug_markers", do_pub_debug_markers_, true);
+            param_nh.param<bool>("do_pub_visualization_clouds", do_pub_visualization_clouds_, true);
+
             param_nh.param<std::string>("tf_odom_frame", tf_odom_frame_,  "/odom_base_link");
 
             semrob_generic::MotionModel2d::Params motion_params;
@@ -252,8 +255,12 @@ public:
             param_nh.param<std::string>("output_gt_file",  gt_filename, "gt_pose.txt");
             param_nh.param<std::string>("output_est_file", est_filename, "est_pose.txt");
             
-            gt_file_.open(gt_filename.c_str());
-            est_file_.open(est_filename.c_str());
+            if (gt_filename != std::string("")) {
+              gt_file_.open(gt_filename.c_str());
+            }
+            if (est_filename != std::string("")) {
+              est_file_.open(est_filename.c_str());
+            }
             
             if (!gt_file_.is_open() || !est_file_.is_open())
             {
@@ -408,7 +415,7 @@ public:
 
                 if (do_pub_occ_map_) {
                   nav_msgs::OccupancyGrid omap;
-                  lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, "/world");
+                  lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
                   moveOccupancyMap(omap, graph->getT());
                   map_pub_.publish(omap);
                 }
@@ -417,19 +424,17 @@ public:
             else {
               if (fuser->wasInit()) {
                 
-                for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
-                  fuser->debug_markers_[i].header.stamp = frameTime;
-                  marker_pub_.publish(fuser->debug_markers_[i]);
+                if (do_pub_debug_markers_) {
+                  for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
+                    fuser->debug_markers_[i].header.stamp = frameTime;
+                    marker_pub_.publish(fuser->debug_markers_[i]);
+                  }
                 }
                 if (do_pub_occ_map_) {
                   nav_msgs::OccupancyGrid omap;
-                  lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, "/world");
+                  lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, world_frame);
                   map_pub_.publish(omap);
                 }
-
-                
-                
-                //                marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1));
               }
             }
     }
@@ -615,17 +620,18 @@ public:
             {
                 this->processFeatureFrame(pcl_cloud,pts, Tm, frame_time);
             }
+            if (do_pub_visualization_clouds_)
             {
               if (use_graph_) {
                 sensor_msgs::PointCloud2 cloud_msg; 
                 pcl::toROSMsg(graph->getVisualizationCloud(), cloud_msg );
-                cloud_msg.header.frame_id = std::string("/world");
+                cloud_msg.header.frame_id = world_frame;
                 pointcloud2_pub_.publish(cloud_msg );
               }
               else {
                 sensor_msgs::PointCloud2 cloud_msg; 
                 pcl::toROSMsg(fuser->getVisualizationCloud(), cloud_msg );
-                cloud_msg.header.frame_id = std::string("/world");
+                cloud_msg.header.frame_id = world_frame;
                 pointcloud2_pub_.publish(cloud_msg );
               }
             }
