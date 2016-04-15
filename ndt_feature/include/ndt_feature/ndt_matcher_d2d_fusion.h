@@ -5,6 +5,416 @@
 
 namespace lslgeneric {
 
+//perform line search to find the best descent rate (More&Thuente)
+double lineSearchMTFusion(
+    Eigen::Matrix<double,6,1> &increment,
+    std::vector<NDTCell*> &sourceNDT,
+    NDTMap &targetNDT,
+    std::vector<NDTCell*> &sourceNDT_feat,
+    NDTMap &targetNDT_feat,
+    NDTMatcherD2D &matcher_d2d,
+    NDTMatcherFeatureD2D &matcher_feat_d2d)
+{
+  std::cout << "lineSearchMTFusion()" << std::endl;
+
+    // default params
+    double stp = 1.0; //default step
+    double recoverystep = 0.1;
+    double dginit = 0.0;
+    double ftol = 0.11111; //epsilon 1
+    double gtol = 0.99999; //epsilon 2
+    double stpmax = 4.0;
+    double stpmin = 0.001;
+    int maxfev = 40; //max function evaluations
+    double xtol = 0.01; //window of uncertainty around the optimal step
+
+    //my temporary variables
+    std::vector<NDTCell*> sourceNDTHere, sourceNDTHere_feat;
+    double score_init = 0.0;
+
+    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> ps;
+    ps.setIdentity();
+
+    Eigen::Matrix<double,6,1> scg_here;
+    Eigen::MatrixXd pincr(6,1), score_gradient_here(6,1), score_gradient_feat_here(6,1);
+    Eigen::MatrixXd pseudoH(6,6), pseudoH_feat(6,6);
+    Eigen::Vector3d eulerAngles;
+    /////
+
+    int info = 0;			// return code
+    int infoc = 1;		// return code for subroutine cstep
+
+    // Compute the initial gradient in the search direction and check
+    // that s is a descent direction.
+
+    //we want to maximize s, so we should minimize -s
+    //score_init = scoreNDT(sourceNDT,targetNDT);
+
+    //gradient directions are opposite for the negated function
+    //score_gradient_init = -score_gradient_init;
+
+//  cout<<"score_init "<<score_init<<endl;
+//  cout<<"score_gradient_init "<<score_gradient_init.transpose()<<endl;
+//  cout<<"increment "<<increment.transpose()<<endl;
+
+    score_gradient_here.setZero();
+    score_gradient_feat_here.setZero();
+    
+    std::cout << "computing gradients: " << std::endl;
+    std::cout << "matcher_d2d.n_neighbours : " << matcher_d2d.n_neighbours << std::endl;
+    score_init = matcher_d2d.derivativesNDT(sourceNDT,targetNDT,score_gradient_here,pseudoH,false);
+    std::cout << "----2" << std::endl;
+    score_init+= matcher_feat_d2d.derivativesNDT(sourceNDT_feat, targetNDT_feat, score_gradient_feat_here, pseudoH_feat, false);
+    std::cout << "----3" << std::endl;
+    std::cout << "score_gradient_ndt_here : " << score_gradient_here << std::endl;
+    score_gradient_here += score_gradient_feat_here;
+    std::cout << "score_gradient_feat_here : " << score_gradient_feat_here << std::endl;
+    std::cout << "----4" << std::endl;
+    std::cout << "pseudoH_ndt : " << pseudoH << std::endl;
+    std::cout << "pseudoH_feat: " << pseudoH_feat << std::endl;
+    pseudoH += pseudoH_feat;
+    std::cout << "----5" << std::endl;
+    scg_here = score_gradient_here;
+    std::cout << "----6" << std::endl;
+    dginit = increment.dot(scg_here);
+
+    std::cout<<"dginit "<<dginit<<std::endl;
+
+    if (dginit >= 0.0)
+    {
+        std::cout << "MoreThuente::cvsrch - wrong direction (dginit = " << dginit << ")" << std::endl;
+        //return recoverystep; //TODO TSV -1; //
+        //return -1;
+
+        increment = -increment;
+        dginit = -dginit;
+
+        if (dginit >= 0.0)
+        {
+            for(unsigned int i=0; i<sourceNDTHere.size(); i++)
+            {
+                if(sourceNDTHere[i]!=NULL)
+                    delete sourceNDTHere[i];
+            }
+            for (unsigned int i=0; i<sourceNDTHere_feat.size(); i++)
+            {
+              if (sourceNDTHere_feat[i]!=NULL)
+                delete sourceNDTHere_feat[i];
+            }
+            return recoverystep;
+        }
+    }
+    else
+    {
+//     cout<<"correct direction (dginit = " << dginit << ")" << endl;
+    }
+
+    // Initialize local variables.
+
+    bool brackt = false;		// has the soln been bracketed?
+    bool stage1 = true;		// are we in stage 1?
+    int nfev = 0;			// number of function evaluations
+    double dgtest = ftol * dginit; // f for curvature condition
+    double width = stpmax - stpmin; // interval width
+    double width1 = 2 * width;	// ???
+
+    //cout<<"dgtest "<<dgtest<<endl;
+    // initial function value
+    double finit = 0.0;
+    finit = score_init;
+
+    // The variables stx, fx, dgx contain the values of the step,
+    // function, and directional derivative at the best step.  The
+    // variables sty, fy, dgy contain the value of the step, function,
+    // and derivative at the other endpoint of the interval of
+    // uncertainty.  The variables stp, f, dg contain the values of the
+    // step, function, and derivative at the current step.
+
+    double stx = 0.0;
+    double fx = finit;
+    double dgx = dginit;
+    double sty = 0.0;
+    double fy = finit;
+    double dgy = dginit;
+
+    // Get the linear solve tolerance for adjustable forcing term
+    //double eta_original = -1.0;
+    //double eta = 0.0;
+    //eta = eta_original;
+
+    // Start of iteration.
+
+    double stmin, stmax;
+    double fm, fxm, fym, dgm, dgxm, dgym;
+
+    while (1)
+    {
+        // Set the minimum and maximum steps to correspond to the present
+        // interval of uncertainty.
+        if (brackt)
+        {
+            stmin = NDTMatcherD2D::MoreThuente::min(stx, sty);
+            stmax = NDTMatcherD2D::MoreThuente::max(stx, sty);
+        }
+        else
+        {
+            stmin = stx;
+            stmax = stp + 4 * (stp - stx);
+        }
+
+        // Force the step to be within the bounds stpmax and stpmin.
+        stp = NDTMatcherD2D::MoreThuente::max(stp, stpmin);
+        stp = NDTMatcherD2D::MoreThuente::min(stp, stpmax);
+
+        // If an unusual termination is to occur then let stp be the
+        // lowest point obtained so far.
+
+        if ((brackt && ((stp <= stmin) || (stp >= stmax))) ||
+                (nfev >= maxfev - 1) || (infoc == 0) ||
+                (brackt && (stmax - stmin <= xtol * stmax)))
+        {
+            stp = stx;
+        }
+
+        // Evaluate the function and gradient at stp
+        // and compute the directional derivative.
+        ///////////////////////////////////////////////////////////////////////////
+
+        pincr = stp*increment;
+
+        ps = Eigen::Translation<double,3>(pincr(0),pincr(1),pincr(2))*
+             Eigen::AngleAxisd(pincr(3),Eigen::Vector3d::UnitX())*
+             Eigen::AngleAxisd(pincr(4),Eigen::Vector3d::UnitY())*
+             Eigen::AngleAxisd(pincr(5),Eigen::Vector3d::UnitZ());
+
+        for(unsigned int i=0; i<sourceNDTHere.size(); i++)
+        {
+            if(sourceNDTHere[i]!=NULL)
+                delete sourceNDTHere[i];
+        }
+        for(unsigned int i=0; i<sourceNDTHere_feat.size(); i++)
+        {
+            if(sourceNDTHere_feat[i]!=NULL)
+                delete sourceNDTHere_feat[i];
+        }
+        sourceNDTHere.clear();
+        sourceNDTHere_feat.clear();
+        for(unsigned int i=0; i<sourceNDT.size(); i++)
+        {
+            NDTCell *cell = sourceNDT[i];
+            if(cell!=NULL)
+            {
+                Eigen::Vector3d mean = cell->getMean();
+                Eigen::Matrix3d cov = cell->getCov();
+                mean = ps*mean;
+                cov = ps.rotation()*cov*ps.rotation().transpose();
+                NDTCell* nd = (NDTCell*)cell->copy();
+                nd->setMean(mean);
+                nd->setCov(cov);
+                sourceNDTHere.push_back(nd);
+            }
+        }
+        for(unsigned int i=0; i<sourceNDT_feat.size(); i++)
+        {
+            NDTCell *cell = sourceNDT_feat[i];
+            if(cell!=NULL)
+            {
+                Eigen::Vector3d mean = cell->getMean();
+                Eigen::Matrix3d cov = cell->getCov();
+                mean = ps*mean;
+                cov = ps.rotation()*cov*ps.rotation().transpose();
+                NDTCell* nd = (NDTCell*)cell->copy();
+                nd->setMean(mean);
+                nd->setCov(cov);
+                sourceNDTHere_feat.push_back(nd);
+            }
+        }
+
+        double f = 0.0;
+        score_gradient_here.setZero();
+        score_gradient_feat_here.setZero();
+
+        /*f = scoreNDT(sourceNDT,targetNDT,ps);
+        derivativesNDT(sourceNDT,targetNDT,ps,score_gradient_here,pseudoH,false);
+        std::cout<<"scg1  " <<score_gradient_here.transpose()<<std::endl;
+        */
+
+        //option 2:
+        //f = scoreNDT(sourceNDTHere,targetNDT);
+        f = matcher_d2d.derivativesNDT(sourceNDTHere,targetNDT,score_gradient_here,pseudoH,false);
+        std::cout << "f_ndt : " << f << std::endl;
+        double f_feat = matcher_feat_d2d.derivativesNDT(sourceNDT_feat,targetNDT_feat,score_gradient_feat_here,pseudoH_feat,false);
+        std::cout << "f_feat : " << std::endl;
+        
+        std::cout << "score_gradient_ndt_here : " << score_gradient_here << std::endl;
+        std::cout << "score_gradient_feat_here : " << score_gradient_feat_here << std::endl;
+        std::cout << "pseudoH_ndt : " << pseudoH << std::endl;
+        std::cout << "pseudoH_feat: " << pseudoH_feat << std::endl;
+
+        f += f_feat;
+        score_gradient_here += score_gradient_feat_here;
+        pseudoH += pseudoH_feat;
+
+        //std::cout<<"scg2  " <<score_gradient_here.transpose()<<std::endl;
+
+
+        //cout<<"incr " <<pincr.transpose()<<endl;
+        //cout<<"score (f) "<<f<<endl;
+
+        double dg = 0.0;
+        scg_here = score_gradient_here;
+        dg = increment.dot(scg_here);
+
+
+        //VALGRIND_CHECK_VALUE_IS_DEFINED(dg);
+        //cout<<"dg = "<<dg<<endl;
+        nfev ++;
+
+///////////////////////////////////////////////////////////////////////////
+
+        //cout<<"consider step "<<stp<<endl;
+        // Armijo-Goldstein sufficient decrease
+        double ftest1 = finit + stp * dgtest;
+        //cout<<"ftest1 is "<<ftest1<<endl;
+
+        // Test for convergence.
+
+        if ((brackt && ((stp <= stmin) || (stp >= stmax))) || (infoc == 0))
+            info = 6;			// Rounding errors
+
+        if ((stp == stpmax) && (f <= ftest1) && (dg <= dgtest))
+            info = 5;			// stp=stpmax
+
+        if ((stp == stpmin) && ((f > ftest1) || (dg >= dgtest)))
+            info = 4;			// stp=stpmin
+
+        if (nfev >= maxfev)
+            info = 3;			// max'd out on fevals
+
+        if (brackt && (stmax-stmin <= xtol*stmax))
+            info = 2;			// bracketed soln
+
+        // RPP sufficient decrease test can be different
+        bool sufficientDecreaseTest = false;
+        sufficientDecreaseTest = (f <= ftest1);  // Armijo-Golstein
+
+        //cout<<"ftest2 "<<gtol*(-dginit)<<endl;
+        //cout<<"sufficientDecrease? "<<sufficientDecreaseTest<<endl;
+        //cout<<"curvature ok? "<<(fabs(dg) <= gtol*(-dginit))<<endl;
+        if ((sufficientDecreaseTest) && (fabs(dg) <= gtol*(-dginit)))
+            info = 1;			// Success!!!!
+
+        if (info != 0) 		// Line search is done
+        {
+            if (info != 1) 		// Line search failed
+            {
+                // RPP add
+                // counter.incrementNumFailedLineSearches();
+
+                //if (recoveryStepType == Constant)
+                stp = recoverystep;
+
+                //newgrp.computeX(oldgrp, dir, stp);
+
+                //message = "(USING RECOVERY STEP!)";
+
+            }
+            else 			// Line search succeeded
+            {
+                //message = "(STEP ACCEPTED!)";
+            }
+
+            //print.printStep(nfev, stp, finit, f, message);
+
+            // Returning the line search flag
+            //cout<<"LineSearch::"<<message<<" info "<<info<<endl;
+            for(unsigned int i=0; i<sourceNDTHere.size(); i++)
+            {
+                if(sourceNDTHere[i]!=NULL)
+                    delete sourceNDTHere[i];
+            }
+            for(unsigned int i=0; i<sourceNDTHere_feat.size(); i++)
+            {
+              if (sourceNDTHere_feat[i]!=NULL)
+                delete sourceNDTHere_feat[i];
+            }
+//      std::cout<<"nfev = "<<nfev<<std::endl;
+            return stp;
+
+        } // info != 0
+
+        // RPP add
+        //counter.incrementNumIterations();
+
+        // In the first stage we seek a step for which the modified
+        // function has a nonpositive value and nonnegative derivative.
+
+        if (stage1 && (f <= ftest1) && (dg >= NDTMatcherD2D::MoreThuente::min(ftol, gtol) * dginit))
+        {
+            stage1 = false;
+        }
+
+        // A modified function is used to predict the step only if we have
+        // not obtained a step for which the modified function has a
+        // nonpositive function value and nonnegative derivative, and if a
+        // lower function value has been obtained but the decrease is not
+        // sufficient.
+
+        if (stage1 && (f <= fx) && (f > ftest1))
+        {
+
+            // Define the modified function and derivative values.
+
+            fm = f - stp * dgtest;
+            fxm = fx - stx * dgtest;
+            fym = fy - sty * dgtest;
+            dgm = dg - dgtest;
+            dgxm = dgx - dgtest;
+            dgym = dgy - dgtest;
+
+            // Call cstep to update the interval of uncertainty
+            // and to compute the new step.
+
+            //VALGRIND_CHECK_VALUE_IS_DEFINED(dgm);
+            infoc = NDTMatcherD2D::MoreThuente::cstep(stx,fxm,dgxm,sty,fym,dgym,stp,fm,dgm,
+                                       brackt,stmin,stmax);
+
+            // Reset the function and gradient values for f.
+
+            fx = fxm + stx*dgtest;
+            fy = fym + sty*dgtest;
+            dgx = dgxm + dgtest;
+            dgy = dgym + dgtest;
+
+        }
+
+        else
+        {
+
+            // Call cstep to update the interval of uncertainty
+            // and to compute the new step.
+
+            //VALGRIND_CHECK_VALUE_IS_DEFINED(dg);
+            infoc = NDTMatcherD2D::MoreThuente::cstep(stx,fx,dgx,sty,fy,dgy,stp,f,dg,
+                                       brackt,stmin,stmax);
+
+        }
+
+        // Force a sufficient decrease in the size of the
+        // interval of uncertainty.
+
+        if (brackt)
+        {
+            if (fabs(sty - stx) >= 0.66 * width1)
+                stp = stx + 0.5 * (sty - stx);
+            width1 = width;
+            width = fabs(sty-stx);
+        }
+
+    } // while-loop
+
+}
+
 
   bool matchFusion( NDTMap& targetNDT,
 		    NDTMap& sourceNDT,
@@ -12,7 +422,7 @@ namespace lslgeneric {
 		    NDTMap& sourceNDT_feat,
 		    const std::vector<std::pair<int, int> > &corr_feat,
 		    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T ,
-		    bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4, bool optimizeOnlyYaw = false)
+		    bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4, bool optimizeOnlyYaw = false, bool step_control_fusion = true)
 {
   std::cerr << "matchFusion()" << " useNDT : " << useNDT << " useFeat : " << useFeat << " step_control : " << step_control << " corr_feat.size() : " << corr_feat.size() << std::endl;
 
@@ -197,18 +607,25 @@ namespace lslgeneric {
           //std::cout << "step_control: start" << std::endl;
           double step_size_ndt = 0.;
           double step_size_feat = 0.;
-	  if (useNDT) {
-	    step_size_ndt = matcher_d2d.lineSearchMT(pose_increment_v,nextNDT,targetNDT);
-          }
-	  if (useFeat) {
-	    step_size_feat = matcher_feat_d2d.lineSearchMT(pose_increment_v,nextNDT_feat, targetNDT_feat);
-          }
-          if (step_size_ndt != 0. && step_size_feat != 0.) {
-            step_size = std::min(step_size_ndt, step_size_feat);
+	  if (useNDT && useFeat && step_control_fusion) {
+            step_size = lineSearchMTFusion(pose_increment_v,nextNDT,targetNDT,nextNDT_feat,targetNDT_feat,matcher_d2d,matcher_feat_d2d);
           }
           else {
-            step_size = std::max(step_size_ndt, step_size_feat);
+            
+            if (useNDT) {
+              step_size_ndt = matcher_d2d.lineSearchMT(pose_increment_v,nextNDT,targetNDT);
+            }
+            if (useFeat) {
+              step_size_feat = matcher_feat_d2d.lineSearchMT(pose_increment_v,nextNDT_feat, targetNDT_feat);
+            }
+            if (step_size_ndt != 0. && step_size_feat != 0.) {
+              step_size = std::min(step_size_ndt, step_size_feat);
+            }
+            else {
+              step_size = std::max(step_size_ndt, step_size_feat);
+            }
           }
+          
           //          std::cout << "step_size_ndt : " << step_size_ndt << " step_size_feat : " << step_size_feat << std::endl;
 
           //std::cout << "step_control: end" << std::endl;

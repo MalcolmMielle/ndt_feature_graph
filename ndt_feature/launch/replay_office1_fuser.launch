@@ -15,7 +15,7 @@
 	<param name="size_x_meters" value="80" />
 	<param name="size_y_meters" value="80" />
 	<param name="size_z_meters" value="0.2" />
-	<param name="resolution" value="0.2" />
+	<param name="resolution" value="0.5" />
 	<param name="laser_variance_z" value="0.02" />
 	
 	<param name="sensor_range" value="29." />
@@ -48,8 +48,8 @@
 
 	<param name="fuser_useNDT" value="true" />
 	<param name="fuser_useFeat" value="false" />
-	<param name="fuser_useOdom" value="false" />
-	<param name="fuser_neighbours" value="1" />
+	<param name="fuser_useOdom" value="true" />
+	<param name="fuser_neighbours" value="0" />
 	<param name="fuser_stepcontrol" value="true" />
 	<param name="fuser_ITR_MAX" value="100" />
 	<param name="fuser_DELTA_SCORE" value="0.0001" />
@@ -58,14 +58,19 @@
 	<param name="fuser_forceOdomAsEst" value="false" />
 	<param name="fuser_visualizeLocalCloud" value="false" />
 	<param name="fuser_allMatchesValid" value="true" />
-	<param name="fuser_discardCells" value="true" />
+	<param name="fuser_discardCells" value="false" />
 	<param name="fuser_optimizeOnlyYaw" value="false" />
 	
 	<param name="use_graph" value="true" />
 
-	<param name="graph_newNodeTranslDist" value="1000." />
+	<param name="graph_newNodeTranslDist" value="4." />
 	<param name="occ_map_resolution" value="0.5" />
 	<param name="do_pub_occ_map" value="true" />
+
+	<param name="motion_params_Cd" value="0.005" />
+	<param name="motion_params_Ct" value="0.01" />
+	<param name="motion_params_Dd" value="0.0001" />
+	<param name="motion_params_Cd" value="0.001" />
 
 	<!-- fusion2d bool -->
     </node>

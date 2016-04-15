@@ -45,7 +45,7 @@
 	<param name="gt_topic" value="/state" />
 	<param name="fuser_useNDT" value="true" />
 	<param name="fuser_useFeat" value="false" />
-	<param name="fuser_useOdom" value="false" />
+	<param name="fuser_useOdom" value="true" />
 	<param name="fuser_neighbours" value="0" />
 	<param name="fuser_stepcontrol" value="true" />
 	<param name="fuser_ITR_MAX" value="100" />
