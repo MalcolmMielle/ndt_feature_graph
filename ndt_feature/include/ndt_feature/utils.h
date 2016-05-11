@@ -146,8 +146,11 @@ void printTransf2d(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor
 void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
   CellVector* idx = dynamic_cast<CellVector*> (map->getMyIndex());
   if (idx != NULL) {
-    NDTCell* nd = (NDTCell*)cell->clone();
-    idx->addNDTCell(cell);
+    std::cerr << "cell->getCov() : " << cell->getCov() << std::endl;
+    NDTCell* nd = (NDTCell*)cell->copy();
+    std::cerr << "nd->getCov() : " << nd->getCov() << std::endl;
+
+    idx->addNDTCell(nd);
   }
   else {
     std::cerr << "Only cellvector implemented" << std::endl;
@@ -204,20 +207,31 @@ bool discardCell(NDTMap &map, const pcl::PointXYZ &pt) {
   return false;
 }
 
-int discardDistantCells(NDTMap &map, const pcl::PointCloud<pcl::PointXYZ> &pts, double max_dist) {
-  for (size_t i = 0; i < pts.size(); i++) {
-    NDTCell *cell;
-    if (map.getCellAtPoint(pts[i], cell)) {
+// int discardDistantCells(NDTMap &map, const pcl::PointCloud<pcl::PointXYZ> &pts, double max_dist) {
+//   for (size_t i = 0; i < pts.size(); i++) {
+//     NDTCell *cell;
+//     if (map.getCellAtPoint(pts[i], cell)) {
       
-    }
+//     }
     
-  }
-}
+//   }
+// }
 
 std::string transformToEvalString(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
   std::ostringstream stream;
+  stream << std::setprecision(std::numeric_limits<double>::digits10);
   Eigen::Quaternion<double> tmp(T.rotation());
   stream << T.translation().transpose() << " " << tmp.x() << " " << tmp.y() << " " << tmp.z() << " " << tmp.w() << std::endl; 
+  return stream.str();
+}
+
+std::string transformToEval2dString(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
+  std::ostringstream stream;
+  stream << std::setprecision(std::numeric_limits<double>::digits10);
+  double yaw = getRobustYawFromAffine3d(T);
+  Eigen::Affine3d T2 = Eigen::Translation<double,3>(T.translation()[0], T.translation()[1], 0.) * Eigen::AngleAxis<double>(yaw, Eigen::Vector3d::UnitZ());
+  Eigen::Quaternion<double> tmp(T2.rotation());
+  stream << T2.translation()[0] << " " << T2.translation()[1] << " 0. " << " " << tmp.x() << " " << tmp.y() << " " << tmp.z() << " " << tmp.w() << std::endl; 
   return stream.str();
 }
 

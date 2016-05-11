@@ -57,6 +57,7 @@ int main(int argc, char** argv)
     ("offset_Ty", po::value<double>(&Ty)->default_value(0.), "offset to T (initial pose estimate)")
     ("offset_Tth", po::value<double>(&Tth)->default_value(0.), "offset to T (initial pose estimate)")
     ("no_est", "if no estimate should be computed")
+    ("no_markers", "if no visualization markers should be published")
     ("add_odom_to_ndtmap", "if the odometry estimate based cells should be added directly to the ndt based maps")
     ("Cd", po::value<double>(&Cd)->default_value(0.005), "motion model sideways (dist)")
     ("Ct", po::value<double>(&Ct)->default_value(0.01), "motion model sideways (rot)")
@@ -83,6 +84,7 @@ int main(int argc, char** argv)
   bool step_control = !vm.count("no_step_control");
   bool compute_est = !vm.count("no_est");
   bool add_odom_to_ndtmap = vm.count("add_odom_to_ndtmap");
+  bool no_markers = vm.count("no_markers");
 
   ros::NodeHandle nh;
   ros::Publisher marker_pub = nh.advertise<visualization_msgs::Marker>("visualization_marker", 10);
@@ -217,13 +219,13 @@ int main(int argc, char** argv)
   
   
 
-  while (ros::ok()) {
+  while (ros::ok() && !no_markers) {
     ros::spinOnce();
     loop_rate.sleep();
     publishMarkerNDTFeatureNode(ref_node, 0, "ref", marker_pub);
     publishMarkerNDTFeatureNode(mov_node, 1, "mov", marker_pub);
 
-    //    marker_pub.publish(ndt_feature::interestPointMarkersFrameId(mov_node.map->featuremap.map, T, 2, std::string("/world")));
+    marker_pub.publish(ndt_feature::interestPointMarkersFrameId(mov_node.map->featuremap.map, T, 2, std::string("/world")));
     marker_pub.publish(ndt_visualisation::markerNDTCells(ndt_mov));
     marker_pub.publish(ndt_visualisation::markerNDTCells(*ndt_mov2, 2, "mov"));
     marker_pub.publish(ndt_visualisation::markerNDTCells(ndt_feature_ref, 1, "feat_ref"));
@@ -234,6 +236,12 @@ int main(int argc, char** argv)
 
     pcref_pub.publish(cloud_msg_ref);
     pcmov_pub.publish(cloud_msg_mov);
+  }
+
+  delete ndt_mov2;
+  delete ndt_feat_mov;
+  for (size_t i = 0; i < ndt_mov.size(); i++) {
+     delete ndt_mov[i];
   }
 
   std::cout << " Done." << std::endl;

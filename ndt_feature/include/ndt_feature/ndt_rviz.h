@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ndt_map/ndt_map.h>
+#include <ndt_mcl/3d_ndt_mcl.h>
 #include <ros/ros.h>
 #include <tf_conversions/tf_eigen.h>
 #include <visualization_msgs/Marker.h>
@@ -123,6 +124,35 @@ namespace ndt_visualisation {
       
     }
 
+ // Visualize the ndt cells as a set of 3 lines drawn along the eigen vectors.
+inline visualization_msgs::Marker markerNDTCells (std::vector<lslgeneric::NDTCell*> cells, const Eigen::Affine3d &pose, const visualization_msgs::Marker &marker)
+    {
+      visualization_msgs::Marker m = marker;
+      m.type = visualization_msgs::Marker::LINE_LIST;
+      m.scale.x = 0.02;
+
+      for (size_t i = 0; i < cells.size(); i++)	{
+	if(!cells[i]->hasGaussian_) continue;
+
+	Eigen::Vector3d mean = cells[i]->getMean();
+	Eigen::Matrix3d evecs = cells[i]->getEvecs();
+	Eigen::Vector3d evals = cells[i]->getEvals();
+	for (size_t j = 0; j < 3; j++) {
+	  double scale = evals(j);
+	  if (scale < 0.0001)
+	    continue;
+	  scale = sqrt(scale);
+	  Eigen::Vector3d offset = evecs.col(j) * scale;
+	  Eigen::Vector3d p1 = mean - offset;
+	  Eigen::Vector3d p2 = mean + offset;
+	  m.points.push_back(toPointFromEigen(pose*p1));
+	  m.points.push_back(toPointFromEigen(pose*p2));
+	}
+      }
+      return m;
+      
+    }
+
    inline visualization_msgs::Marker markerNDTCells (std::vector<lslgeneric::NDTCell*> cells) 
     {
       visualization_msgs::Marker m;
@@ -137,14 +167,71 @@ inline visualization_msgs::Marker markerNDTCells( lslgeneric::NDTMap &map, int i
     assignColor(m, id);
     m.id = id;
     m.ns = name;
-    return  markerNDTCells(map.getAllCells(), m);
+    std::vector<lslgeneric::NDTCell*> cells = map.getAllCells();
+    visualization_msgs::Marker ret = markerNDTCells(cells, m);
+    for (std::vector<lslgeneric::NDTCell*>::const_iterator it = cells.begin(); it != cells.end(); it++) {
+      delete *it;
+    }
+    return  ret;
+}
 
+inline visualization_msgs::Marker markerNDTCells( lslgeneric::NDTMap &map, const Eigen::Affine3d &pose, int id, const std::string &name) {
+    visualization_msgs::Marker m;
+    assignDefault(m);
+    assignColor(m, id);
+    m.id = id;
+    m.ns = name;
+    std::vector<lslgeneric::NDTCell*> cells = map.getAllCells();
+    visualization_msgs::Marker ret = markerNDTCells(cells, pose, m);
+    for (std::vector<lslgeneric::NDTCell*>::const_iterator it = cells.begin(); it != cells.end(); it++) {
+      delete *it;
+    }
+    return  ret;
 }
 
   inline visualization_msgs::Marker markerNDTCells (lslgeneric::NDTMap &map, int id) 
   {
     return  markerNDTCells(map, id, std::string("NDTMap"));
   }
+
+                                                  
+ // Visualize the ndt cells as a set of 3 lines drawn along the eigen vectors.
+void markerNDTCells2 (std::vector<lslgeneric::NDTCell*> cells, const Eigen::Affine3d &pose, visualization_msgs::Marker &m)
+    {
+      m.type = visualization_msgs::Marker::LINE_LIST;
+      m.scale.x = 0.02;
+
+      for (size_t i = 0; i < cells.size(); i++)	{
+	if(!cells[i]->hasGaussian_) continue;
+
+	Eigen::Vector3d mean = cells[i]->getMean();
+	Eigen::Matrix3d evecs = cells[i]->getEvecs();
+	Eigen::Vector3d evals = cells[i]->getEvals();
+	for (size_t j = 0; j < 3; j++) {
+	  double scale = evals(j);
+	  if (scale < 0.0001)
+	    continue;
+	  scale = sqrt(scale);
+	  Eigen::Vector3d offset = evecs.col(j) * scale;
+	  Eigen::Vector3d p1 = mean - offset;
+	  Eigen::Vector3d p2 = mean + offset;
+	  m.points.push_back(toPointFromEigen(pose*p1));
+	  m.points.push_back(toPointFromEigen(pose*p2));
+	}
+      }
+    }
+
+void markerNDTCells2( lslgeneric::NDTMap &map, const Eigen::Affine3d &pose, int id, const std::string &name, visualization_msgs::Marker &m) {
+    assignDefault(m);
+    assignColor(m, id);
+    m.id = id;
+    m.ns = name;
+    std::vector<lslgeneric::NDTCell*> cells = map.getAllCells();
+    markerNDTCells2(cells, pose, m);
+    for (std::vector<lslgeneric::NDTCell*>::const_iterator it = cells.begin(); it != cells.end(); it++) {
+      delete *it;
+    }
+}
 
   //! Draw correspondance lines between the NDTCells
   inline visualization_msgs::Marker markerCellVectorCorrespondances (lslgeneric::NDTMap &map1, lslgeneric::NDTMap &map2, const std::vector<std::pair<int, int> > &corr) 
@@ -188,7 +275,27 @@ inline visualization_msgs::Marker markerMeanCovariance2d(const Eigen::Vector3d &
   return m;
 }
 
-
+visualization_msgs::Marker markerParticlesNDTMCL3D(const NDTMCL3D &mcl, int color, const std::string& ns) {
+  visualization_msgs::Marker m;
+  assignDefault(m);
+  m.ns = ns;
+  m.id = 0;
+  m.type = visualization_msgs::Marker::LINE_LIST;
+  m.scale.x = 0.005;
+  m.color.g = m.color.a = 1.0;
+  m.color.r = 0.6; m.color.b = 0.8;
+  if (color >= 0) {
+    assignColor(m, color);
+  }
+  for (unsigned int i = 0; i < mcl.pf.size(); i++) {
+    const Eigen::Affine3d &T = mcl.pf.pcloud[i].T;
+    m.points.push_back(toPointFromEigen(T.translation()));
+    // Length of the line -> 0.3.
+    Eigen::Vector3d p2 = T*Eigen::Vector3d(0.3, 0., 0.);
+    m.points.push_back(toPointFromEigen(p2));
+  }  
+  return m;
+}
 
 
 } // namespace

@@ -51,6 +51,14 @@ bool loadInterestPointVec(InterestPointVec &pts, const std::string &fileName) {
 class NDTFeatureMap {
 public:
   NDTFeatureMap() { counter_ = 0; }
+
+  ~NDTFeatureMap() {
+    std::cerr << "NDTFeatureMap Destructor" << std::endl;
+    for (size_t i = 0; i < map.size(); i++) {
+      delete map[i];
+    }
+    std::cerr << "NDTFeatureMap Destructor - done" << std::endl;
+  }
   void update(InterestPointVec &pts) {
     // For now simply append this to the map.
     if (counter_ % 4 == 0) {

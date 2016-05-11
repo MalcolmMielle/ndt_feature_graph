@@ -15,8 +15,6 @@ double lineSearchMTFusion(
     NDTMatcherD2D &matcher_d2d,
     NDTMatcherFeatureD2D &matcher_feat_d2d)
 {
-  std::cout << "lineSearchMTFusion()" << std::endl;
-
     // default params
     double stp = 1.0; //default step
     double recoverystep = 0.1;
@@ -60,25 +58,19 @@ double lineSearchMTFusion(
     score_gradient_here.setZero();
     score_gradient_feat_here.setZero();
     
-    std::cout << "computing gradients: " << std::endl;
-    std::cout << "matcher_d2d.n_neighbours : " << matcher_d2d.n_neighbours << std::endl;
+    //    std::cout << "computing gradients: " << std::endl;
+    //    std::cout << "matcher_d2d.n_neighbours : " << matcher_d2d.n_neighbours << std::endl;
     score_init = matcher_d2d.derivativesNDT(sourceNDT,targetNDT,score_gradient_here,pseudoH,false);
-    std::cout << "----2" << std::endl;
     score_init+= matcher_feat_d2d.derivativesNDT(sourceNDT_feat, targetNDT_feat, score_gradient_feat_here, pseudoH_feat, false);
-    std::cout << "----3" << std::endl;
-    std::cout << "score_gradient_ndt_here : " << score_gradient_here << std::endl;
+    //    std::cout << "score_gradient_ndt_here : " << score_gradient_here << std::endl;
     score_gradient_here += score_gradient_feat_here;
-    std::cout << "score_gradient_feat_here : " << score_gradient_feat_here << std::endl;
-    std::cout << "----4" << std::endl;
-    std::cout << "pseudoH_ndt : " << pseudoH << std::endl;
-    std::cout << "pseudoH_feat: " << pseudoH_feat << std::endl;
+    //    std::cout << "score_gradient_feat_here : " << score_gradient_feat_here << std::endl;
+    //    std::cout << "pseudoH_ndt : " << pseudoH << std::endl;
+    //    std::cout << "pseudoH_feat: " << pseudoH_feat << std::endl;
     pseudoH += pseudoH_feat;
-    std::cout << "----5" << std::endl;
     scg_here = score_gradient_here;
-    std::cout << "----6" << std::endl;
     dginit = increment.dot(scg_here);
-
-    std::cout<<"dginit "<<dginit<<std::endl;
+    //    std::cout<<"dginit "<<dginit<<std::endl;
 
     if (dginit >= 0.0)
     {
@@ -242,14 +234,14 @@ double lineSearchMTFusion(
         //option 2:
         //f = scoreNDT(sourceNDTHere,targetNDT);
         f = matcher_d2d.derivativesNDT(sourceNDTHere,targetNDT,score_gradient_here,pseudoH,false);
-        std::cout << "f_ndt : " << f << std::endl;
+        //        std::cout << "f_ndt : " << f << std::endl;
         double f_feat = matcher_feat_d2d.derivativesNDT(sourceNDT_feat,targetNDT_feat,score_gradient_feat_here,pseudoH_feat,false);
-        std::cout << "f_feat : " << std::endl;
+        //        std::cout << "f_feat : " << std::endl;
         
-        std::cout << "score_gradient_ndt_here : " << score_gradient_here << std::endl;
-        std::cout << "score_gradient_feat_here : " << score_gradient_feat_here << std::endl;
-        std::cout << "pseudoH_ndt : " << pseudoH << std::endl;
-        std::cout << "pseudoH_feat: " << pseudoH_feat << std::endl;
+        //        std::cout << "score_gradient_ndt_here : " << score_gradient_here << std::endl;
+        //        std::cout << "score_gradient_feat_here : " << score_gradient_feat_here << std::endl;
+        //        std::cout << "pseudoH_ndt : " << pseudoH << std::endl;
+        //        std::cout << "pseudoH_feat: " << pseudoH_feat << std::endl;
 
         f += f_feat;
         score_gradient_here += score_gradient_feat_here;
@@ -480,7 +472,7 @@ double lineSearchMTFusion(
 	//double score_here = matcher_d2d.derivativesNDT_2d(nextNDT,targetNDT,score_gradient_ndt,Hessian,true);
         double score_here_feat = matcher_feat_d2d.derivativesNDT(nextNDT_feat,targetNDT_feat,score_gradient_feat,Hessian_feat,true);
         
-        std::cerr << "score_here_ndt : " << score_here_ndt << "\t score_here_feat : " << score_here_feat << std::endl;
+        //        std::cerr << "score_here_ndt : " << score_here_ndt << "\t score_here_feat : " << score_here_feat << std::endl;
 
 	// Sum them up...
 	if (useNDT) {
@@ -532,7 +524,7 @@ double lineSearchMTFusion(
             Eigen::Matrix<double,6,6> Lam;
             Lam = evals.asDiagonal();
             Hessian = evecs*Lam*(evecs.transpose());
-	    //            std::cerr<<"regularizing\n";
+            std::cerr<<"regularizing\n";
         }
 
         //        int active_cells = nexNDT.size() + nextNDT_feat.size();
@@ -573,8 +565,22 @@ double lineSearchMTFusion(
             return true;
         }
         pose_increment_v = -Hessian.ldlt().solve(score_gradient);
+        if (pose_increment_v.norm() > 0.2) {
+          pose_increment_v.normalize();
+          pose_increment_v *= 0.2;
+        }
+
         double dginit = pose_increment_v.dot(scg);
-        //std::cout << "dginit : " << dginit << std::endl;
+        std::cerr << "score_here_ndt : " << score_here_ndt << "\t score_here_feat : " << score_here_feat << std::endl;
+        std::cout << "pose_increment_v : " << pose_increment_v.transpose() << std::endl;
+        std::cout << "score_gradient : " << score_gradient.transpose() << std::endl;
+        std::cout << "score_gradient_ndt  : " << score_gradient_ndt.transpose() << std::endl;
+        std::cout << "score_gradient_feat : " << score_gradient_feat.transpose() << std::endl;
+        std::cout << "hessian : " << Hessian << std::endl;
+        std::cout << "Hessian_ndt : " << Hessian_ndt << std::endl;
+        std::cout << "Hessian_feat: " << Hessian_feat << std::endl;
+
+        std::cout << "dginit : " << dginit << std::endl;
         if(dginit > 0)
         {
 	  //	    std::cout<<"incr(:,"<<itr_ctr+1<<") = ["<<pose_increment_v.transpose()<<"]';\n";
@@ -583,7 +589,7 @@ double lineSearchMTFusion(
             //de-alloc nextNDT
 	    if(score_here > score_best) 
 	    {
-	      //		std::cout<<"crap iterations, best was "<<score_best<<" last was "<<score_here<<std::endl;
+              std::cout<<"crap iterations, best was "<<score_best<<" last was "<<score_here<<std::endl;
 		T = Tbest;
 	    }
             for(unsigned int i=0; i<nextNDT.size(); i++)
@@ -600,8 +606,8 @@ double lineSearchMTFusion(
 	    //	    std::cout<<"itr "<<itr_ctr<<" dScore "<< 0 <<std::endl;
             return true;
         }
-	//	std::cout<<"score("<<itr_ctr+1<<") = "<<score_here<<";\n";
-        //        std::cout << "===========================================================" << std::endl;
+        std::cout<<"score("<<itr_ctr+1<<") = "<<score_here<<";\n";
+        std::cout << "===========================================================" << std::endl;
 
 	if(step_control) {
           //std::cout << "step_control: start" << std::endl;
@@ -633,7 +639,7 @@ double lineSearchMTFusion(
 	    step_size = 1;
 	}
         pose_increment_v = step_size*pose_increment_v;
-        ///std::cout<<"\%iteration "<<itr_ctr<<" pose norm "<<(pose_increment_v.norm())<<" score "<<score_here<<" step "<<step_size<<std::endl;
+        std::cout<<"\%iteration "<<itr_ctr<<" pose norm "<<(pose_increment_v.norm())<<" score "<<score_here<<" step "<<step_size<<std::endl;
 
         TR.setIdentity();
         TR =  Eigen::Translation<double,3>(pose_increment_v(0),pose_increment_v(1),pose_increment_v(2))*
@@ -746,7 +752,7 @@ double lineSearchMTFusion(
     
     if(score_here > score_best) 
     {
-      //	std::cout<<"crap iterations, best was "<<score_best<<" last was "<<score_here<<std::endl;
+      std::cout<<"crap iterations, best was "<<score_best<<" last was "<<score_here<<std::endl;
 	T = Tbest;
     }
     for(unsigned int i=0; i<nextNDT.size(); i++)

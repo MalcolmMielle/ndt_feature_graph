@@ -1,6 +1,4 @@
-// Test code to evaluate how laser2d features such as the FLIRT library could paly along with NDT.
-//#include <ndt_fuser.h>
-#include <ndt_fuser/ndt_fuser_hmt.h>
+#include <ndt_fuser/ndt_feature_fuser_hmt.h>
 #include <ros/ros.h>
 
 #include <pcl_conversions/pcl_conversions.h>
@@ -25,9 +23,6 @@
 #include <std_srvs/Empty.h>
 
 #include <ndt_visualisation/ndt_rviz.h>
-
-#include <flirtlib_ros/flirtlib.h>
-#include <flirtlib_ros/conversions.h>
 
 #ifndef SYNC_FRAMES
 #define SYNC_FRAMES 20
@@ -62,6 +57,7 @@ class NDTFuserNode {
 	
 	boost::mutex m, message_m;
 	lslgeneric::NDTFuserHMT<pcl::PointXYZ> *fuser;
+  ndt_feature::NDTFeatureGraph *graph;
 	std::string points_topic, laser_topic, map_dir, map_name, odometry_topic, 
 		    world_frame, fuser_frame, init_pose_frame, gt_topic;
 	double size_x, size_y, size_z, resolution, sensor_range, min_laser_range_;
@@ -83,9 +79,21 @@ class NDTFuserNode {
         ros::Publisher marker_pub_;
 
 	Eigen::Affine3d last_odom, this_odom;
+
+  bool use_graph_;
+  double occ_map_resolution_;
+  bool do_pub_occ_map_;
+  bool do_pub_debug_markers_;
+  bool do_pub_visualization_clouds_;
+  bool skip_features_;
+  std::string tf_odom_frame_;
+  
+  std::ofstream gt_file_;
+  std::ofstream est_file_;
+  
     public:
 	// Constructor
-	NDTFuserNode(ros::NodeHandle param_nh) : nb_added_clouds_(0)
+	NDTFeatureFuser3dNode(ros::NodeHandle param_nh) : nb_added_clouds_(0)
 	{
 	    ///topic to wait for point clouds, if available
 	    param_nh.param<std::string>("points_topic",points_topic,"points");
@@ -176,31 +184,31 @@ class NDTFuserNode {
 		if(useOdometry) {
 		    odom_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh_,odometry_topic,10);
 		    sync_po_ = new message_filters::Synchronizer< PointsOdomSync >(PointsOdomSync(SYNC_FRAMES), *points2_sub_, *odom_sub_);
-		    sync_po_->registerCallback(boost::bind(&NDTFuserNode::points2OdomCallback, this, _1, _2));
+		    sync_po_->registerCallback(boost::bind(&NDTFeature3dFuserNode::points2OdomCallback, this, _1, _2));
 		} else {
-		    points2_sub_->registerCallback(boost::bind( &NDTFuserNode::points2Callback, this, _1));
+		    points2_sub_->registerCallback(boost::bind( &NDTFeature3dFuserNode::points2Callback, this, _1));
 		}
 	    } else {
 		laser_sub_ = new message_filters::Subscriber<sensor_msgs::LaserScan>(nh_,laser_topic,2);
 		if(useOdometry) {
 		    odom_sub_ = new message_filters::Subscriber<nav_msgs::Odometry>(nh_,odometry_topic,10);
 		    sync_lo_ = new message_filters::Synchronizer< LaserOdomSync >(LaserOdomSync(SYNC_FRAMES), *laser_sub_, *odom_sub_);
-		    sync_lo_->registerCallback(boost::bind(&NDTFuserNode::laserOdomCallback, this, _1, _2));
+		    sync_lo_->registerCallback(boost::bind(&NDTFeature3dFuserNode::laserOdomCallback, this, _1, _2));
 
 		} else {
-		    laser_sub_->registerCallback(boost::bind( &NDTFuserNode::laserCallback, this, _1));
+		    laser_sub_->registerCallback(boost::bind( &NDTFeature3dFuserNode::laserCallback, this, _1));
 		}
 	    }
-	    save_map_ = param_nh.advertiseService("save_map", &NDTFuserNode::save_map_callback, this);
+	    save_map_ = param_nh.advertiseService("save_map", &NDTFeature3dFuserNode::save_map_callback, this);
 
 	    if(plotGTTrack) {
-		gt_sub = nh_.subscribe<nav_msgs::Odometry>(gt_topic,10,&NDTFuserNode::gt_callback, this);	
+		gt_sub = nh_.subscribe<nav_msgs::Odometry>(gt_topic,10,&NDTFeature3dFuserNode::gt_callback, this);	
 	    }
 	    initPoseSet = false;
             marker_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 10);
 	}
 
-	~NDTFuserNode()
+	~NDTFeature3dFuserNode()
 	{
 	    delete fuser;
 	}
@@ -423,7 +431,7 @@ int main(int argc, char **argv)
     ros::init(argc, argv, "ndt_feature_test");
 
     ros::NodeHandle param("~");
-    NDTFuserNode t(param);
+    NDTFeature3dFuserNode t(param);
     ros::spin();
 
     return 0;

@@ -44,6 +44,11 @@ public:
     Tlocal_fuse.setIdentity();
   }
 
+  ~NDTFeatureNode() {
+    std::cerr << "FeatureNode Destructor" << std::endl;
+    std::cerr << "FeatureNode Destructor - done" << std::endl;
+  }
+
   NDTFeatureFuserHMT* map;
   Eigen::Affine3d T;
   Eigen::Matrix3d cov;
@@ -85,7 +90,9 @@ return this->pts;
     }
 
     std::string pc_file = fileName + ".pcd";
-    pcl::io::savePCDFileASCII (pc_file, this->pts);
+    if (!this->pts.empty()) {
+      pcl::io::savePCDFileASCII (pc_file, this->pts);
+    }
     return true;
   }
   
@@ -113,7 +120,7 @@ if (!map->load(fileName)) {
 
     if (pcl::io::loadPCDFile<pcl::PointXYZ> (pc_file, this->pts) == -1)
     {
-      return false;
+      //      return false;
     }
     return true;
   }

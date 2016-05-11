@@ -23,16 +23,19 @@ public:
       newNodeTranslDist = 1.;
       storePtsInNodes = false;
       storePtsInNodesIncr = 8;
+      popNodes = false;
     }
     double newNodeTranslDist;
     bool storePtsInNodes;
     int storePtsInNodesIncr;
+    bool popNodes;
     
     friend std::ostream& operator<<(std::ostream &os, const NDTFeatureGraph::Params &obj)
     {
-      os << "\nnewNodeTranslDist : " << obj.newNodeTranslDist << std::endl;
-      os << "\nstorePtsInNodes   : " << obj.storePtsInNodes << std::endl;
-      os << "\nstorePtsInNodesIncr : " << obj.storePtsInNodesIncr << std::endl;
+      os << "\nnewNodeTranslDist  : " << obj.newNodeTranslDist;
+      os << "\nstorePtsInNodes    : " << obj.storePtsInNodes;
+      os << "\nstorePtsInNodesIncr: " << obj.storePtsInNodesIncr;
+      os << "\npopNodes           : " << obj.popNodes;
       return os;
     }
     
@@ -60,11 +63,14 @@ public:
   
   virtual ~NDTFeatureGraph()
   {
-    std::vector<NDTFeatureNode>::iterator it;
-    for (it = nodes_.begin(); it != nodes_.end(); ++it) {
-      delete it->map;
-    }
-    //    std::for_each(nodes_.begin(), nodes_.end(), [](NDTFeatureNode &n){ delete n.map; });
+    std::cerr << "NDTFeatureGraph Destructor" << std::endl;
+     std::vector<NDTFeatureNode>::iterator it;
+     for (it = nodes_.begin(); it != nodes_.end(); ++it) {
+       if (it->map != NULL)
+         delete it->map;
+     }
+     //std::for_each(nodes_.begin(), nodes_.end(), [](NDTFeatureNode &n){ delete n.map; });
+    std::cerr << "NDTFeatureGraph Destructor - done" << std::endl;
   }
   
   
@@ -135,6 +141,10 @@ public:
         new_node.addCloud(Tnow_local_sensor, cloud);
       }
       
+      if (params_.popNodes) {
+        std::cerr << "POP NODES!!!-------------------" << std::endl;
+        nodes_.pop_back();
+      }
       nodes_.push_back(new_node);
       std::cout << "update -> done" << std::endl;
       return Tnow;

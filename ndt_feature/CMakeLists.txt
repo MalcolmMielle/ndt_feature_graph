@@ -8,6 +8,7 @@ find_package(catkin REQUIRED COMPONENTS
   rosconsole 
   ndt_registration 
   ndt_map 
+  ndt_mcl
   laser_geometry 
   sensor_msgs 
   ndt_visualisation 
@@ -43,6 +44,8 @@ add_executable(ndt_feature_node_test src/ndt_feature_node_test.cpp)
 
 add_executable(utils_affine_test src/utils_affine_test.cpp)
 add_executable(ndt_fusion_test src/ndt_fusion_test.cpp)
+add_executable(ndt_memcheck_test src/ndt_memcheck_test.cpp)
+add_executable(ndt_feature_mcl_node src/ndt_feature_mcl_node.cpp)
 
 
 ## System dependencies are found with CMake's conventions
@@ -93,3 +96,7 @@ target_link_libraries(ndt_feature_node_test ${Boost_LIBRARIES} ${catkin_LIBRARIE
 
 target_link_libraries(utils_affine_test  ${Boost_LIBRARIES} ${catkin_LIBRARIES})
 target_link_libraries(ndt_fusion_test ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)
+
+target_link_libraries(ndt_memcheck_test ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)
+
+target_link_libraries(ndt_feature_mcl_node ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)

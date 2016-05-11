@@ -88,6 +88,7 @@ class NDTFeatureFuserHMT{
       allMatchesValid = false;
       discardCells = false;
       optimizeOnlyYaw = false;
+      computeCov = true;
     }
     
     bool checkConsistency;
@@ -118,6 +119,7 @@ class NDTFeatureFuserHMT{
     bool allMatchesValid;
     bool discardCells;
     bool optimizeOnlyYaw;
+    bool computeCov;
   
     friend std::ostream& operator<<(std::ostream &os, const NDTFeatureFuserHMT::Params &obj)
     {
@@ -150,6 +152,7 @@ class NDTFeatureFuserHMT{
       os << "\nallMatchesValid : " << obj.allMatchesValid;
       os << "\ndiscardCells: " << obj.discardCells;
       os << "\noptimizeOnlyYaw: " << obj.optimizeOnlyYaw;
+      os << "\ncomputeCov  : " << obj.computeCov;
       return os;
     }
   };
@@ -172,9 +175,9 @@ class NDTFeatureFuserHMT{
 
     localMapSize<<params.sensor_range+3*params.resolution,params.sensor_range+3*params.resolution,params.map_size_z;
     
-    char fname[1000];
-    snprintf(fname,999,"%s_addTime.txt",params.prefix.c_str());
-    fAddTimes = fopen(fname,"w");
+    // char fname[1000];
+    // snprintf(fname,999,"%s_addTime.txt",params.prefix.c_str());
+    // fAddTimes = fopen(fname,"w");
     
     std::cout<<"MAP: resolution: "<<params.resolution<<" size "<<params.map_size_x<<" "<<params.map_size_y<<" "<<params.map_size_z<<" sr "<<params.sensor_range<<std::endl;
   }
@@ -184,11 +187,15 @@ class NDTFeatureFuserHMT{
 
     ~NDTFeatureFuserHMT()
       {
+        std::cerr << "NDTFeatureFuserHMT Destructor() " << std::endl;
         if (viewer!=NULL) 
           delete viewer;
-	if(fAddTimes!=NULL) fclose(fAddTimes);
-	if(fRegTimes!=NULL) fclose(fRegTimes);
-        delete map;
+	// if(fAddTimes!=NULL) fclose(fAddTimes);
+	// if(fRegTimes!=NULL) fclose(fRegTimes);
+        if (map != NULL) 
+          delete map;
+        
+        std::cerr << "NDTFeatureFuserHMT Destructor() - done " << std::endl;
       }
 
   void setMotionParams(const semrob_generic::MotionModel2d::Params &params) {
@@ -265,6 +272,7 @@ class NDTFeatureFuserHMT{
     return pointcloud_vis;
   }
 
+  
 
     /**
      * Set the initial position and set the first scan to the map
@@ -321,15 +329,32 @@ class NDTFeatureFuserHMT{
       semrob_generic::Pose2d relpose(Tmotion.translation()[0],
                                  Tmotion.translation()[1],
                                  Tmotion.rotation().eulerAngles(0,1,2)[2]);
+
+      ROS_ERROR_STREAM("relpose: " << relpose);
+      
+
       semrob_generic::Pose2dCov relposecov = motion.getPose2dCov(relpose);
+
+      ROS_ERROR_STREAM("relposecov: " << relposecov);
+      
       Eigen::Matrix3d odom_cov = relposecov.cov;
+      odom_cov(2,0) = 0.; odom_cov(2,1) = 0.; odom_cov(0,2) = 0.; odom_cov(1,2) = 0.;
       odom_cov(2,2) = 0.01; // This is the height in the ndt feature vec and not rotational variance.
-      lslgeneric::NDTCell* ndt_odom_cell = new lslgeneric::NDTCell();
-      ndt_odom_cell->setMean(Eigen::Vector3d(0.,0.,0.));
-      ndt_odom_cell->setCov(odom_cov);
-      lslgeneric::NDTCell* ndt_odom_cell_prev = new lslgeneric::NDTCell();
-      ndt_odom_cell_prev->setMean(Tmotion.translation());
-      ndt_odom_cell_prev->setCov(odom_cov);
+      //lslgeneric::NDTCell* ndt_odom_cell = new lslgeneric::NDTCell();
+      //      ndt_odom_cell->setMean(Eigen::Vector3d(0.,0.,0.));
+      //      ndt_odom_cell->setCov(odom_cov);
+      //      lslgeneric::NDTCell* ndt_odom_cell_prev = new lslgeneric::NDTCell();
+      //      ndt_odom_cell_prev->setMean(Tmotion.translation());
+      //      ndt_odom_cell_prev->setCov(odom_cov);
+      lslgeneric::NDTCell ndt_odom_cell;
+      ndt_odom_cell.setMean(Eigen::Vector3d(0.,0.,0.));
+      ndt_odom_cell.setCov(odom_cov);
+      lslgeneric::NDTCell ndt_odom_cell_prev;
+      ndt_odom_cell_prev.setMean(Tmotion.translation());
+      ndt_odom_cell_prev.setCov(odom_cov);
+      
+      ROS_ERROR_STREAM("odom_cov : " << odom_cov);
+
       
 
       Todom = Todom * Tmotion; //we track this only for display purposes!
@@ -351,6 +376,10 @@ class NDTFeatureFuserHMT{
       else {
         Tmotion_est = Tnow*Tmotion;
       }
+
+      //      return Tmotion; ////////////////////////////////////////////////////////////////////// ok!!!!
+
+
       Eigen::Affine3d global_rotation;
       
       double t0=0,t1=0,t2=0,t3=0,t4=0,t5=0,t6=0;
@@ -358,8 +387,9 @@ class NDTFeatureFuserHMT{
       lslgeneric::transformPointCloudInPlace(Tinit_sensor_pose, cloud);  // Cloud -> transformed in to the vehicle origin!
       
       t0 = getDoubleTime();
-      ///Create global map
-      lslgeneric::NDTMap ndglobal(new lslgeneric::LazyGrid(params_.resolution));
+      ///Create global map - TODO update the comments and naming - this is not global....
+      lslgeneric::SpatialIndex* ndglobal_idx = new lslgeneric::LazyGrid(params_.resolution);
+      lslgeneric::NDTMap ndglobal(ndglobal_idx, true);
       
       
       if (params_.loadCentroid) {
@@ -399,6 +429,9 @@ class NDTFeatureFuserHMT{
 
       debug_markers_.push_back(ndt_visualisation::markerNDTCells(ndglobal, 2, "ndglobal"));
 
+      // THIS IS OK!!!
+      ////      return Tmotion; ////////////////////////////////////////////////////////////////////// 
+
       
       t1 = getDoubleTime();
       
@@ -423,18 +456,18 @@ class NDTFeatureFuserHMT{
         Eigen::Affine3d Torigin;
         Torigin.setIdentity();
         tf::poseEigenToMsg(Torigin, prev_pose); // PREV
-        debug_markers_.push_back(ndt_feature::interestPointMarkersFrameId(/*prevPts*/featuremap.getMap(), prev_pose, 1, std::string("/world"))); // ptsPrev in the map coords already...
+        //        debug_markers_.push_back(ndt_feature::interestPointMarkersFrameId(/*prevPts*/featuremap.getMap(), prev_pose, 1, std::string("/world"))); // ptsPrev in the map coords already...
 	
         geometry_msgs::Pose curr_pose;
         tf::poseEigenToMsg(Tinit*sensor_pose, curr_pose); // CURRENT
-        debug_markers_.push_back(ndt_feature::interestPointMarkersFrameId(pts, curr_pose, 0, std::string("/world")));
+        //        debug_markers_.push_back(ndt_feature::interestPointMarkersFrameId(pts, curr_pose, 0, std::string("/world")));
 	
         if (matches.size() > 0) {
           // Seems that the order is off.
-          debug_markers_.push_back(ndt_feature::correspondenceMarkers (matches, 
-                                                                       prev_pose,
-                                                                       curr_pose,
-                                                                       std::string("/world")));
+          //          debug_markers_.push_back(ndt_feature::correspondenceMarkers (matches, 
+          //                                                                       prev_pose,
+          //                                                                       curr_pose,
+          //                                                                       std::string("/world")));
           // Check that this makes sence (not to much difference compared to the odometry...
           //		checkConsistency = true;
           Eigen::Affine3d diff = (Tnow * Tmotion).inverse() * (Tfeat);
@@ -462,18 +495,19 @@ class NDTFeatureFuserHMT{
       }
       
       
-      lslgeneric::NDTMap ndt_feat_prev_sensor_frame(cv_prev_sensor_frame);
-      lslgeneric::NDTMap ndt_feat_curr_sensor_frame(cv_curr_sensor_frame);
+      lslgeneric::NDTMap ndt_feat_prev_sensor_frame(cv_prev_sensor_frame, true);
+      lslgeneric::NDTMap ndt_feat_curr_sensor_frame(cv_curr_sensor_frame, true);
       
       lslgeneric::NDTMap* ndt_feat_prev_vehicle_frame = ndt_feat_prev_sensor_frame.pseudoTransformNDTMap(sensor_pose);
       // The current frame is always in vehicle frame (to be moved Tinit in registration)-
       lslgeneric::NDTMap* ndt_feat_curr_vehicle_frame = ndt_feat_curr_sensor_frame.pseudoTransformNDTMap(sensor_pose);
       
+
       if (params_.useOdom) {
         // Add odometry (if enabled last)
-        //ROS_ERROR_STREAM("adding odometry...");
-        addNDTCellToMap(ndt_feat_prev_vehicle_frame, ndt_odom_cell_prev);
-        addNDTCellToMap(ndt_feat_curr_vehicle_frame, ndt_odom_cell);
+        ROS_ERROR_STREAM("adding odometry...");
+        addNDTCellToMap(ndt_feat_prev_vehicle_frame, &ndt_odom_cell_prev);
+        addNDTCellToMap(ndt_feat_curr_vehicle_frame, &ndt_odom_cell);
         int tmp_size = corr.size(); 
         corr.push_back(std::pair<int,int>(tmp_size, tmp_size));
       }
@@ -481,11 +515,18 @@ class NDTFeatureFuserHMT{
 
       lslgeneric::NDTMap* ndt_feat_prev = ndt_feat_prev_vehicle_frame->pseudoTransformNDTMap(Tnow/**Tmotion*/);
       lslgeneric::NDTMap* ndt_feat_curr = ndt_feat_curr_vehicle_frame->pseudoTransformNDTMap(Tinit);
+
+      // Remove the covariance rotation from the odometry (done when pseudo moving)...
+      if (params_.useOdom) {
+        lslgeneric::CellVector *cl = dynamic_cast<lslgeneric::CellVector*>(ndt_feat_curr->getMyIndex());
+        ROS_ERROR_STREAM(" cl->size() : " << cl->size());
+        std::cerr << "cl->getCellIdx(cl->size()-1)->getCov() : " << cl->getCellIdx(cl->size()-1)->getCov() << std::endl;
+        cl->getCellIdx(cl->size()-1)->setCov(odom_cov);
+        std::cerr << "cl->getCellIdx(cl->size()-1)->getCov() :.. " << cl->getCellIdx(cl->size()-1)->getCov() << std::endl;
+      }
       
-      //            ROS_ERROR_STREAM("corr.size() : " << corr.size());
-      
-      debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndt_feat_curr, 3, "feat_curr"));
       debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndt_feat_prev, 2, "feat_prev"));
+      debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndt_feat_curr, 3, "feat_curr"));
       
 
       t2 = getDoubleTime();
@@ -505,14 +546,46 @@ class NDTFeatureFuserHMT{
         match_ok = lslgeneric::matchFusion(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE, params_.optimizeOnlyYaw) || params_.fuseIncomplete;
       }
 
-      // std::cout << "match_ok : " << match_ok << std::endl;
+      std::cout << "match_ok : " << match_ok << std::endl;
       if (params_.allMatchesValid) {
         match_ok = true;
       }
 
+      std::cout << "Tmotion_est : \n" << std::endl;
+      lslgeneric::printTransf(Tmotion_est);
+
+      //-------------------------------------------------------
+      // {
+      // std::cout << "Tmotion_est : ";
+      // lslgeneric::printTransf2d(Tmotion_est);
+      // Tnow = Tmotion_est;
+      // Eigen::Affine3d spose = Tnow*sensor_pose;
+      // lslgeneric::transformPointCloudInPlace(spose, cloud_orig);
+      // //	    map->addPointCloudMeanUpdate(spose.translation(),cloud,localMapSize, 1e5, 1250, map_size_z/2, 0.06);
+      
+      // if (updateNDTMap) {
+      
+      
+      //   map->addPointCloud(spose.translation(),cloud_orig, 0.06, 25); // Here, keep the raw cloud and add it here! TODO - check the influence here...
+      //   map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, spose.translation(), 0.1);
+      // }
+      // }
+
+      // delete ndt_feat_prev_vehicle_frame;
+      // delete ndt_feat_curr_vehicle_frame;
+      // delete ndt_feat_prev;
+      // delete ndt_feat_curr;
+
+
+      // return Tnow; ///////////////////////////////////////////// OK
+
+      //------------------------------------------------------
+
+
       if (match_ok) {
 
         // Recompute the covariance (based on the matching...)
+        if (params_.computeCov)
         {
           lslgeneric::NDTMatcherD2D matcher_d2d;
             Eigen::MatrixXd matching_cov(6,6);
@@ -521,19 +594,12 @@ class NDTFeatureFuserHMT{
             posecov.mean = semrob_generic::pose2dFromAffine3d(Tmotion_est);
             posecov.cov = semrob_generic::cov6toCov3(matching_cov);
             lslgeneric::printTransf2d(Tmotion_est);
-            //std::cout << "matching_cov : " << matching_cov << std::endl;
             semrob_generic::pose2dClearDependence(posecov);
-            //std::cout << "posecov : " << posecov << std::endl;
-            debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(posecov.mean, posecov.cov, 100., 1, -1));
-
+            //            debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(posecov.mean, posecov.cov, 100., 1, -1));
             current_posecov.mean = semrob_generic::pose2dFromAffine3d(Tmotion_est);
             Eigen::Matrix3d prev_cov = current_posecov.cov;
             current_posecov.cov = prev_cov+posecov.cov; // Only works if the registration is done from local frame to global that is that Tmotion holds the complete motion and the covariance estimate is only the local one.
-            //std::cout << "current_posecov : " << current_posecov << std::endl;
-            debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(current_posecov.mean, current_posecov.cov, 1., 2, 0));
-
-            //std::cout << "relposecov : " << relposecov << std::endl;
-            
+            //            debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(current_posecov.mean, current_posecov.cov, 1., 2, 0));
         }
 
 
@@ -542,6 +608,7 @@ class NDTFeatureFuserHMT{
         if (!params_.globalTransf) { // Plot the nd maps in global frame...
           lslgeneric::NDTMap* ndglobal_matched = ndglobal.pseudoTransformNDTMap(Tmotion_est);
           debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndglobal_matched, 2, "ndglobal_matched"));
+          delete ndglobal_matched;
         }
         // Update the motion estimation with the orientation
 
@@ -568,36 +635,16 @@ class NDTFeatureFuserHMT{
                 Tnow = Tmotion_est;
             }
           }
-          //			lslgeneric::transformPointCloudInPlace(Tnow, cloud);
+
           Eigen::Affine3d diff_fuse = Tlast_fuse.inverse()*Tnow;
           if(diff_fuse.translation().norm() > translation_fuse_delta ||
              diff_fuse.rotation().eulerAngles(0,1,2).norm() > rotation_fuse_delta)
           {
-            //std::cout<<"F: "<<spose.translation().transpose()<<" "<<spose.rotation().eulerAngles(0,1,2).transpose()<<std::endl;
             t4 = getDoubleTime();
-            //map->addPointCloudMeanUpdate(spose.translation(),cloud,localMapSize, 1e5, 25, 2*map_size_z, 0.06);
-            //map->addPointCloud(spose.translation(),cloud, 0.06, 25);
-            //map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, spose.translation(), 0.1);
-            //t4 = getDoubleTime();
-            //std::cout<<"match: "<<t3-t2<<" addPointCloud: "<<t5-t4<<" ndlocal "<<t1-t0<<" total: "<<t5-t0<<std::endl;
-            
-            debug_markers_.push_back(ndt_visualisation::markerNDTCells(*map, 1));
+            //            debug_markers_.push_back(ndt_visualisation::markerNDTCells(*map, 1));
             
             
             Tlast_fuse = Tnow;
-            if(visualize) //&&ctr%20==0) 
-            {
-              if(ctr%20==0) {
-                viewer->plotNDTSAccordingToOccupancy(-1,map);
-                viewer->plotLocalNDTMap(cloud,params_.resolution);
-              }
-              viewer->addTrajectoryPoint(Tnow.translation()(0),Tnow.translation()(1),Tnow.translation()(2),1,0,0);
-              viewer->addTrajectoryPoint(Todom.translation()(0),Todom.translation()(1),Todom.translation()(2),0,1,0);
-              viewer->displayTrajectory();
-              viewer->setCameraPointing(Tnow.translation()(0),Tnow.translation()(1),Tnow.translation()(2)+3);
-              viewer->repaint();
-            }
-            ctr++;
           }
         }
       }else{
@@ -620,10 +667,11 @@ class NDTFeatureFuserHMT{
       t5 = getDoubleTime();
       
 
-      if (params_.visualizeLocalCloud)
-        pointcloud_vis = cloud;
-      else
-        pointcloud_vis = cloud_orig;
+      ////////////////////////////////////////////////////////////////////////////////
+      // if (params_.visualizeLocalCloud)
+      //   pointcloud_vis = cloud;
+      // else
+      //   pointcloud_vis = cloud_orig;
       
       ptsPrev = pts;
       // Move the features to the current pose (Tnow)
@@ -631,8 +679,16 @@ class NDTFeatureFuserHMT{
         ndt_feature::moveInterestPointVec(Tnow*sensor_pose, ptsPrev);
         featuremap.update(ptsPrev);
       }
+
+
+
+      delete ndt_feat_prev_vehicle_frame;
+      delete ndt_feat_curr_vehicle_frame;
+      delete ndt_feat_prev;
+      delete ndt_feat_curr;
+
       return Tnow;
-    }
+  }
 
   NDTFeatureMap& getFeatureMap() {
     return featuremap;
@@ -641,7 +697,6 @@ class NDTFeatureFuserHMT{
   const NDTFeatureMap& getFeatureMap() const {
     return featuremap;
   }
-
 
   private:
     bool isInit;

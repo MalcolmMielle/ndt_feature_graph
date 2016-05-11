@@ -33,6 +33,7 @@
   <!-- Dependencies needed to compile this package. -->
   <build_depend>ndt_registration</build_depend>
   <build_depend>ndt_map</build_depend>
+  <build_depend>ndt_mcl</build_depend>
   <build_depend>laser_geometry</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_srvs</build_depend>
@@ -48,6 +49,7 @@
   <!-- Dependencies needed after this package is compiled. -->
   <run_depend>ndt_registration</run_depend>
   <run_depend>ndt_map</run_depend>
+  <run_depend>ndt_mcl</run_depend>
   <run_depend>laser_geometry</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_srvs</run_depend>

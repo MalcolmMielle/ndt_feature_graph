@@ -68,6 +68,7 @@ class NDTFeatureFuserNode {
 	tf::TransformBroadcaster tf_;
 	ros::Publisher pointcloud_pub_;
   ros::Publisher pointcloud2_pub_;
+  ros::Publisher fuser_odom_pub_, fuser_pub_;
 	Eigen::Affine3d pose_, T, sensor_pose_;
 
         tf::TransformListener listener;
@@ -107,7 +108,7 @@ class NDTFeatureFuserNode {
   ros::Publisher map_pub_;
 
 
-	Eigen::Affine3d last_odom, this_odom;
+  Eigen::Affine3d last_odom, this_odom, Todom;
 
     // Flirtlib
     boost::shared_ptr<SimpleMinMaxPeakFinder> peak_finder_;
@@ -120,11 +121,21 @@ class NDTFeatureFuserNode {
   bool do_pub_occ_map_;
   bool do_pub_debug_markers_;
   bool do_pub_visualization_clouds_;
+  bool do_pub_ndtmap_marker_;
   bool skip_features_;
   std::string tf_odom_frame_;
 
   std::ofstream gt_file_;
   std::ofstream est_file_;
+
+  int scan_counter_;
+  int drop_scan_nb_;
+
+  // Separate thread for publishing visualization markers.
+  ros::Timer heartbeat_slow_visualization_;
+  ros::Time frameTime_;
+  
+  int seq_odom_fuser_;
 
 public:
 	// Constructor
@@ -134,7 +145,7 @@ public:
         detector_(ndt_feature::createDetector(peak_finder_.get())),
         descriptor_(ndt_feature::createDescriptor(histogram_dist_.get()))
 	{
-
+          seq_odom_fuser_ = 0;
 	    ///topic to wait for point clouds, if available
 	    param_nh.param<std::string>("points_topic",points_topic,"points");
 	    ///topic to wait for laser scan messages, if available
@@ -227,6 +238,7 @@ public:
             param_nh.param<bool>("fuser_allMatchesValid", fuser_params.allMatchesValid, false);
             param_nh.param<bool>("fuser_discardCells", fuser_params.discardCells, false);
             param_nh.param<bool>("fuser_optimizeOnlyYaw", fuser_params.optimizeOnlyYaw, false);
+            param_nh.param<bool>("fuser_computeCov", fuser_params.computeCov, true);
 
             param_nh.param<bool>("use_graph", use_graph_, false);
             
@@ -234,11 +246,16 @@ public:
             param_nh.param<double>("graph_newNodeTranslDist", graph_params.newNodeTranslDist, 10.);
             param_nh.param<bool>("graph_storePtsInNodes", graph_params.storePtsInNodes, true);
             param_nh.param<int>("graph_storePtsInNodesIncr", graph_params.storePtsInNodesIncr, 2);
+            param_nh.param<bool>("graph_popNodes", graph_params.popNodes, false);
 
             param_nh.param<double>("occ_map_resolution", occ_map_resolution_, 1.);
             param_nh.param<bool>("do_pub_occ_map", do_pub_occ_map_, false);
             param_nh.param<bool>("do_pub_debug_markers", do_pub_debug_markers_, true);
             param_nh.param<bool>("do_pub_visualization_clouds", do_pub_visualization_clouds_, true);
+            param_nh.param<bool>("do_pub_ndtmap_marker", do_pub_ndtmap_marker_, true);
+            scan_counter_ = 0;
+            param_nh.param<int>("drop_scan_nb", drop_scan_nb_, 0);
+
 
             param_nh.param<std::string>("tf_odom_frame", tf_odom_frame_,  "/odom_base_link");
 
@@ -267,6 +284,7 @@ public:
               ROS_ERROR_STREAM("Failed to open : " << gt_file_ << " || " << est_file_); 
             }
 
+            
             offline = false;
             if (offline_nb_readings > 0)
                 offline = true;
@@ -301,6 +319,7 @@ public:
 
             if (use_graph_) {
               
+              std::cout << "graph_params: " << graph_params << std::endl;
               graph = new ndt_feature::NDTFeatureGraph(graph_params, fuser_params);
               std::cout << "graph created" << std::endl;
               graph->setSensorPose(sensor_pose_);
@@ -338,10 +357,15 @@ public:
 		gt_sub = nh_.subscribe<nav_msgs::Odometry>(gt_topic,10,&NDTFeatureFuserNode::gt_callback, this);	
 	    }
 	    initPoseSet = false;
-            marker_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1000);
+            marker_pub_ = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 3);
             map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("map", 1000);
-            pointcloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("offline_map", 1000);
-            pointcloud2_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 1000);
+            pointcloud_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("offline_map", 10);
+            pointcloud2_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 10);
+            fuser_pub_ = nh_.advertise<nav_msgs::Odometry>("fuser_est", 10);
+            fuser_odom_pub_ = nh_.advertise<nav_msgs::Odometry>("fuser_odom", 10);
+
+            heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(1.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
+            
         }
 
 	~NDTFeatureFuserNode()
@@ -353,9 +377,61 @@ public:
           delete fuser;
 	}
 
+  void publish_visualization_slow(const ros::TimerEvent &event) {
+            // Add some drawing
+            if (use_graph_) 
+            {
+              if (graph->wasInit()) {
+
+                if (do_pub_debug_markers_) {
+                  // Draw the debug stuff...
+                  ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
+                  for (size_t i = 0; i < f->debug_markers_.size(); i++) {
+                    f->debug_markers_[i].header.stamp = frameTime_;
+                    marker_pub_.publish(f->debug_markers_[i]);
+                  }
+                }
+                if (do_pub_ndtmap_marker_)
+                {
+                  // visualization_msgs::Marker markers_ndt;
+                  // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
+                  //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
+                  // marker_pub_.publish(markers_ndt);
+                  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_glboal_map_last"));
+
+                }
+                if (do_pub_occ_map_) {
+                  nav_msgs::OccupancyGrid omap;
+                  lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
+                  moveOccupancyMap(omap, graph->getT());
+                  map_pub_.publish(omap);
+                }
+              }
+            }
+            else {
+              if (fuser->wasInit()) {
+                
+                if (do_pub_debug_markers_) {
+                  for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
+                    fuser->debug_markers_[i].header.stamp = frameTime_;
+                    marker_pub_.publish(fuser->debug_markers_[i]);
+                  }
+                }
+                if (do_pub_occ_map_) {
+                  nav_msgs::OccupancyGrid omap;
+                  lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, world_frame);
+                  map_pub_.publish(omap);
+                }
+              }
+            }
+
+  }
+
     
     void processFeatureFrame(pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts, Eigen::Affine3d Tmotion, const ros::Time &frameTime) {
         m.lock();
+        
+        frameTime_ = frameTime;
 	    if (nb_added_clouds_  == 0)
 	    {
 		ROS_INFO("initializing fuser map. Init pose from GT? %d, TF? %d", initPoseFromGT, initPoseFromTF);
@@ -384,6 +460,7 @@ public:
                 else {
                   pose_ = fuser->update(Tmotion,cloud,pts);
                 }
+                Todom = Todom*Tmotion;
 	    }
 	    m.unlock();
 
@@ -400,43 +477,26 @@ public:
 	    tf::TransformEigenToTF(pose_, transform);
 #endif
 	    tf_.sendTransform(tf::StampedTransform(transform, frameTime, world_frame, fuser_frame));
-
-            // Add some drawing
-            if (use_graph_) 
             {
-              if (graph->wasInit()) {
-
-                // Draw the debug stuff...
-                ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
-                for (size_t i = 0; i < f->debug_markers_.size(); i++) {
-                  f->debug_markers_[i].header.stamp = frameTime;
-                  marker_pub_.publish(f->debug_markers_[i]);
-                }
-
-                if (do_pub_occ_map_) {
-                  nav_msgs::OccupancyGrid omap;
-                  lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
-                  moveOccupancyMap(omap, graph->getT());
-                  map_pub_.publish(omap);
-                }
-              }
+              nav_msgs::Odometry odom;
+              tf::poseEigenToMsg(pose_, odom.pose.pose);
+              odom.header.stamp = frameTime;
+              odom.header.frame_id = "world";
+              odom.header.seq = seq_odom_fuser_++;
+              odom.child_frame_id = "fuser";
+              fuser_pub_.publish(odom);
             }
-            else {
-              if (fuser->wasInit()) {
-                
-                if (do_pub_debug_markers_) {
-                  for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
-                    fuser->debug_markers_[i].header.stamp = frameTime;
-                    marker_pub_.publish(fuser->debug_markers_[i]);
-                  }
-                }
-                if (do_pub_occ_map_) {
-                  nav_msgs::OccupancyGrid omap;
-                  lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, world_frame);
-                  map_pub_.publish(omap);
-                }
-              }
+            {
+              nav_msgs::Odometry odom;
+              tf::poseEigenToMsg(Todom, odom.pose.pose);
+              odom.header.stamp = frameTime;
+              odom.header.frame_id = "world";
+              odom.header.seq = seq_odom_fuser_++;
+              odom.child_frame_id = "fuser_odom";
+              fuser_odom_pub_.publish(odom);
             }
+
+
     }
 
 
@@ -462,15 +522,101 @@ public:
 	// Callback
 	void points2Callback(const sensor_msgs::PointCloud2::ConstPtr& msg_in)
 	{
-            assert(false);
+          ROS_INFO(":.");
+          scan_counter_++;
+          if (drop_scan_nb_ > 1) {
+            if (scan_counter_ % drop_scan_nb_ == 0) {
+              scan_counter_ = 0;
+              return;
+            }
+          }
 
+          pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+          Eigen::Affine3d Tm;
+          Eigen::Affine3d Tgt;
+          ros::Time frame_time = msg_in->header.stamp;
+
+          //            assert(false);
+          // The odometry that should be provided is in vehicle coordinates
+          {
+            tf::StampedTransform transform;
+            try {   
+              listener.waitForTransform(world_frame, tf_odom_frame_,
+                                        frame_time, ros::Duration(3.0));
+              listener.lookupTransform(world_frame, tf_odom_frame_,
+                                       frame_time, transform);
+              
+            }
+            catch (tf::TransformException ex){
+              ROS_ERROR("%s",ex.what());
+              return;
+            }
+            tf::transformTFToEigen( transform, this_odom);
+          }
+          
+          if (nb_added_clouds_  == 0)
+          {
+            Tm.setIdentity();
+          } else {
+            Tm = last_odom.inverse()*this_odom;
+            
+            if (Tm.translation().norm() < min_incr_dist /*0.02*/ && Tm.rotation().eulerAngles(0,1,2).norm() < min_incr_rot/*0.02*/) {
+              message_m.unlock();
+              return;
+            }
+          }
+          last_odom = this_odom;
+
+
+          {            
+            InterestPointVec pts;
+            pcl::fromROSMsg (*msg_in, pcl_cloud);
+            this->processFeatureFrame(pcl_cloud,pts, Tm, frame_time);
+          }
+          ROS_INFO("_");
 	};
 	
 	// Callback
-	void points2OdomCallback(const sensor_msgs::PointCloud2::ConstPtr& msg_in,
-		  const nav_msgs::Odometry::ConstPtr& odo_in)
-	{
-            assert(false);
+  void points2OdomCallback(const sensor_msgs::PointCloud2::ConstPtr& msg_in,
+                                 const nav_msgs::Odometry::ConstPtr& odo_in)
+  {
+          ROS_INFO(":.");
+          // Used for the Volvo bags (the TF there are using the GPS)
+          Eigen::Quaterniond qd;
+          sensor_msgs::PointCloud2 cloud;
+          pcl::PointCloud<pcl::PointXYZ> pcl_cloud;
+          Eigen::Affine3d Tm;
+          ros::Time frame_time = msg_in->header.stamp;
+          
+          message_m.lock();
+          qd.x() = odo_in->pose.pose.orientation.x;
+          qd.y() = odo_in->pose.pose.orientation.y;
+          qd.z() = odo_in->pose.pose.orientation.z;
+          qd.w() = odo_in->pose.pose.orientation.w;
+	  
+          this_odom = Eigen::Translation3d (odo_in->pose.pose.position.x,
+                                            odo_in->pose.pose.position.y,odo_in->pose.pose.position.z) * qd;
+
+	    if (nb_added_clouds_  == 0)
+	    {
+		Tm.setIdentity();
+	    } else {
+		Tm = last_odom.inverse()*this_odom;
+                if (Tm.translation().norm() < min_incr_dist /*0.02*/ && Tm.rotation().eulerAngles(0,1,2).norm() < min_incr_rot/*0.02*/) {
+                  message_m.unlock();
+                  return;
+		}
+	    }
+	    last_odom = this_odom;
+            { 
+              InterestPointVec pts;
+              pcl::fromROSMsg (*msg_in, pcl_cloud);
+
+              this->processFeatureFrame(pcl_cloud,pts, Tm, frame_time);
+            }
+            
+            message_m.unlock();
+            
         };
 	
 	// Callback
@@ -720,10 +866,15 @@ public:
 		    msg_in->pose.pose.position.y,msg_in->pose.pose.position.z) * qd;
 	     
 	    //ROS_INFO("got GT pose from GT track");
+            if (gt_file_.is_open()) {
+              gt_file_ << msg_in->header.stamp << " " << lslgeneric::transformToEvalString(gt_pose);
+            }
+
 	    m.lock();
 	    if(initPoseFromGT && !initPoseSet) {
 		initPoseSet = true;
 		pose_ = gt_pose;
+                Todom = pose_;
 		ROS_INFO("Set initial pose from GT track");
                 lslgeneric::printTransf2d(pose_);
             }
