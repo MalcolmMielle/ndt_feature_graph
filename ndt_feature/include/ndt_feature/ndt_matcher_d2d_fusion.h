@@ -416,7 +416,7 @@ double lineSearchMTFusion(
 		    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T ,
 		    bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4, bool optimizeOnlyYaw = false, bool step_control_fusion = true)
 {
-  std::cerr << "matchFusion()" << " useNDT : " << useNDT << " useFeat : " << useFeat << " step_control : " << step_control << " corr_feat.size() : " << corr_feat.size() << std::endl;
+  //  std::cerr << "matchFusion()" << " useNDT : " << useNDT << " useFeat : " << useFeat << " step_control : " << step_control << " corr_feat.size() : " << corr_feat.size() << std::endl;
 
   // Combines two different NDT maps at once. One which holds NDT derrived from features with known correspondance (obtained earlier through RANSAC or similar) with two standard NDT maps (target could very well be obtained from the fuser).
   
@@ -496,7 +496,7 @@ double lineSearchMTFusion(
 	{
 	    Tbest = T;
 	    score_best = score_here;
-	    std::cout<<"best score "<<score_best<<" at "<<itr_ctr<<std::endl;
+	    //+std::cout<<"best score "<<score_best<<" at "<<itr_ctr<<std::endl;
 	}
 
         //		std::cout<<"T translation "<<T.translation().transpose()
@@ -571,16 +571,16 @@ double lineSearchMTFusion(
         }
 
         double dginit = pose_increment_v.dot(scg);
-        std::cerr << "score_here_ndt : " << score_here_ndt << "\t score_here_feat : " << score_here_feat << std::endl;
-        std::cout << "pose_increment_v : " << pose_increment_v.transpose() << std::endl;
-        std::cout << "score_gradient : " << score_gradient.transpose() << std::endl;
-        std::cout << "score_gradient_ndt  : " << score_gradient_ndt.transpose() << std::endl;
-        std::cout << "score_gradient_feat : " << score_gradient_feat.transpose() << std::endl;
-        std::cout << "hessian : " << Hessian << std::endl;
-        std::cout << "Hessian_ndt : " << Hessian_ndt << std::endl;
-        std::cout << "Hessian_feat: " << Hessian_feat << std::endl;
+        // std::cerr << "score_here_ndt : " << score_here_ndt << "\t score_here_feat : " << score_here_feat << std::endl;
+        // std::cout << "pose_increment_v : " << pose_increment_v.transpose() << std::endl;
+        // std::cout << "score_gradient : " << score_gradient.transpose() << std::endl;
+        // std::cout << "score_gradient_ndt  : " << score_gradient_ndt.transpose() << std::endl;
+        // std::cout << "score_gradient_feat : " << score_gradient_feat.transpose() << std::endl;
+        // std::cout << "hessian : " << Hessian << std::endl;
+        // std::cout << "Hessian_ndt : " << Hessian_ndt << std::endl;
+        // std::cout << "Hessian_feat: " << Hessian_feat << std::endl;
 
-        std::cout << "dginit : " << dginit << std::endl;
+        // std::cout << "dginit : " << dginit << std::endl;
         if(dginit > 0)
         {
 	  //	    std::cout<<"incr(:,"<<itr_ctr+1<<") = ["<<pose_increment_v.transpose()<<"]';\n";
@@ -606,8 +606,8 @@ double lineSearchMTFusion(
 	    //	    std::cout<<"itr "<<itr_ctr<<" dScore "<< 0 <<std::endl;
             return true;
         }
-        std::cout<<"score("<<itr_ctr+1<<") = "<<score_here<<";\n";
-        std::cout << "===========================================================" << std::endl;
+        //+ std::cout<<"score("<<itr_ctr+1<<") = "<<score_here<<";\n";
+        //+ std::cout << "===========================================================" << std::endl;
 
 	if(step_control) {
           //std::cout << "step_control: start" << std::endl;

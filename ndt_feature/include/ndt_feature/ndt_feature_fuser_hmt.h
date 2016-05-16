@@ -330,12 +330,12 @@ class NDTFeatureFuserHMT{
                                  Tmotion.translation()[1],
                                  Tmotion.rotation().eulerAngles(0,1,2)[2]);
 
-      ROS_ERROR_STREAM("relpose: " << relpose);
+      //      ROS_ERROR_STREAM("relpose: " << relpose);
       
 
       semrob_generic::Pose2dCov relposecov = motion.getPose2dCov(relpose);
 
-      ROS_ERROR_STREAM("relposecov: " << relposecov);
+      //ROS_ERROR_STREAM("relposecov: " << relposecov);
       
       Eigen::Matrix3d odom_cov = relposecov.cov;
       odom_cov(2,0) = 0.; odom_cov(2,1) = 0.; odom_cov(0,2) = 0.; odom_cov(1,2) = 0.;
@@ -353,7 +353,7 @@ class NDTFeatureFuserHMT{
       ndt_odom_cell_prev.setMean(Tmotion.translation());
       ndt_odom_cell_prev.setCov(odom_cov);
       
-      ROS_ERROR_STREAM("odom_cov : " << odom_cov);
+      //      ROS_ERROR_STREAM("odom_cov : " << odom_cov);
 
       
 
@@ -505,7 +505,7 @@ class NDTFeatureFuserHMT{
 
       if (params_.useOdom) {
         // Add odometry (if enabled last)
-        ROS_ERROR_STREAM("adding odometry...");
+        //ROS_INFO_STREAM("adding odometry...");
         addNDTCellToMap(ndt_feat_prev_vehicle_frame, &ndt_odom_cell_prev);
         addNDTCellToMap(ndt_feat_curr_vehicle_frame, &ndt_odom_cell);
         int tmp_size = corr.size(); 
@@ -519,10 +519,10 @@ class NDTFeatureFuserHMT{
       // Remove the covariance rotation from the odometry (done when pseudo moving)...
       if (params_.useOdom) {
         lslgeneric::CellVector *cl = dynamic_cast<lslgeneric::CellVector*>(ndt_feat_curr->getMyIndex());
-        ROS_ERROR_STREAM(" cl->size() : " << cl->size());
-        std::cerr << "cl->getCellIdx(cl->size()-1)->getCov() : " << cl->getCellIdx(cl->size()-1)->getCov() << std::endl;
+        //ROS_ERROR_STREAM(" cl->size() : " << cl->size());
+        //std::cerr << "cl->getCellIdx(cl->size()-1)->getCov() : " << cl->getCellIdx(cl->size()-1)->getCov() << std::endl;
         cl->getCellIdx(cl->size()-1)->setCov(odom_cov);
-        std::cerr << "cl->getCellIdx(cl->size()-1)->getCov() :.. " << cl->getCellIdx(cl->size()-1)->getCov() << std::endl;
+        //std::cerr << "cl->getCellIdx(cl->size()-1)->getCov() :.. " << cl->getCellIdx(cl->size()-1)->getCov() << std::endl;
       }
       
       debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndt_feat_prev, 2, "feat_prev"));
@@ -546,7 +546,7 @@ class NDTFeatureFuserHMT{
         match_ok = lslgeneric::matchFusion(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE, params_.optimizeOnlyYaw) || params_.fuseIncomplete;
       }
 
-      std::cout << "match_ok : " << match_ok << std::endl;
+      //      std::cout << "match_ok : " << match_ok << std::endl;
       if (params_.allMatchesValid) {
         match_ok = true;
       }

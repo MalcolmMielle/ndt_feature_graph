@@ -253,6 +253,7 @@ public:
             param_nh.param<bool>("do_pub_debug_markers", do_pub_debug_markers_, true);
             param_nh.param<bool>("do_pub_visualization_clouds", do_pub_visualization_clouds_, true);
             param_nh.param<bool>("do_pub_ndtmap_marker", do_pub_ndtmap_marker_, true);
+            
             scan_counter_ = 0;
             param_nh.param<int>("drop_scan_nb", drop_scan_nb_, 0);
 
@@ -364,7 +365,7 @@ public:
             fuser_pub_ = nh_.advertise<nav_msgs::Odometry>("fuser_est", 10);
             fuser_odom_pub_ = nh_.advertise<nav_msgs::Odometry>("fuser_odom", 10);
 
-            heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(1.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
+            heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(4.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
             
         }
 
@@ -397,7 +398,7 @@ public:
                   // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
                   //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
                   // marker_pub_.publish(markers_ndt);
-                  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_glboal_map_last"));
+                  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
 
                 }
                 if (do_pub_occ_map_) {
@@ -416,6 +417,10 @@ public:
                     fuser->debug_markers_[i].header.stamp = frameTime_;
                     marker_pub_.publish(fuser->debug_markers_[i]);
                   }
+                }
+                if (do_pub_ndtmap_marker_) {
+                  Eigen::Affine3d p; p.setIdentity();
+                  marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1, "nd_global_map"));
                 }
                 if (do_pub_occ_map_) {
                   nav_msgs::OccupancyGrid omap;

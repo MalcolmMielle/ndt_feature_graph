@@ -146,9 +146,7 @@ void printTransf2d(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor
 void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
   CellVector* idx = dynamic_cast<CellVector*> (map->getMyIndex());
   if (idx != NULL) {
-    std::cerr << "cell->getCov() : " << cell->getCov() << std::endl;
     NDTCell* nd = (NDTCell*)cell->copy();
-    std::cerr << "nd->getCov() : " << nd->getCov() << std::endl;
 
     idx->addNDTCell(nd);
   }

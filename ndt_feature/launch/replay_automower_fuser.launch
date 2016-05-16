@@ -25,7 +25,6 @@
 	<param name="sensor_range" value="29." />
 	<param name="min_laser_range" value="0.5" />
 	
-	<!-- Specific sensor offset parameters for the example file S3000 survey -->
 	<param name="sensor_pose_x" value="0.016" />
 	<param name="sensor_pose_y" value="0.003" />
 	<param name="sensor_pose_t" value="0.009" />
@@ -49,7 +48,7 @@
 	
 	<param name="fuser_useNDT" value="true" />
 	<param name="fuser_useFeat" value="false" />
-	<param name="fuser_useOdom" value="false" />
+	<param name="fuser_useOdom" value="true" />
 	<param name="fuser_neighbours" value="1" />
 	<param name="fuser_stepcontrol" value="true" />
 	<param name="fuser_ITR_MAX" value="100" />
@@ -71,7 +70,10 @@
 
 	<param name="occ_map_resolution" value="0.2" />
 	<param name="do_pub_occ_map" value="true" />
-
+	<param name="do_pub_visualization_clouds" value="false"/>
+	<param name="do_pub_ndtmap_marker" value="true"/>
+	<param name="do_pub_debug_markers" value="false"/>
+	<param name="do_pub_visualization_clouds" value="false"/>
 	<!-- fusion2d bool -->
     </node>
 
@@ -80,7 +82,7 @@
     <!-- TF tree from automower contains odom as a world ref -->
     <node pkg="tf" type="static_transform_publisher" name="world_odom_frame" args="0 0 0 0 0 0 /world /odom 10"/>
 
-    <node pkg="tf" type="static_transform_publisher" name="world_map_frame" args="0 0 0 0 0 0 /world /map 10"/>
+    <node pkg="tf" type="static_transform_publisher" name="world_map_frame" args="0 0 0 0 0 0 /odom /map 10"/>
 
 
     <!--node pkg="tf" type="static_transform_publisher" name="laser_scan_frame" args="0 0 0 0 0 0 /base_laser_link /laserscan 10"/>  
