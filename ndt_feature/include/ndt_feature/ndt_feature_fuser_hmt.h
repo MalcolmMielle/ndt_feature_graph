@@ -121,6 +121,12 @@ class NDTFeatureFuserHMT{
     bool optimizeOnlyYaw;
     bool computeCov;
   
+    std::string getDescString() const {
+      std::ostringstream os;
+      os << "useNDT" << useNDT << "useFeat" << useFeat << "useOdom" << useOdom << "loadCentroid" << loadCentroid << "discardCells" << discardCells << "neighbours" << neighbours;
+      return os.str();
+    }
+    
     friend std::ostream& operator<<(std::ostream &os, const NDTFeatureFuserHMT::Params &obj)
     {
       os << "\nresolution           : " << obj.resolution;
@@ -278,6 +284,7 @@ class NDTFeatureFuserHMT{
      * Set the initial position and set the first scan to the map
      */
   void initialize(Eigen::Affine3d initPos, const pcl::PointCloud<pcl::PointXYZ> &cloudOrig, const InterestPointVec& pts, bool preLoad=false){
+
       ///Set the cloud to sensor frame with respect to base
     
       // Copy the points... need to transform them around
@@ -317,7 +324,8 @@ class NDTFeatureFuserHMT{
 	return Tnow;
       }
 
-      debug_markers_.clear();
+    debug_markers_.clear();
+    
       pcl::PointCloud<pcl::PointXYZ> cloud(cloudOrig);
       pcl::PointCloud<pcl::PointXYZ> cloud_orig(cloudOrig);
       
@@ -340,6 +348,13 @@ class NDTFeatureFuserHMT{
       Eigen::Matrix3d odom_cov = relposecov.cov;
       odom_cov(2,0) = 0.; odom_cov(2,1) = 0.; odom_cov(0,2) = 0.; odom_cov(1,2) = 0.;
       odom_cov(2,2) = 0.01; // This is the height in the ndt feature vec and not rotational variance.
+      Eigen::MatrixXd TmotionCov = motion.getCovMatrix6(relpose);
+      TmotionCov(2,2) = 0.01; // z
+      TmotionCov(3,3) = 0.01; // roll
+      TmotionCov(4,4) = 0.01; // pitch
+
+      std::cerr << "TmotionCov : " << TmotionCov << std::endl;
+
       //lslgeneric::NDTCell* ndt_odom_cell = new lslgeneric::NDTCell();
       //      ndt_odom_cell->setMean(Eigen::Vector3d(0.,0.,0.));
       //      ndt_odom_cell->setCov(odom_cov);
@@ -418,8 +433,8 @@ class NDTFeatureFuserHMT{
           ndglobal.guessSize(0,0,0,params_.sensor_range,params_.sensor_range,params_.map_size_z);
           // The ndglobal map is a map with a reference frame to the vehicle origin(!)
         }
-        ndglobal.loadPointCloud(cloud, params_.sensor_range);
-      }
+        ndglobal.loadPointCloud(cloud, params_.sensor_range); 
+     }
       ndglobal.computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE);
       
       if (params_.discardCells) {
@@ -427,7 +442,9 @@ class NDTFeatureFuserHMT{
         discardCell(ndglobal, cloud.back());
       }
 
-      debug_markers_.push_back(ndt_visualisation::markerNDTCells(ndglobal, 2, "ndglobal"));
+      ROS_ERROR_STREAM("ndglobal.numberOfActiveCells() : " << ndglobal.numberOfActiveCells());
+      debug_markers_.push_back(ndt_visualisation::markerNDTCells(ndglobal, 1, "ndglobal"));
+
 
       // THIS IS OK!!!
       ////      return Tmotion; ////////////////////////////////////////////////////////////////////// 
@@ -506,10 +523,12 @@ class NDTFeatureFuserHMT{
       if (params_.useOdom) {
         // Add odometry (if enabled last)
         //ROS_INFO_STREAM("adding odometry...");
-        addNDTCellToMap(ndt_feat_prev_vehicle_frame, &ndt_odom_cell_prev);
-        addNDTCellToMap(ndt_feat_curr_vehicle_frame, &ndt_odom_cell);
-        int tmp_size = corr.size(); 
-        corr.push_back(std::pair<int,int>(tmp_size, tmp_size));
+        for (int i = 0; i < 40; i++) { // Quick HACK HERE.
+          addNDTCellToMap(ndt_feat_prev_vehicle_frame, &ndt_odom_cell_prev);
+          addNDTCellToMap(ndt_feat_curr_vehicle_frame, &ndt_odom_cell);
+          int tmp_size = corr.size(); 
+          corr.push_back(std::pair<int,int>(tmp_size, tmp_size));
+        }
       }
       
 
@@ -525,8 +544,8 @@ class NDTFeatureFuserHMT{
         //std::cerr << "cl->getCellIdx(cl->size()-1)->getCov() :.. " << cl->getCellIdx(cl->size()-1)->getCov() << std::endl;
       }
       
-      debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndt_feat_prev, 2, "feat_prev"));
-      debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndt_feat_curr, 3, "feat_curr"));
+      // debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndt_feat_prev, 2, "feat_prev"));
+      // debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndt_feat_curr, 3, "feat_curr"));
       
 
       t2 = getDoubleTime();
@@ -539,11 +558,14 @@ class NDTFeatureFuserHMT{
       }
 
       bool match_ok = true;
+      Eigen::Affine3d Tmotion_prematched = Tmotion_est;
+
       if (params_.fusion2d) {
         match_ok = lslgeneric::matchFusion2d(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE) || params_.fuseIncomplete;
       }
       else {
-        match_ok = lslgeneric::matchFusion(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE, params_.optimizeOnlyYaw) || params_.fuseIncomplete;
+        match_ok = lslgeneric::matchFusion(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, TmotionCov,
+                                           true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE, params_.optimizeOnlyYaw) || params_.fuseIncomplete;
       }
 
       //      std::cout << "match_ok : " << match_ok << std::endl;
@@ -609,6 +631,10 @@ class NDTFeatureFuserHMT{
           lslgeneric::NDTMap* ndglobal_matched = ndglobal.pseudoTransformNDTMap(Tmotion_est);
           debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndglobal_matched, 2, "ndglobal_matched"));
           delete ndglobal_matched;
+
+          lslgeneric::NDTMap* ndglobal_prematched = ndglobal.pseudoTransformNDTMap(Tmotion_prematched);
+          debug_markers_.push_back(ndt_visualisation::markerNDTCells(*ndglobal_prematched, 0, "ndglobal_prematched"));
+          delete ndglobal_prematched;
         }
         // Update the motion estimation with the orientation
 

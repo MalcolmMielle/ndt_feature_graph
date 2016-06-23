@@ -97,6 +97,8 @@ int main(int argc, char** argv)
 
     pcl::PointCloud<pcl::PointXYZ> static_pc, moving_pc;
     Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> gt_transform;
+    Eigen::MatrixXd T_cov(6,6);
+    T_cov.setIdentity();
 
     // Generate the static point cloud + indices...
     boost::mt19937 rng;
@@ -250,6 +252,7 @@ int main(int argc, char** argv)
                   mov_feat, ndt_feat,
                   corresp2,
                   T_fusion,
+                  T_cov,
                   true,
                   use_NDT,
                   use_feat,

@@ -66,6 +66,7 @@
 	<param name="graph_newNodeTranslDist" value="4." />
 	<param name="occ_map_resolution" value="0.5" />
 	<param name="do_pub_occ_map" value="true" />
+	<param name="do_pub_debug_markers" value="true" />
 
 	<param name="motion_params_Cd" value="0.005" />
 	<param name="motion_params_Ct" value="0.01" />

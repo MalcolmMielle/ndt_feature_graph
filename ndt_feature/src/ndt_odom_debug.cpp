@@ -88,6 +88,8 @@ int main(int argc, char** argv)
            
     pcl::PointCloud<pcl::PointXYZ> static_pc, moving_pc;
     Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> gt_transform, odom_transform;
+    Eigen::MatrixXd T_cov(6,6);
+    T_cov.setIdentity();
 
     // Generate the static point cloud - parallel lines as seen from a cooridor.
     boost::mt19937 rng;
@@ -230,6 +232,7 @@ int main(int argc, char** argv)
                 ndt_feat, mov_feat,
                 corresp,
                 T_fusion,
+                T_cov,
                 true,
                 use_NDT,
                 use_feat,

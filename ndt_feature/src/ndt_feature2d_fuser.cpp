@@ -137,6 +137,8 @@ class NDTFeatureFuserNode {
   
   int seq_odom_fuser_;
 
+  bool clear_odometry_estimate_;
+
 public:
 	// Constructor
     NDTFeatureFuserNode(ros::NodeHandle param_nh) : nb_added_clouds_(0),
@@ -260,6 +262,8 @@ public:
 
             param_nh.param<std::string>("tf_odom_frame", tf_odom_frame_,  "/odom_base_link");
 
+            param_nh.param<bool>("clear_odometry_estimate", clear_odometry_estimate_, false);
+
             semrob_generic::MotionModel2d::Params motion_params;
             param_nh.param<double>("motion_params_Cd", motion_params.Cd, 0.005);
             param_nh.param<double>("motion_params_Ct", motion_params.Ct, 0.01);
@@ -270,10 +274,17 @@ public:
 
             // To be able to use the evaluation scripts.
             std::string gt_filename, est_filename;
-            param_nh.param<std::string>("output_gt_file",  gt_filename, "gt_pose.txt");
-            param_nh.param<std::string>("output_est_file", est_filename, "est_pose.txt");
+            param_nh.param<std::string>("output_gt_file",  gt_filename, std::string(""));
+            param_nh.param<std::string>("output_est_file", est_filename, std::string(""));
             
-            if (gt_filename != std::string("")) {
+            if (gt_filename == std::string("")) {
+              gt_filename = std::string("gt_pose") + fuser_params.getDescString() + std::string(".txt");
+            }
+            if (est_filename == std::string("")) {
+              est_filename = std::string("est_pose") + fuser_params.getDescString() + std::string(".txt");
+            }
+                   
+            if (gt_filename != std::string("") && gt_frame != std::string("")) {
               gt_file_.open(gt_filename.c_str());
             }
             if (est_filename != std::string("")) {
@@ -367,6 +378,7 @@ public:
 
             heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(4.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
             
+            Todom.setIdentity();
         }
 
 	~NDTFeatureFuserNode()
@@ -436,6 +448,10 @@ public:
     void processFeatureFrame(pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts, Eigen::Affine3d Tmotion, const ros::Time &frameTime) {
         m.lock();
         
+        if (clear_odometry_estimate_) {
+          Tmotion.setIdentity();
+        }
+
         frameTime_ = frameTime;
 	    if (nb_added_clouds_  == 0)
 	    {
@@ -486,7 +502,7 @@ public:
               nav_msgs::Odometry odom;
               tf::poseEigenToMsg(pose_, odom.pose.pose);
               odom.header.stamp = frameTime;
-              odom.header.frame_id = "world";
+              odom.header.frame_id = world_frame;
               odom.header.seq = seq_odom_fuser_++;
               odom.child_frame_id = "fuser";
               fuser_pub_.publish(odom);
@@ -495,7 +511,7 @@ public:
               nav_msgs::Odometry odom;
               tf::poseEigenToMsg(Todom, odom.pose.pose);
               odom.header.stamp = frameTime;
-              odom.header.frame_id = "world";
+              odom.header.frame_id = world_frame;
               odom.header.seq = seq_odom_fuser_++;
               odom.child_frame_id = "fuser_odom";
               fuser_odom_pub_.publish(odom);
@@ -692,7 +708,9 @@ public:
             }
             
             if (gt_file_.is_open()) {
-              gt_file_ << frame_time << " " << lslgeneric::transformToEvalString(Tgt);
+              //              gt_file_ << frame_time << " " << lslgeneric::transformToEvalString(Tgt);
+              gt_file_ << frame_time << " " << lslgeneric::transformToEval2dString(Tgt);
+              //              ROS_INFO("tf transformed to gt_file_");
             }
 
             last_odom = this_odom;
@@ -870,10 +888,10 @@ public:
 	    gt_pose = Eigen::Translation3d (msg_in->pose.pose.position.x,
 		    msg_in->pose.pose.position.y,msg_in->pose.pose.position.z) * qd;
 	     
-	    //ROS_INFO("got GT pose from GT track");
-            if (gt_file_.is_open()) {
-              gt_file_ << msg_in->header.stamp << " " << lslgeneric::transformToEvalString(gt_pose);
-            }
+            // if (gt_file_.is_open()) {
+            //   gt_file_ << msg_in->header.stamp << " " << lslgeneric::transformToEvalString(gt_pose);
+            //   ROS_INFO("gt_callback added to gt_file_");
+            // }
 
 	    m.lock();
 	    if(initPoseFromGT && !initPoseSet) {

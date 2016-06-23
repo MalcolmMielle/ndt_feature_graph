@@ -2,6 +2,8 @@
 
 #include <ndt_registration/ndt_matcher_d2d_2d.h>
 #include <ndt_registration/ndt_matcher_d2d_feature.h>
+#include <ndt_feature/utils.h>
+
 
 namespace lslgeneric {
 
@@ -413,10 +415,11 @@ double lineSearchMTFusion(
 		    NDTMap& targetNDT_feat,
 		    NDTMap& sourceNDT_feat,
 		    const std::vector<std::pair<int, int> > &corr_feat,
-		    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T ,
-		    bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4, bool optimizeOnlyYaw = false, bool step_control_fusion = true)
+		    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T,
+                    const Eigen::MatrixXd& Tcov,
+		    bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4, bool optimizeOnlyYaw = false, bool step_control_fusion = true, bool useTikhonovRegularization = true)
 {
-  //  std::cerr << "matchFusion()" << " useNDT : " << useNDT << " useFeat : " << useFeat << " step_control : " << step_control << " corr_feat.size() : " << corr_feat.size() << std::endl;
+  std::cerr << "matchFusion()" << " useNDT : " << useNDT << " useFeat : " << useFeat << " step_control : " << step_control << " corr_feat.size() : " << corr_feat.size() << std::endl;
 
   // Combines two different NDT maps at once. One which holds NDT derrived from features with known correspondance (obtained earlier through RANSAC or similar) with two standard NDT maps (target could very well be obtained from the fuser).
   
@@ -442,7 +445,7 @@ double lineSearchMTFusion(
     Eigen::MatrixXd Hessian_ndt(6,6), score_gradient_ndt(6,1); //column vectors, pose_increment_v(6,1)
     Eigen::MatrixXd Hessian_feat(6,6), score_gradient_feat(6,1); //column vectors, pose_increment_v(6,1)
  
-    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> TR, Tbest;
+    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> TR, Tbest, Tinit;
     Eigen::Vector3d transformed_vec, mean;
     bool ret = true;
     if(!useInitialGuess)
@@ -450,7 +453,7 @@ double lineSearchMTFusion(
         T.setIdentity();
     }
     Tbest = T;
-    
+    Tinit = T;
 
     std::vector<NDTCell*> nextNDT = sourceNDT.pseudoTransformNDT(T);
     std::vector<NDTCell*> nextNDT_feat = sourceNDT_feat.pseudoTransformNDT(T);
@@ -485,6 +488,25 @@ double lineSearchMTFusion(
 	  Hessian += Hessian_feat;
 	  score_gradient += score_gradient_feat;
 	}
+
+        // Add the T_est with covariance using the Generalized Tikhonov regularization.
+        if (useTikhonovRegularization) {
+          // update the score gradient with the regularization part.
+          Eigen::MatrixXd Q = Tcov.inverse();
+          Eigen::MatrixXd P(6,6); P.setIdentity();
+          Eigen::MatrixXd H = Hessian;
+          Eigen::MatrixXd g = score_gradient;
+          Eigen::Affine3d x0T = Tinit * T.inverse();
+          Eigen::Matrix<double,6,1> x0;
+          convertAffineToVector(x0T,x0);
+          std::cerr << "x0 : " << x0 << std::endl;
+          std::cerr << "score_gradient (old) : " << score_gradient << std::endl;
+          score_gradient = H.transpose()*P*g+Q*x0;
+          std::cerr << "score_gradient (new) : " << score_gradient << std::endl;
+          std::cerr << "Hessian (old) : " << Hessian << std::endl;
+          Hessian = H.transpose()*P*H+Q;
+          std::cerr << "Hessian (new) : " << Hessian << std::endl;
+        }
 
         // std::cout << "score_gradient_ndt : " << score_gradient_ndt << std::endl;
         // std::cout << "score_gradient_feat : " << score_gradient_feat << std::endl;
@@ -565,14 +587,15 @@ double lineSearchMTFusion(
             return true;
         }
         pose_increment_v = -Hessian.ldlt().solve(score_gradient);
-        if (pose_increment_v.norm() > 0.2) {
+        const double max_pose_increment_norm = 0.02;
+        if (pose_increment_v.norm() > max_pose_increment_norm) {
           pose_increment_v.normalize();
-          pose_increment_v *= 0.2;
+          pose_increment_v *= max_pose_increment_norm;
         }
 
         double dginit = pose_increment_v.dot(scg);
-        // std::cerr << "score_here_ndt : " << score_here_ndt << "\t score_here_feat : " << score_here_feat << std::endl;
-        // std::cout << "pose_increment_v : " << pose_increment_v.transpose() << std::endl;
+        std::cerr << "score_here_ndt : " << score_here_ndt << "\t score_here_feat : " << score_here_feat << std::endl;
+        std::cout << "pose_increment_v : " << pose_increment_v.transpose() << std::endl;
         // std::cout << "score_gradient : " << score_gradient.transpose() << std::endl;
         // std::cout << "score_gradient_ndt  : " << score_gradient_ndt.transpose() << std::endl;
         // std::cout << "score_gradient_feat : " << score_gradient_feat.transpose() << std::endl;

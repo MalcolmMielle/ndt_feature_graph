@@ -44,6 +44,7 @@ int main(int argc, char** argv)
     ("only_odometry", "only used odometry links")
     ("use_incrT", "use the global T as base for incremental odometry links")
     ("use_fuseT", "use the fused estimates as base for incremental odometry links")
+    ("draw_no_links", "draw links using rviz markers")
     ("force2d", "force all transformations to be using x,y,theta only")
     ("max_score", po::value<double>(&max_score)->default_value(0.1), "max allowed matching score (lower is better) for DA")
     ("max_dist", po::value<double>(&max_dist)->default_value(1.0), "max allowed distance for matching for DA")
@@ -72,6 +73,7 @@ int main(int argc, char** argv)
   bool force2d = vm.count("force2d");
   bool use_ndt = !vm.count("skip_ndt");
   bool keep_score = vm.count("keep_score");
+  bool draw_links = !vm.count("draw_no_links");
 
   std::cout << "min_idx_dist     : " << min_idx_dist << std::endl;
   std::cout << "max_dist         : " << max_dist << std::endl;
@@ -192,7 +194,9 @@ int main(int argc, char** argv)
     // marker_pub.publish(ndt_feature::interestPointMarkersFrameId(graph.getLastFeatureFuser()->featuremap.map, 0, std::string("/world")));
     
     ndt_feature::publishMarkerNDTFeatureNodes(graph, marker_pub);
-    ndt_feature::publishMarkerNDTFeatureLinks(graph, marker_pub);
+    if (draw_links) {
+      ndt_feature::publishMarkerNDTFeatureLinks(graph, marker_pub);
+    }
     pc_pub.publish(cloud_msg);
 
     for (size_t i = 0; i < odom_global.size(); i++) {

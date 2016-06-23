@@ -2,7 +2,6 @@
 
 #include <ndt_registration/ndt_matcher_d2d.h>
 #include <ndt_registration/ndt_matcher_d2d_feature.h>
-#include <ndt_feature/ndt_matcher_d2d_fusion.h>
 #include <ndt_map/ndt_map.h>
 #include <ndt_map/cell_vector.h>
 #include <ndt_map/lazy_grid.h>
@@ -142,6 +141,16 @@ void printTransf2d(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor
             << lslgeneric::getRobustYawFromAffine3d(T) << ")" << std::endl;
     }
 
+
+void convertAffineToVector(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T,
+                                Eigen::Matrix<double,6,1> &vec) {
+  vec[0] = T.translation().transpose()[0];
+  vec[1] = T.translation().transpose()[1];
+  vec[2] = T.translation().transpose()[2];
+  vec[3] = T.rotation().eulerAngles(0,1,2)[0];
+  vec[4] = T.rotation().eulerAngles(0,1,2)[1];
+  vec[5] = T.rotation().eulerAngles(0,1,2)[2];
+}
 
 void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
   CellVector* idx = dynamic_cast<CellVector*> (map->getMyIndex());

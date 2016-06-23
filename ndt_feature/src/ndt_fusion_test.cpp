@@ -121,6 +121,8 @@ int main(int argc, char** argv)
   ndt_feature::NDTFeatureNode &ref_node = graph.getNode(ref_idx);
   ndt_feature::NDTFeatureNode &mov_node = graph.getNode(mov_idx);
   Eigen::Affine3d T, Tfeat, Tmotion;
+  Eigen::MatrixXd T_cov(6,6);
+  T_cov.setIdentity();
 
   Tmotion = ref_node.Tlocal_odom;
   std::cout << "Odometry used : " << std::endl;
@@ -191,6 +193,7 @@ int main(int argc, char** argv)
                                   ndt_feature_mov,
                                   corr,
                                   T,
+                                  T_cov,
                                   use_initial_guess,
                                   use_ndt,
                                   use_feat || use_odom,
