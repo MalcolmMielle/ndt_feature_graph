@@ -12,11 +12,16 @@ namespace ndt_feature {
 		
 	protected :
 		
+		Eigen::Affine3d _start_pose;
 		
 	public:
 		GraphVisualizer(){
 			
 		};
+		
+		void setStart(const Eigen::Affine3d& in){
+			_start_pose = in;
+		}
 		
 		void rvizPrint(const NDTFeatureGraph& graph, visualization_msgs::Marker& origins){
 			visualization_msgs::Marker destinations;
@@ -38,20 +43,26 @@ namespace ndt_feature {
 			//Prints
 			geometry_msgs::Point p;
 			//Getting the translation out of the transform : https://en.wikipedia.org/wiki/Transformation_matrix
-			p.x = 0;
-			p.y = 0;
+			p.x = _start_pose(0, 3);
+			p.y = _start_pose(1, 3);
 			p.z = 0;
 			origins.points.push_back(p);
 			
-			geometry_msgs::Point cumulated_translation = p;
+// 			geometry_msgs::Point cumulated_translation = p;
+			
+			Eigen::Affine3d cumulated_translation = _start_pose;
 			for(size_t i = 0; i < links.size() ; ++i){
 				std::cout << "Making poitns " << links.size() << std::endl;
 				//Getting the translation out of the transform : https://en.wikipedia.org/wiki/Transformation_matrix
 				Eigen::Affine3d T = links[i].T;
-				cumulated_translation.x = cumulated_translation.x + T(0, 3);
-				cumulated_translation.y = cumulated_translation.y + T(1, 3);
-				cumulated_translation.z = 0;
-				origins.points.push_back(cumulated_translation);
+				
+				cumulated_translation = cumulated_translation * T;
+				
+				
+				p.x = cumulated_translation(0, 3);
+				p.y = cumulated_translation(1, 3);
+				p.z = 0;
+				origins.points.push_back(p);
 			}
 			std::cout << "Point made.............." << std::endl;
 // 			marker_pub.publish(points);

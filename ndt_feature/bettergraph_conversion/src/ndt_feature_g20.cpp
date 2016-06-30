@@ -145,6 +145,7 @@ class NDTFeatureFuserNode {
 	
 	//RegistrationGraph from betterGraph Library
 	ndt_feature::NDTFeatureRegistrationGraph _malcolm_graph;
+	ndt_feature::GraphVisualizer _gvisu;
 
 public:
 	// Constructor
@@ -412,9 +413,8 @@ public:
 		  if(use_graph_){
 				if (graph->wasInit() == true) {
 					
-					ndt_feature::GraphVisualizer gvisu;
 					visualization_msgs::Marker origins;
-					gvisu.rvizPrint(*graph, origins);
+					_gvisu.rvizPrint(*graph, origins);
 					_marker_pub_graph.publish(origins);
 				}
 			}
@@ -490,9 +490,9 @@ public:
             if(use_graph_){
 				if (graph->wasInit() == true) {
 					
-					ndt_feature::GraphVisualizer gvisu;
+					
 					visualization_msgs::Marker origins;
-					gvisu.rvizPrint(*graph, origins);
+					_gvisu.rvizPrint(*graph, origins);
 					_marker_pub_graph.publish(origins);
 				}
 			}
@@ -528,7 +528,7 @@ public:
 				std::cout << "INIT " << nb_added_clouds_ << std::endl;
 				
 				//Better init maybe ?
-				
+				_gvisu.setStart(pose_);
 				graph->initialize(pose_,cloud,pts);
 				std::cout << "Graph init. Nb nof nodes : " << graph->getNbNodes() << std::endl;
 // 				exit(0);
@@ -595,9 +595,9 @@ public:
 		if(use_graph_){
 			if (graph->wasInit() == true) {
 				
-				ndt_feature::GraphVisualizer gvisu;
+				
 				visualization_msgs::Marker origins;
-				gvisu.rvizPrint(*graph, origins);
+				_gvisu.rvizPrint(*graph, origins);
 				_marker_pub_graph.publish(origins);
 			}
 		}
