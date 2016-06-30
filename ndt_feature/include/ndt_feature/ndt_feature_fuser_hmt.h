@@ -315,7 +315,7 @@ class NDTFeatureFuserHMT{
 		Todom = Tnow;
 		
 		//Add visualization point cloud
-		pointcloud_vis = cloudOrig;
+// 		pointcloud_vis = cloudOrig;
     }
 
     /**
@@ -727,6 +727,10 @@ class NDTFeatureFuserHMT{
 
   const NDTFeatureMap& getFeatureMap() const {
     return featuremap;
+  }
+  
+  const NDTFeatureFuserHMT::Params& getParam() const {
+	  return params_;
   }
 
   private:

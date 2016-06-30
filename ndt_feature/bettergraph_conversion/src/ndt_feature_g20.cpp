@@ -491,7 +491,7 @@ public:
 			nb_added_clouds_++;
 			if (use_graph_) {
 				std::cout << "Update with added cloud " << nb_added_clouds_ << std::endl;
-				assert(graph->getNbNodes() == nb_added_clouds_ - 1);
+// 				assert(graph->getNbNodes() == nb_added_clouds_ - 1);
 				pose_ = graph->update(Tmotion,cloud,pts);
 				std::cout << "Graph update. Nb nof nodes : " << graph->getNbNodes() << std::endl;
 			}
@@ -501,6 +501,11 @@ public:
 			Todom = Todom*Tmotion;
 	    }
 	    m.unlock();
+		
+		if(graph->fullInit() == false){
+			std::cout << "GRAPH NOT FULLY INIT " << std::cout;
+			assert(graph->fullInit());
+		}
 
 		if (est_file_.is_open()) {
 			est_file_ << frameTime << " " << lslgeneric::transformToEvalString(pose_);

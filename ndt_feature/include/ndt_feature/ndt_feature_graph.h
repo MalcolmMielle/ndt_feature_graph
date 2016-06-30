@@ -73,8 +73,18 @@ public:
     std::cerr << "NDTFeatureGraph Destructor - done" << std::endl;
   }
   
-  
   lslgeneric::NDTMap *map;  /// The complete NDT map (will be updated when optimize is called)
+  
+  
+	bool fullInit(){
+		for(size_t i = 0 ; i < getNbNodes() ; ++i){
+			if(nodes_[i].map->wasInit() == false){
+				std::cout << "False on the " << i + 1 << " element out of " << getNbNodes() << " elements." << std::endl;
+				return false;
+			}
+		}
+		return true;
+	}
   
   // Initialize the first entry of the map.
   void initialize(Eigen::Affine3d initPose, pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts, bool preLoad=false) {
@@ -99,12 +109,21 @@ public:
     }
 
     nodes_.push_back(node);
+	
+	assert(node.map->wasInit() == true);
+	assert(nodes_[0].map->wasInit() == true);
+	
+	if(fullInit() == false){
+		std::cout << "GRAPH NOT FULLY INIT " << std::cout;
+		assert(fullInit());
+	}
     std::cout << "initialize -> done" << std::endl;
   }
 
   // Update the map with new readings, return the current pose in global coordinates.
   Eigen::Affine3d update(Eigen::Affine3d Tmotion, pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts){
 
+	  std::cout << "Graph update. Nb nof nodes : " << getNbNodes() << std::endl;
     NDTFeatureNode &node = nodes_.back();
     std::cout << "---update--- # " << node.nbUpdates << " node # " << nodes_.size() << std::endl;
     std::cout << " odom : " << std::flush; lslgeneric::printTransf2d(node.Tlocal_odom);

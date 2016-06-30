@@ -44,17 +44,31 @@ public:
     Tlocal_fuse.setIdentity();
   }
   
-  NDTFeatureNode(const NDTFeatureNode& ndt_feat){
+  //Bugging Henrik code
+//   NDTFeatureNode(const NDTFeatureNode& ndt_feat){
+// 	  cov = ndt_feat.getCov();
+// 	  T = ndt_feat.getPose();
+// 	  Tlocal_odom = ndt_feat.getTLocalOdom();
+// 	  Tlocal_fuse = ndt_feat.getTLocalFuse();
+// 	  pts = ndt_feat.getPts();
+// 	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
+// 	  &map = ndt_feat.getFeatureMap();
+//   }
+
+  ~NDTFeatureNode() {
+    std::cerr << "FeatureNode Destructor" << std::endl;
+    std::cerr << "FeatureNode Destructor - done" << std::endl;
+  }
+  
+  void copyNDTFeatureNode(const NDTFeatureNode& ndt_feat){
 	  cov = ndt_feat.getCov();
 	  T = ndt_feat.getPose();
 	  Tlocal_odom = ndt_feat.getTLocalOdom();
 	  Tlocal_fuse = ndt_feat.getTLocalFuse();
 	  pts = ndt_feat.getPts();
-  }
-
-  ~NDTFeatureNode() {
-    std::cerr << "FeatureNode Destructor" << std::endl;
-    std::cerr << "FeatureNode Destructor - done" << std::endl;
+	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
+	  //TODO :
+// 	  &map = ndt_feat.getFeatureMap();
   }
 
   NDTFeatureFuserHMT* map;
