@@ -41,6 +41,9 @@
 
 #include <ndt_feature/ros_utils.h>
 
+#include "NDTRegistrationGraph.hpp"
+#include "ndt_feature/graph_visualizer.hpp"
+
 #ifndef SYNC_FRAMES
 #define SYNC_FRAMES 20
 #endif
@@ -69,6 +72,7 @@ class NDTFeatureFuserNode {
 	ros::Publisher pointcloud_pub_;
 	ros::Publisher pointcloud2_pub_;
 	ros::Publisher fuser_odom_pub_, fuser_pub_;
+	ros::Publisher _marker_pub_graph;
 	Eigen::Affine3d pose_, T, sensor_pose_;
 
 	tf::TransformListener listener;
@@ -138,6 +142,9 @@ class NDTFeatureFuserNode {
 	int seq_odom_fuser_;
 
 	bool clear_odometry_estimate_;
+	
+	//RegistrationGraph from betterGraph Library
+	ndt_feature::NDTFeatureRegistrationGraph _malcolm_graph;
 
 public:
 	// Constructor
@@ -383,6 +390,9 @@ public:
 		pointcloud2_pub_ = nh_.advertise<sensor_msgs::PointCloud2>("cloud", 10);
 		fuser_pub_ = nh_.advertise<nav_msgs::Odometry>("fuser_est", 10);
 		fuser_odom_pub_ = nh_.advertise<nav_msgs::Odometry>("fuser_odom", 10);
+		
+		
+		_marker_pub_graph = nh_.advertise<visualization_msgs::Marker>("visualization_marker_graph", 10);
 
 		heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(4.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
 		
@@ -397,7 +407,29 @@ public:
             gt_file_.close();
           if (est_file_.is_open())
             est_file_.close();
-          delete fuser;
+		  
+		  //Last marker print
+		  if(use_graph_){
+				if (graph->wasInit() == true) {
+					
+					ndt_feature::GraphVisualizer gvisu;
+					visualization_msgs::Marker origins;
+					gvisu.rvizPrint(*graph, origins);
+					_marker_pub_graph.publish(origins);
+				}
+			}
+		  
+		  
+		  //Copy graph
+		  _malcolm_graph.convert(*graph);
+		  
+		  
+		  if(use_graph_==false){
+			delete fuser;
+		  }
+		  else{
+			 delete graph;
+		  }
 	}
 
   void publish_visualization_slow(const ros::TimerEvent &event) {
@@ -451,6 +483,19 @@ public:
                 }
               }
             }
+            
+            
+            //Trying to draw the graph here
+            
+            if(use_graph_){
+				if (graph->wasInit() == true) {
+					
+					ndt_feature::GraphVisualizer gvisu;
+					visualization_msgs::Marker origins;
+					gvisu.rvizPrint(*graph, origins);
+					_marker_pub_graph.publish(origins);
+				}
+			}
 
   }
 
@@ -482,6 +527,7 @@ public:
 				std::cout << "INIT " << nb_added_clouds_ << std::endl;
 				graph->initialize(pose_,cloud,pts);
 				std::cout << "Graph init. Nb nof nodes : " << graph->getNbNodes() << std::endl;
+				exit(0);
 			}
 			else {
 				fuser->initialize(pose_,cloud,pts);
@@ -538,6 +584,18 @@ public:
 			odom.header.seq = seq_odom_fuser_++;
 			odom.child_frame_id = "fuser_odom";
 			fuser_odom_pub_.publish(odom);
+		}
+		
+		
+		//Marker print
+		if(use_graph_){
+			if (graph->wasInit() == true) {
+				
+				ndt_feature::GraphVisualizer gvisu;
+				visualization_msgs::Marker origins;
+				gvisu.rvizPrint(*graph, origins);
+				_marker_pub_graph.publish(origins);
+			}
 		}
 		
 		std::cout << "Transform sent" << std::endl;

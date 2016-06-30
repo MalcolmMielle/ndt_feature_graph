@@ -45,15 +45,15 @@ public:
   }
   
   //Bugging Henrik code
-//   NDTFeatureNode(const NDTFeatureNode& ndt_feat){
-// 	  cov = ndt_feat.getCov();
-// 	  T = ndt_feat.getPose();
-// 	  Tlocal_odom = ndt_feat.getTLocalOdom();
-// 	  Tlocal_fuse = ndt_feat.getTLocalFuse();
-// 	  pts = ndt_feat.getPts();
-// 	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
-// 	  &map = ndt_feat.getFeatureMap();
-//   }
+  NDTFeatureNode(const NDTFeatureNode& ndt_feat){
+	  cov = ndt_feat.getCov();
+	  T = ndt_feat.getPose();
+	  Tlocal_odom = ndt_feat.getTLocalOdom();
+	  Tlocal_fuse = ndt_feat.getTLocalFuse();
+	  pts = ndt_feat.getPts();
+	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
+	  *map = *(ndt_feat.map);
+  }
 
   ~NDTFeatureNode() {
     std::cerr << "FeatureNode Destructor" << std::endl;
@@ -68,7 +68,7 @@ public:
 	  pts = ndt_feat.getPts();
 	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
 	  //TODO :
-// 	  &map = ndt_feat.getFeatureMap();
+	  *map = *(ndt_feat.map);
   }
 
   NDTFeatureFuserHMT* map;

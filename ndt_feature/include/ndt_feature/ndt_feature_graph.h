@@ -238,7 +238,7 @@ public:
   
   std::vector<NDTFeatureLink> getIncrementalLinks() const {
     std::vector<NDTFeatureLink> ret;
-    for (size_t i = 0; i < nodes_.size()-1; i++) {
+    for (size_t i = 0; i < (int) nodes_.size() - 1 ; i++) {
       NDTFeatureLink m(i, i+1);
       //m.T = nodes_[i].T.rotation()*nodes_[i].T.inverse()*nodes_[i+1].T;;
       //m.T = Eigen::Translation<double,3>(nodes_[i+1].T.translation()-nodes_[i].T.translation())*nodes_[i+1].T.rotation();
