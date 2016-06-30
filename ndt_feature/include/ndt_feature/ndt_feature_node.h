@@ -171,6 +171,10 @@ if (!map->load(fileName)) {
   virtual const pcl::PointCloud<pcl::PointXYZ>& getPts() const {
 	return pts;
   }
+  virtual pcl::PointCloud<pcl::PointXYZ>& getPts() {
+	pcl::PointCloud<pcl::PointXYZ>& pt(pts);
+	return pt;
+  }
 
   void setPose(const Eigen::Affine3d &pose) { T = pose; }
   void setCov(const Eigen::Matrix3d &cov_) { cov = cov_; }

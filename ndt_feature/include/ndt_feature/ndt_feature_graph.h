@@ -109,6 +109,7 @@ public:
     std::cout << "---update--- # " << node.nbUpdates << " node # " << nodes_.size() << std::endl;
     std::cout << " odom : " << std::flush; lslgeneric::printTransf2d(node.Tlocal_odom);
 
+	assert(node.map->wasInit() == true);
 
     distance_moved_in_last_node_ += Tmotion.translation().norm();
     
@@ -159,6 +160,7 @@ public:
 	std::cout << "Update the node without creating any new node ?" << std::endl;
 
     // The returned pose is the local map coord.
+	assert(node.map->wasInit() == true);
     Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts);
 	std::cout << "Updated the node without creating any new node" << std::endl;
 
@@ -461,7 +463,9 @@ public:
   pcl::PointCloud<pcl::PointXYZ>& getVisualizationCloud() {
     if (wasInit()) {
       // Rotate / translate this with current T value.
-      pcl::PointCloud<pcl::PointXYZ> &pc = nodes_.back().map->pointcloud_vis;
+//       pcl::PointCloud<pcl::PointXYZ> &pc = nodes_.back().map->pointcloud_vis;
+		//Get the point cloud from the node instead of the map
+		pcl::PointCloud<pcl::PointXYZ> &pc = nodes_.back().getPts();
 	  //WARNING : CRASH HERE !
 	  std::cout << pc.points.size () << " != " << pc.width * pc.height << std::endl;
 	  assert(pc.points.size () == pc.width * pc.height);
