@@ -88,12 +88,14 @@ public:
     node.map->setSensorPose(sensor_pose_);
     // Keep each map in it's own ref frame (that is node.T)
     initPose.setIdentity();
+	std::cout << "Initializing node " << std::endl;
     node.map->initialize(initPose, cloud, pts, preLoad);
 
     // Add the cloud...
     if (params_.storePtsInNodes) {
-      Eigen::Affine3d Tnow_local_sensor = initPose*sensor_pose_;
-      node.addCloud(Tnow_local_sensor, cloud);
+		std::cout << "STORING THE POINT CLOUD" << std::endl;
+		Eigen::Affine3d Tnow_local_sensor = initPose*sensor_pose_;
+		node.addCloud(Tnow_local_sensor, cloud);
     }
 
     nodes_.push_back(node);
@@ -116,6 +118,7 @@ public:
       // The returned pose is the local map coord
       // Do not update the feature map in this step.
       
+	  std::cout << "Updating node " << std::endl;
       Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts, false, false);
       Tnow = node.T*Tnow_local;
       node.Tlocal_odom = node.Tlocal_odom*Tmotion;
@@ -133,7 +136,9 @@ public:
       // Add the first data...
       Eigen::Affine3d init_pose;
       init_pose.setIdentity();
+	  std::cout << "Creating new_node init " << std::endl;
       new_node.map->initialize(init_pose, cloud, pts, false);
+	  std::cout << "Done new_node init " << std::endl;
 
       // Add the cloud...
       if (params_.storePtsInNodes) {
@@ -149,9 +154,14 @@ public:
       std::cout << "update -> done" << std::endl;
       return Tnow;
     }
+    
+    
+	std::cout << "Update the node without creating any new node ?" << std::endl;
 
     // The returned pose is the local map coord.
     Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts);
+	std::cout << "Updated the node without creating any new node" << std::endl;
+
     Tnow = node.T*Tnow_local;
     node.Tlocal_odom = node.Tlocal_odom*Tmotion;
     node.Tlocal_fuse = Tnow_local;
@@ -452,7 +462,14 @@ public:
     if (wasInit()) {
       // Rotate / translate this with current T value.
       pcl::PointCloud<pcl::PointXYZ> &pc = nodes_.back().map->pointcloud_vis;
+	  //WARNING : CRASH HERE !
+	  std::cout << pc.points.size () << " != " << pc.width * pc.height << std::endl;
+	  assert(pc.points.size () == pc.width * pc.height);
+	  std::cout << "TRANSFORM" <<std::endl;
       lslgeneric::transformPointCloudInPlace(nodes_.back().T, pc);
+	  std::cout << "TRANSFORM DONE" <<std::endl;
+	  std::cout << pc.points.size () << " != " << pc.width * pc.height << std::endl;
+	  assert(pc.points.size () == pc.width * pc.height);
       return pc;
     }
     return pointcloud_vis;

@@ -288,29 +288,34 @@ class NDTFeatureFuserHMT{
       ///Set the cloud to sensor frame with respect to base
     
       // Copy the points... need to transform them around
-    pcl::PointCloud<pcl::PointXYZ> cloud(cloudOrig);
+		pcl::PointCloud<pcl::PointXYZ> cloud(cloudOrig);
+		
+		assert(cloud.points.size () == cloud.width * cloud.height);
 
-      lslgeneric::transformPointCloudInPlace(sensor_pose, cloud);
-      lslgeneric::transformPointCloudInPlace(initPos, cloud);
-      Tnow = initPos;
+		lslgeneric::transformPointCloudInPlace(sensor_pose, cloud);
+		lslgeneric::transformPointCloudInPlace(initPos, cloud);
+		Tnow = initPos;
 
-      ptsPrev = pts; // pts are always given in the sensor frame...
+		ptsPrev = pts; // pts are always given in the sensor frame...
 
-      // Move the features to the current pose (Tnow)
-      ndt_feature::moveInterestPointVec(Tnow*sensor_pose, ptsPrev);
-      
-      featuremap.update(ptsPrev);
+		// Move the features to the current pose (Tnow)
+		ndt_feature::moveInterestPointVec(Tnow*sensor_pose, ptsPrev);
+		
+		featuremap.update(ptsPrev);
 
-      map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(params_.resolution));
-      map->initialize(Tnow.translation()(0),Tnow.translation()(1),0./*Tnow.translation()(2)*/,params_.map_size_x,params_.map_size_y,params_.map_size_z);
-      
-      Eigen::Affine3d Tnow_sensor = Tnow*sensor_pose; // The origin from where the sensor readings occured...
-      map->addPointCloud(Tnow_sensor.translation(),cloud, 0.1, 100.0, 0.1);
-      map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, Tnow_sensor.translation(), 0.1);
+		map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(params_.resolution));
+		map->initialize(Tnow.translation()(0),Tnow.translation()(1),0./*Tnow.translation()(2)*/,params_.map_size_x,params_.map_size_y,params_.map_size_z);
+		
+		Eigen::Affine3d Tnow_sensor = Tnow*sensor_pose; // The origin from where the sensor readings occured...
+		map->addPointCloud(Tnow_sensor.translation(),cloud, 0.1, 100.0, 0.1);
+		map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, Tnow_sensor.translation(), 0.1);
 
-      isInit = true;
-      Tlast_fuse = Tnow;
-      Todom = Tnow;
+		isInit = true;
+		Tlast_fuse = Tnow;
+		Todom = Tnow;
+		
+		//Add visualization point cloud
+		pointcloud_vis = cloudOrig;
     }
 
     /**

@@ -43,6 +43,14 @@ public:
     Tlocal_odom.setIdentity();
     Tlocal_fuse.setIdentity();
   }
+  
+  NDTFeatureNode(const NDTFeatureNode& ndt_feat){
+	  cov = ndt_feat.getCov();
+	  T = ndt_feat.getPose();
+	  Tlocal_odom = ndt_feat.getTLocalOdom();
+	  Tlocal_fuse = ndt_feat.getTLocalFuse();
+	  pts = ndt_feat.getPts();
+  }
 
   ~NDTFeatureNode() {
     std::cerr << "FeatureNode Destructor" << std::endl;
@@ -153,6 +161,15 @@ if (!map->load(fileName)) {
   }
   virtual const Eigen::Matrix3d& getCov() const {
     return cov;
+  }
+  virtual const Eigen::Affine3d& getTLocalOdom() const {
+    return Tlocal_odom;
+  }
+  virtual const Eigen::Affine3d& getTLocalFuse() const {
+    return Tlocal_fuse;
+  }
+  virtual const pcl::PointCloud<pcl::PointXYZ>& getPts() const {
+	return pts;
   }
 
   void setPose(const Eigen::Affine3d &pose) { T = pose; }

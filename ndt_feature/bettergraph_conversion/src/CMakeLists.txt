@@ -1,0 +1,2 @@
+add_executable(ndt_g2o ndt_feature_g20.cpp)
+target_link_libraries(ndt_g2o ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod)

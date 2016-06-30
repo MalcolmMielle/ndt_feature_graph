@@ -73,9 +73,6 @@ ELSE(VTK_FOUND)
   MESSAGE(FATAL_ERROR "Cannot build the executable without VTK. Please set the VTK_DIR")
 ENDIF (VTK_FOUND)
 
-
-MESSAGE(STATUS "${VTK_USE_FILE}")
-
 include_directories(${Boost_INCLUDE_DIRS})
 
 include_directories(/usr/local/include/flirtlib)
@@ -111,3 +108,11 @@ target_link_libraries(ndt_fusion_test ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/
 target_link_libraries(ndt_memcheck_test ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt)
 
 target_link_libraries(ndt_feature_mcl_node ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${OPENGL_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils)
+
+
+## Better graph 
+
+find_package(bettergraph)
+if(bettergraph_FOUND)
+	add_subdirectory(bettergraph_conversion)
+endif(bettergraph_FOUND)

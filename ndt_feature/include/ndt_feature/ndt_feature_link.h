@@ -13,6 +13,13 @@ public:
     T.setIdentity();
     score = 0.;
   }
+  NDTFeatureLink(const NDTFeatureLink& link){
+	  ref_idx = link.getRefIdx();
+	  mov_idx = link.getMovIdx();
+	  T = link.getRelPose();
+	  cov = getRelCov();
+	  score = getScore();
+  }
   size_t ref_idx; // Vector idx...
   size_t mov_idx;
   Eigen::Affine3d T; // From ref->mov.
