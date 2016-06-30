@@ -521,13 +521,17 @@ public:
 				return;
 				}
 			}
+			pose_ = Tmotion;
 			ROS_INFO("Init pose is (%lf,%lf,%lf)", pose_.translation()(0), pose_.translation()(1), 
 				pose_.rotation().eulerAngles(0,1,2)(0));
 			if (use_graph_) {
 				std::cout << "INIT " << nb_added_clouds_ << std::endl;
+				
+				//Better init maybe ?
+				
 				graph->initialize(pose_,cloud,pts);
 				std::cout << "Graph init. Nb nof nodes : " << graph->getNbNodes() << std::endl;
-				exit(0);
+// 				exit(0);
 			}
 			else {
 				fuser->initialize(pose_,cloud,pts);
@@ -782,7 +786,9 @@ public:
 		// Need to get the incremental update.
 		if (nb_added_clouds_  == 0)
 		{
-			Tm.setIdentity();
+			//Better init ?
+			Tm = this_odom;
+// 			Tm.setIdentity();
 		} else {
 			Tm = last_odom.inverse()*this_odom;
 
