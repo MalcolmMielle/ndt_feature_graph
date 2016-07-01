@@ -114,7 +114,7 @@ public:
 	assert(nodes_[0].map->wasInit() == true);
 	
 	if(fullInit() == false){
-		std::cout << "GRAPH NOT FULLY INIT " << std::cout;
+		std::cout << "GRAPH NOT FULLY INIT " << std::endl;
 		assert(fullInit());
 	}
     std::cout << "initialize -> done" << std::endl;

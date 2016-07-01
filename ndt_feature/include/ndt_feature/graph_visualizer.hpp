@@ -23,18 +23,19 @@ namespace ndt_feature {
 			_start_pose = in;
 		}
 		
+		/**
+		 * @brief Only print red square at every node position
+		 */
 		void rvizPrint(const NDTFeatureGraph& graph, visualization_msgs::Marker& origins){
-			visualization_msgs::Marker destinations;
-			origins.header.frame_id = destinations.header.frame_id = "/world";
-			origins.header.stamp = destinations.header.stamp = ros::Time::now();
-			origins.ns = destinations.ns = "graph_markers";
+			origins.header.frame_id = "/world";
+			origins.header.stamp = ros::Time::now();
+			origins.ns = "graph_markers";
 			origins.id = 0;
-			destinations.id = 1;
-			origins.type = destinations.type = visualization_msgs::Marker::POINTS;
-			origins.scale.x = destinations.scale.x = 1;
-			origins.scale.y = destinations.scale.y = 1;
-			origins.color.g = destinations.color.r = 1.0f;
-			origins.color.a = destinations.color.a = 1.0;
+			origins.type = visualization_msgs::Marker::POINTS;
+			origins.scale.x = 0.2;
+			origins.scale.y = 0.2;
+			origins.color.r = 1.0f;
+			origins.color.a = 1.0;
 			
 			std::cout << "Getting incre" << std::endl;
 			std::vector<NDTFeatureLink> links = graph.getIncrementalLinks();

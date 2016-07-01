@@ -43,6 +43,7 @@
 
 #include "NDTRegistrationGraph.hpp"
 #include "ndt_feature/graph_visualizer.hpp"
+#include "Graph2G2o.hpp"
 
 #ifndef SYNC_FRAMES
 #define SYNC_FRAMES 20
@@ -146,6 +147,7 @@ class NDTFeatureFuserNode {
 	//RegistrationGraph from betterGraph Library
 	ndt_feature::NDTFeatureRegistrationGraph _malcolm_graph;
 	ndt_feature::GraphVisualizer _gvisu;
+	ndt_feature::G2OGraphOptimization _graph_2_g2o;
 
 public:
 	// Constructor
@@ -302,7 +304,7 @@ public:
 		
 		if (!gt_file_.is_open() || !est_file_.is_open())
 		{
-			ROS_ERROR_STREAM("Failed to open : " << gt_file_ << " || " << est_file_); 
+			ROS_ERROR_STREAM("Failed to open : " << gt_filename << " || " << est_filename); 
 		}
 
 		
@@ -419,12 +421,16 @@ public:
 				}
 			}
 		  
-		  
 		  //Copy graph
 		  _malcolm_graph.convert(*graph);
 		  
+		  //G2o optimization and writing the files
 		  
-		  if(use_graph_==false){
+		  _graph_2_g2o.updateGraph(*graph);
+		  _graph_2_g2o.optimize();
+		  
+		  
+		  if(use_graph_ == false){
 			delete fuser;
 		  }
 		  else{
@@ -553,7 +559,7 @@ public:
 	    m.unlock();
 		
 		if(graph->fullInit() == false){
-			std::cout << "GRAPH NOT FULLY INIT " << std::cout;
+			std::cout << "GRAPH NOT FULLY INIT " << std::endl;
 			assert(graph->fullInit());
 		}
 
