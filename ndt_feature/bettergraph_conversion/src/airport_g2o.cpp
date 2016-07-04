@@ -222,7 +222,7 @@ public:
 	    //the frame to initialize to
             param_nh.param<std::string>("gt_frame",gt_frame,std::string(""));
 	    //the world frame
-	    param_nh.param<std::string>("world_frame",world_frame,"/world");
+	    param_nh.param<std::string>("world_frame",world_frame,"/map");
 	    //our frame
 	    param_nh.param<std::string>("fuser_frame",fuser_frame,"/fuser");
  
@@ -272,7 +272,7 @@ public:
 		param_nh.param<int>("drop_scan_nb", drop_scan_nb_, 0);
 
 
-		param_nh.param<std::string>("tf_odom_frame", tf_odom_frame_,  "/odom_base_link");
+		param_nh.param<std::string>("tf_odom_frame", tf_odom_frame_,  "/odom");
 
 		param_nh.param<bool>("clear_odometry_estimate", clear_odometry_estimate_, false);
 
@@ -431,7 +431,7 @@ public:
 					
 					visualization_msgs::Marker origins;
 					visualization_msgs::Marker origins_odom;
-					_gvisu.rvizPrint(*graph, origins, origins_odom);
+					_gvisu.rvizPrint(*graph, origins, origins_odom, "/map");
 					_marker_pub_graph.publish(origins);
 					_marker_pub_graph_odom.publish(origins_odom);
 				}
@@ -505,7 +505,7 @@ public:
 				if (graph->wasInit() == true) {
 					visualization_msgs::Marker origins;
 					visualization_msgs::Marker origins_odom;
-					_gvisu.rvizPrint(*graph, origins, origins_odom);
+					_gvisu.rvizPrint(*graph, origins, origins_odom), "/map";
 					_marker_pub_graph.publish(origins);
 					_marker_pub_graph_odom.publish(origins_odom);
 				}
@@ -611,15 +611,15 @@ public:
 				
 				visualization_msgs::Marker origins;
 				visualization_msgs::Marker origins_odom;
-				_gvisu.rvizPrint(*graph, origins, origins_odom);
+				_gvisu.rvizPrint(*graph, origins, origins_odom, "/map");
 				_marker_pub_graph.publish(origins);
 				_marker_pub_graph_odom.publish(origins_odom);
 // 				if(graph->getNbNodes() == 6){
 					_graph_2_g2o.updateGraph(*graph);
-					
+// 					
 // 					exit(0);
-// 					_graph_2_g2o.optimize();
-					
+// // 					_graph_2_g2o.optimize();
+// 					
 // 				}
 			}
 		}
@@ -770,7 +770,7 @@ public:
 		//            ROS_ERROR_STREAM("frame : " << tf_odom_frame_);
 
 		// The odometry that should be provided is in vehicle coordinates - the /base_link
-		{
+// 		{
 			tf::StampedTransform transform;
 			try {   
 				listener.waitForTransform(world_frame, tf_odom_frame_,
@@ -784,7 +784,9 @@ public:
 				return;
 			}
 			tf::transformTFToEigen( transform, this_odom);
-		}
+// 		}
+		
+		std::cout << "Still goigng" << std::endl;
 
 		// Ground truth
 		if (gt_frame != std::string(""))
@@ -804,6 +806,8 @@ public:
 			tf::transformTFToEigen( transform, Tgt );
 		}
 
+		
+		std::cout << "Still goigng" << std::endl;
 
 		// Need to get the incremental update.
 		if (nb_added_clouds_  == 0)
@@ -816,6 +820,8 @@ public:
 
 			if (Tm.translation().norm() < min_incr_dist /*0.02*/ && Tm.rotation().eulerAngles(0,1,2).norm() < min_incr_rot/*0.02*/) {
 				message_m.unlock();
+				
+				std::cout << "Distance is too small" << std::endl;
 				return;
 			}
 		}
@@ -826,18 +832,21 @@ public:
 			//              ROS_INFO("tf transformed to gt_file_");
 		}
 
+		
+		std::cout << "Geeting odom " << std::endl;
 		last_odom = this_odom;
 
 					
 		projector_.projectLaser(*msg_in, cloud);
 	    message_m.unlock();
 	    
+		std::cout << "Geeting ros message " << std::endl;
 	    pcl::fromROSMsg (cloud, pcl_cloud_unfiltered);
 
 		if (pcl_cloud_unfiltered.points.size() == 0) {
 			ROS_ERROR("BAD LASER SCAN(!) - should never happen - check your driver / bag file");
 		}
-		if(pcl_cloud_unfiltered.points.size () != pcl_cloud_unfiltered.width * pcl_cloud_unfiltered.height){
+		else if(pcl_cloud_unfiltered.points.size () != pcl_cloud_unfiltered.width * pcl_cloud_unfiltered.height){
 			std::cout << "Weird cloud sizes. I don't know what's going on" << std::endl;
 		}
 		else{

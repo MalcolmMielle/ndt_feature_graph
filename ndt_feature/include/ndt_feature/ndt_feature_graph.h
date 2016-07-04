@@ -153,7 +153,12 @@ public:
       new_node.map->setMotionParams(motion_params_);
       new_node.map->setSensorPose(sensor_pose_);
       new_node.T = Tnow;
-      // Add the first data...
+	  
+	  
+// 	  new_node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+//       new_node.Tlocal_fuse = Tnow_local;
+      
+	  // Add the first data...
       Eigen::Affine3d init_pose;
       init_pose.setIdentity();
 	  std::cout << "Creating new_node init " << std::endl;
@@ -161,10 +166,10 @@ public:
 	  std::cout << "Done new_node init " << std::endl;
 
       // Add the cloud...
-      if (params_.storePtsInNodes) {
-        Eigen::Affine3d Tnow_local_sensor = init_pose*sensor_pose_;
-        new_node.addCloud(Tnow_local_sensor, cloud);
-      }
+//       if (params_.storePtsInNodes) {
+//         Eigen::Affine3d Tnow_local_sensor = init_pose*sensor_pose_;
+//         new_node.addCloud(Tnow_local_sensor, cloud);
+//       }
       
       if (params_.popNodes) {
         std::cerr << "POP NODES!!!-------------------" << std::endl;
@@ -257,6 +262,48 @@ public:
       m.score = -1.;
       ret.push_back(m);
     }
+    return ret;
+  
+  }
+  
+  
+  std::vector<NDTFeatureLink> getOdometryLinks() const {
+    std::vector<NDTFeatureLink> ret;
+    for (size_t i = 0; i < (int) nodes_.size() - 1 ; i++) {
+      NDTFeatureLink m(i, i+1);
+	  Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+	  std::cout <<"Cov on creation " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
+      //m.T = nodes_[i].T.rotation()*nodes_[i].T.inverse()*nodes_[i+1].T;;
+      //m.T = Eigen::Translation<double,3>(nodes_[i+1].T.translation()-nodes_[i].T.translation())*nodes_[i+1].T.rotation();
+      m.T = nodes_[i].Tlocal_odom; //<-Not multiuplied since it's alwasy starts at zero again so we don't need a difference
+      //.inverse()*nodes_[i+1].Tlocal_odom;
+
+      std::cout << "---" << std::endl;
+      std::cout << "incr : " << std::flush; lslgeneric::printTransf(m.T);
+      std::cout << "T  : " << std::flush; lslgeneric::printTransf(nodes_[i].T);
+      std::cout << "T+1  : " << std::flush; lslgeneric::printTransf(nodes_[i+1].T);
+      std::cout << "T*incr : " << std::flush; lslgeneric::printTransf(nodes_[i].T*m.T);
+      
+      std::cout << "m.T.rotation() : " << m.T.rotation() << std::endl;
+      std::cout << "m.T.rotation().eulerAngles(0,1,2) : " <<
+        m.T.rotation().eulerAngles(0,1,2) << std::endl;
+
+      m.score = -1.;
+      ret.push_back(m);
+	  std::cout <<"Cov on push_back " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
+	  
+	  //TODO COVARIANCE BUT HOW TO :(
+    
+		
+	}
+	
+	for(int tmp = 0 ; tmp < ret.size() ; ++tmp){
+		Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+			std::cout <<"Estimate before return " << ret[tmp].getRelCov().inverse().format(cleanFmt) << std::endl;
+			std::cout << "Adding Edge" << std::endl;	
+		}
+    
+    
     return ret;
   
   }

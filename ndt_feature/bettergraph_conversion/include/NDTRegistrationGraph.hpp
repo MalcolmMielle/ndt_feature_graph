@@ -9,7 +9,47 @@ namespace ndt_feature {
 	
 	class NDTFeatureRegistrationGraph : public bettergraph::DirectedPseudoGraph<ndt_feature::NDTFeatureNode, NDTFeatureLink>{
 		
+	public:
+
+		class Params {
+			public:
+			Params() {
+				newNodeTranslDist = 1.;
+				storePtsInNodes = false;
+				storePtsInNodesIncr = 8;
+				popNodes = false;
+			}
+			double newNodeTranslDist;
+			bool storePtsInNodes;
+			int storePtsInNodesIncr;
+			bool popNodes;
+
+// 			friend std::ostream& operator<<(std::ostream &os, const NDTFeatureGraph::Params &obj)
+// 			{
+// 				os << "\nnewNodeTranslDist  : " << obj.newNodeTranslDist;
+// 				os << "\nstorePtsInNodes    : " << obj.storePtsInNodes;
+// 				os << "\nstorePtsInNodesIncr: " << obj.storePtsInNodesIncr;
+// 				os << "\npopNodes           : " << obj.popNodes;
+// 				return os;
+// 			}
+
+		};
+		
+		
+		
 	protected:
+		
+		double _distance_moved_in_last_node;
+		NDTViz *viewer;
+  
+		NDTFeatureGraph::Params _params;
+		NDTFeatureFuserHMT::Params _fuser_params;
+		semrob_generic::MotionModel2d::Params _motion_params;
+		Eigen::Affine3d _sensor_pose;
+
+		Eigen::Affine3d _Tnow; // Current pose estimate.
+
+		pcl::PointCloud<pcl::PointXYZ> _pointcloud_vis;
 		
 		
 	public:

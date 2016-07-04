@@ -26,8 +26,12 @@ namespace ndt_feature {
 		/**
 		 * @brief Only print red square at every node position
 		 */
-		void rvizPrint(const NDTFeatureGraph& graph, visualization_msgs::Marker& origins){
-			origins.header.frame_id = "/world";
+		void rvizPrint(const NDTFeatureGraph& graph, visualization_msgs::Marker& origins, visualization_msgs::Marker& origins_odom){
+			rvizPrint(graph, origins, origins_odom, "/world");
+		}
+		
+		void rvizPrint(const NDTFeatureGraph& graph, visualization_msgs::Marker& origins, visualization_msgs::Marker& origins_odom, const std::string& frame){
+			origins.header.frame_id = frame;
 			origins.header.stamp = ros::Time::now();
 			origins.ns = "graph_markers";
 			origins.id = 0;
@@ -37,8 +41,29 @@ namespace ndt_feature {
 			origins.color.r = 1.0f;
 			origins.color.a = 1.0;
 			
-			std::cout << "Getting incre" << std::endl;
+			origins_odom.header.frame_id = frame;
+			origins_odom.header.stamp = ros::Time::now();
+			origins_odom.ns = "graph_markers";
+			origins_odom.id = 0;
+			origins_odom.type = visualization_msgs::Marker::POINTS;
+			origins_odom.scale.x = 0.2;
+			origins_odom.scale.y = 0.2;
+			origins_odom.color.b = 1.0f;
+			origins_odom.color.a = 1.0;
+			
+			std::cout << "Getting incre :" << graph.getNbLinks() << std::endl;
+			std::vector<NDTFeatureLink> links_odom = graph.getOdometryLinks();
 			std::vector<NDTFeatureLink> links = graph.getIncrementalLinks();
+			std::cout << "Got incre" << std::endl;
+			//Apply transformations.
+			//Prints
+			
+			printLinks(links_odom, origins_odom);
+			printLinks(links, origins);
+			
+		}
+		
+		void printLinks(const std::vector<NDTFeatureLink>& links, visualization_msgs::Marker& origins){
 			std::cout << "Got incre" << std::endl;
 			//Apply transformations.
 			//Prints
@@ -67,7 +92,6 @@ namespace ndt_feature {
 			}
 			std::cout << "Point made.............." << std::endl;
 // 			marker_pub.publish(points);
-			
 		}
 		
 		
