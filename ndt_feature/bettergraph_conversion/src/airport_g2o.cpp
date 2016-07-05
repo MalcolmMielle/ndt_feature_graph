@@ -23,6 +23,7 @@
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
 #include <message_filters/sync_policies/approximate_time.h>
+#include <std_msgs/Bool.h>
 #include <std_srvs/Empty.h>
 
 #include <flirtlib_ros/flirtlib.h>
@@ -66,6 +67,8 @@ class NDTFeatureFuserNode {
 	message_filters::Subscriber<sensor_msgs::PointCloud2> *points2_sub_;
 	message_filters::Subscriber<sensor_msgs::LaserScan> *laser_sub_;
 	message_filters::Subscriber<nav_msgs::Odometry> *odom_sub_;
+	
+	ros::Subscriber optimize_sub;
 	ros::Subscriber gt_sub;
 
 	// Components for publishing
@@ -404,6 +407,8 @@ public:
 		Todom.setIdentity();
 		
 		std::cout << "start added cloud and of init " << nb_added_clouds_ << std::endl;
+		
+		optimize_sub = nh_.subscribe<std_msgs::Bool>("/optimize",10,&NDTFeatureFuserNode::optimize, this);	
 	}
 
 	~NDTFeatureFuserNode()
@@ -615,7 +620,7 @@ public:
 				_marker_pub_graph.publish(origins);
 				_marker_pub_graph_odom.publish(origins_odom);
 // 				if(graph->getNbNodes() == 6){
-					_graph_2_g2o.updateGraph(*graph);
+// 					_graph_2_g2o.updateGraph(*graph);
 // 					
 // 					exit(0);
 // // 					_graph_2_g2o.optimize();
@@ -1019,6 +1024,13 @@ public:
             this->processFeatureFrame(pcl_cloud,pts, Tm, frame_time);
                 
 	};
+	
+	void optimize(const std_msgs::Bool::ConstPtr& bool_msg){
+		
+		if(bool_msg->data == true){
+			_graph_2_g2o.updateGraph(*graph);
+		}
+	}
 	
 	// Callback
 	void gt_callback(const nav_msgs::Odometry::ConstPtr& msg_in)

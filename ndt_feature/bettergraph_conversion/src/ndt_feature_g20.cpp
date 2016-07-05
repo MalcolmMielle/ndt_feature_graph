@@ -19,6 +19,7 @@
 #include <nav_msgs/Odometry.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <geometry_msgs/PoseStamped.h>
+#include <std_msgs/Bool.h>
 
 #include <message_filters/subscriber.h>
 #include <message_filters/synchronizer.h>
@@ -67,7 +68,7 @@ class NDTFeatureFuserNode {
 	message_filters::Subscriber<sensor_msgs::LaserScan> *laser_sub_;
 	message_filters::Subscriber<nav_msgs::Odometry> *odom_sub_;
 	ros::Subscriber gt_sub;
-
+	ros::Subscriber optimize_sub;
 	// Components for publishing
 	tf::TransformBroadcaster tf_;
 	ros::Publisher pointcloud_pub_;
@@ -404,6 +405,8 @@ public:
 		Todom.setIdentity();
 		
 		std::cout << "start added cloud and of init " << nb_added_clouds_ << std::endl;
+		
+		optimize_sub = nh_.subscribe<std_msgs::Bool>("/optimize", 10, &NDTFeatureFuserNode::optimize, this);
 	}
 
 	~NDTFeatureFuserNode()
@@ -615,7 +618,7 @@ public:
 				_marker_pub_graph.publish(origins);
 				_marker_pub_graph_odom.publish(origins_odom);
 // 				if(graph->getNbNodes() == 6){
-					_graph_2_g2o.updateGraph(*graph);
+// 					_graph_2_g2o.updateGraph(*graph);
 					
 // 					exit(0);
 // 					_graph_2_g2o.optimize();
@@ -645,6 +648,13 @@ public:
 	    m.unlock();
 
 	    return ret;
+	}
+	
+	void optimize(const std_msgs::Bool::ConstPtr& bool_msg){
+		
+		if(bool_msg->data == true){
+			_graph_2_g2o.updateGraph(*graph);
+		}
 	}
 
 
