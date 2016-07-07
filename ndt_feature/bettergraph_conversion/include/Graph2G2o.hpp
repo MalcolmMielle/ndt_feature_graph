@@ -213,7 +213,7 @@ namespace ndt_feature {
 // 		std::cout <<"Estimate " << link.getRelCov().inverse().format(cleanFmt) << std::endl;
 		
 		
-		//BUG : Covariance of each node :
+		//BUG : Covariance of each node : USE SCAN MATCHING
 // 		auto cov_fo_node = node.map.getCov();
 		
 		
