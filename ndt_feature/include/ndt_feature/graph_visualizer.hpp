@@ -4,6 +4,9 @@
 
 #include "ndt_feature/ndt_feature_graph.h"
 #include <visualization_msgs/Marker.h>
+#include <ndt_map/NDTMapMsg.h>
+#include <ndt_map/ndt_conversions.h>
+#include <ndt_map/ndt_map.h>
 
 namespace ndt_feature {
 
@@ -13,21 +16,64 @@ namespace ndt_feature {
 	protected :
 		
 		Eigen::Affine3d _start_pose;
+		ndt_feature::NDTFeatureGraph* _graph;
 		
 	public:
 		GraphVisualizer(){
 			
 		};
 		
+		void setGraph(ndt_feature::NDTFeatureGraph* graph){_graph = graph;};
+		
+		void loadGraph(const std::string &fileName, int nb_nodes = -1){
+			if(nb_nodes < 0){
+				throw std::runtime_error("Not engouh nodes");
+			}
+			_graph->load(fileName, nb_nodes);
+		}
+		
+		void printLoadedGraph(){
+			visualization_msgs::Marker origins, origins_odom;
+			ndt_map::NDTMapMsg mapmsg;
+			const std::string frame_name = "/graph_visualizer";
+			
+			//Print all node center
+			rvizPrint(*_graph, origins, origins_odom, frame_name);
+			
+			//For all node print the cloud
+			for(size_t i = 0; i < _graph->getNbNodes() ; ++i){
+				lslgeneric::NDTMap* map = _graph->getMap();
+				bool good = lslgeneric::toMessage(map, mapmsg, frame_name);
+			}
+			
+			
+			
+		}
+		
 		void setStart(const Eigen::Affine3d& in){
 			_start_pose = in;
+		}
+		
+		void printAll(NDTFeatureGraph& graph, visualization_msgs::Marker& origins, visualization_msgs::Marker& origins_odom, ndt_map::NDTMapMsg& mapmsg, const std::string& frame_name){
+			
+			rvizPrint(graph, origins, origins_odom, frame_name);
+			
+			//Get the last ndtMap element
+			lslgeneric::NDTMap* map = graph.getMap();
+			
+// 			lslgeneric::NDTMap* map = map->pseudoTransformNDTMap();
+			bool good = lslgeneric::toMessage(map, mapmsg, frame_name);
+			
+			//TODO Change it to the fuser frame ?
+// 			printNDTMap(, mapmsg, frame_name);
+			
 		}
 		
 		/**
 		 * @brief Only print red square at every node position
 		 */
 		void rvizPrint(const NDTFeatureGraph& graph, visualization_msgs::Marker& origins, visualization_msgs::Marker& origins_odom){
-			rvizPrint(graph, origins, origins_odom, "/world");
+			rvizPrint(graph, origins, origins_odom, "/fuser");
 		}
 		
 		void rvizPrint(const NDTFeatureGraph& graph, visualization_msgs::Marker& origins, visualization_msgs::Marker& origins_odom, const std::string& frame){
@@ -65,6 +111,8 @@ namespace ndt_feature {
 		
 		void printLinks(const std::vector<NDTFeatureLink>& links, visualization_msgs::Marker& origins){
 			std::cout << "Got incre" << std::endl;
+			std::ofstream ofs;
+			ofs.open("allpositions.txt", std::ofstream::out | std::ofstream::trunc);
 			//Apply transformations.
 			//Prints
 			geometry_msgs::Point p;
@@ -73,10 +121,12 @@ namespace ndt_feature {
 			p.y = _start_pose(1, 3);
 			p.z = 0;
 			origins.points.push_back(p);
+			ofs << p.x << " " << p.y << std::endl;
 			
 // 			geometry_msgs::Point cumulated_translation = p;
 			
 			Eigen::Affine3d cumulated_translation = _start_pose;
+			
 			for(size_t i = 0; i < links.size() ; ++i){
 				std::cout << "Making poitns " << links.size() << std::endl;
 				//Getting the translation out of the transform : https://en.wikipedia.org/wiki/Transformation_matrix
@@ -88,11 +138,20 @@ namespace ndt_feature {
 				p.x = cumulated_translation(0, 3);
 				p.y = cumulated_translation(1, 3);
 				p.z = 0;
+				ofs << p.x << " " << p.y << std::endl;
 				origins.points.push_back(p);
 			}
+			ofs.close();
 			std::cout << "Point made.............." << std::endl;
 // 			marker_pub.publish(points);
 		}
+		
+	
+		void printNDTMap(const ndt_feature::NDTFeatureNode& node, ndt_map::NDTMapMsg& mapmsg, std::string frame_name){
+			lslgeneric::NDTMap* map = node.map->map;
+			bool good = lslgeneric::toMessage(map, mapmsg, frame_name);
+		
+		};
 		
 		
 	};
