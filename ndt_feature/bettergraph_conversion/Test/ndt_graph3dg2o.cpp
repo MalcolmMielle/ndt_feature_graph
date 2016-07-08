@@ -1,3 +1,5 @@
+#include <valgrind/callgrind.h>
+
 // Test code to evaluate how laser2d features such as the FLIRT library could paly along with NDT.
 #include <ndt_feature/ndt_feature_fuser_hmt.h>
 //#include <ndt_fuser/ndt_fuser_hmt.h>
@@ -45,6 +47,7 @@
 #include "NDTRegistrationGraph.hpp"
 #include "ndt_feature/graph_visualizer.hpp"
 #include "Graph2G2o.hpp"
+#include "Graph2G2o3d.hpp"
 
 #ifndef SYNC_FRAMES
 #define SYNC_FRAMES 20
@@ -76,6 +79,7 @@ class NDTFeatureFuserNode {
 	ros::Publisher fuser_odom_pub_, fuser_pub_;
 	ros::Publisher _marker_pub_graph;
 	ros::Publisher _marker_pub_graph_odom;
+	ros::Publisher _last_ndtmap;
 	Eigen::Affine3d pose_, T, sensor_pose_;
 
 	tf::TransformListener listener;
@@ -149,7 +153,7 @@ class NDTFeatureFuserNode {
 	//RegistrationGraph from betterGraph Library
 	ndt_feature::NDTFeatureRegistrationGraph _malcolm_graph;
 	ndt_feature::GraphVisualizer _gvisu;
-	ndt_feature::G2OGraphOptimization _graph_2_g2o;
+	ndt_feature::G2OGraphOptimization3d _graph_2_g2o;
 
 public:
 	// Constructor
@@ -399,6 +403,7 @@ public:
 		
 		_marker_pub_graph = nh_.advertise<visualization_msgs::Marker>("visualization_marker_graph", 10);
 		_marker_pub_graph_odom= nh_.advertise<visualization_msgs::Marker>("visualization_marker_graph_odom", 10);
+		_last_ndtmap= nh_.advertise<ndt_map::NDTMapMsg>("lastgraphmap", 10);
 
 		heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(4.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
 		
@@ -413,6 +418,8 @@ public:
 	{
 		
 		std::cout << "DESTRUCTION" << std::endl;
+		
+// 		graph->saveMap();
 		
 		//Copy graph
 		  _malcolm_graph.convert(*graph);
@@ -434,9 +441,11 @@ public:
 					
 					visualization_msgs::Marker origins;
 					visualization_msgs::Marker origins_odom;
-					_gvisu.rvizPrint(*graph, origins, origins_odom);
+					ndt_map::NDTMapMsg mapmsg;
+					_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
 					_marker_pub_graph.publish(origins);
 					_marker_pub_graph_odom.publish(origins_odom);
+					_last_ndtmap.publish(mapmsg);
 				}
 			}
 		  
@@ -508,9 +517,11 @@ public:
 				if (graph->wasInit() == true) {
 					visualization_msgs::Marker origins;
 					visualization_msgs::Marker origins_odom;
-					_gvisu.rvizPrint(*graph, origins, origins_odom);
+					ndt_map::NDTMapMsg mapmsg;
+					_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
 					_marker_pub_graph.publish(origins);
 					_marker_pub_graph_odom.publish(origins_odom);
+					_last_ndtmap.publish(mapmsg);
 				}
 			}
 
@@ -609,23 +620,25 @@ public:
 		
 		
 		//Marker print
-		if(use_graph_){
-			if (graph->wasInit() == true) {
-				
-				visualization_msgs::Marker origins;
-				visualization_msgs::Marker origins_odom;
-				_gvisu.rvizPrint(*graph, origins, origins_odom);
-				_marker_pub_graph.publish(origins);
-				_marker_pub_graph_odom.publish(origins_odom);
-// 				if(graph->getNbNodes() == 6){
-// 					_graph_2_g2o.updateGraph(*graph);
-					
-// 					exit(0);
-// 					_graph_2_g2o.optimize();
-					
-// 				}
-			}
-		}
+// 		if(use_graph_){
+// 			if (graph->wasInit() == true) {
+// 				
+// 				visualization_msgs::Marker origins;
+// 				visualization_msgs::Marker origins_odom;
+// 				ndt_map::NDTMapMsg mapmsg;
+// 				_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
+// 				_marker_pub_graph.publish(origins);
+// 				_marker_pub_graph_odom.publish(origins_odom);
+// 				_last_ndtmap.publish(mapmsg);
+// // 				if(graph->getNbNodes() == 6){
+// // 					_graph_2_g2o.updateGraph(*graph);
+// 					
+// // 					exit(0);
+// // 					_graph_2_g2o.optimize();
+// 					
+// // 				}
+// 			}
+// 		}
 		
 		std::cout << "Transform sent" << std::endl;
 
@@ -762,7 +775,10 @@ public:
 	void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg_in)
 	{
           //          ROS_ERROR("laserCallback()");
-		
+
+// 		CALLGRIND_START_INSTRUMENTATION;
+// 		CALLGRIND_TOGGLE_COLLECT;
+// 
 		std::cout << "Laser Callback" << std::endl;
 		std::cout << "added cloud " << nb_added_clouds_ << std::endl;
 	    sensor_msgs::PointCloud2 cloud;
@@ -953,6 +969,11 @@ public:
 				std::cout << "Don ePublication visualize" << std::endl;
 			}
 		}
+		
+// 		CALLGRIND_TOGGLE_COLLECT;
+// 		CALLGRIND_STOP_INSTRUMENTATION;
+		
+		
 	};
 	
 	// Callback

@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 11)
 #  message(STATUS "${_variableName}=${${_variableName}}")
 # endforeach()
 
+
 #Add CMake module path
 message("Moduele path")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules/")
@@ -32,6 +33,5 @@ message("Added includes")
 include_directories(include)
 
 add_subdirectory(include)
-add_subdirectory(test)
 message("INto source")
-add_subdirectory(src)
+add_subdirectory(Test)
