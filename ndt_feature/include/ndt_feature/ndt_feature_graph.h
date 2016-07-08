@@ -286,8 +286,7 @@ public:
       
       std::cout << "m.T.rotation() : " << m.T.rotation() << std::endl;
       std::cout << "m.T.rotation().eulerAngles(0,1,2) : " <<
-        m.T.rotation().eulerAngles(0,1,2) << std::endl;
-
+	  m.T.rotation().eulerAngles(0,1,2) << std::endl;
       m.score = -1.;
       ret.push_back(m);
 	  std::cout <<"Cov on push_back " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
@@ -308,11 +307,29 @@ public:
   
   }
 
+  void updateAllGraphLinksUsingNDTRegistration(int nb_neighbours, bool keepScore){
+	  
+	  for(size_t i = 0 ; i < getNbLinks() ; ++i){
+		  
+		  NDTFeatureLink link = (NDTFeatureLink&) getLinkInterface(i);
+		  updateLinkUsingNDTRegistration(link, nb_neighbours, keepScore);
+		  
+	  }
+	  
+  }
+  
   void updateLinkUsingNDTRegistration(NDTFeatureLink &link, int nb_neighbours, bool keepScore) {
     lslgeneric::NDTMatcherD2D matcher_d2d;
     matcher_d2d.n_neighbours = nb_neighbours;
     
     matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T,true);
+	//Adding the covariance into the link
+	Eigen::MatrixXd cov;
+	matcher_d2d.covariance(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, cov);
+	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << std::endl; 
+	link.cov = cov;
+	
     if (!keepScore) {
       link.score = ndt_feature::overlapNDTOccupancyScore(nodes_[link.getRefIdx()],
                                                          nodes_[link.getMovIdx()], 
