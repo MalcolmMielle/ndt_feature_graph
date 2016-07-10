@@ -321,12 +321,24 @@ public:
   void updateLinkUsingNDTRegistration(NDTFeatureLink &link, int nb_neighbours, bool keepScore) {
     lslgeneric::NDTMatcherD2D matcher_d2d;
     matcher_d2d.n_neighbours = nb_neighbours;
+	
+	std::cout << "Matching : " << link.getRefIdx() << " with " << link.getMovIdx() << std::endl;
+	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+	std::cout << "Transform between the two " << link.T.matrix().format(cleanFmt) << std::endl; 
     
-    matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T,true);
+    bool converged = matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T,true);
+	
+	assert(converged == true);
+	
+	std::cout << "Transform between the two new " << link.T.matrix().format(cleanFmt) << std::endl; 
 	//Adding the covariance into the link
 	Eigen::MatrixXd cov;
 	matcher_d2d.covariance(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, cov);
-	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+	
+	std::cout << "Size of Covariance : " << cov.rows() << " AND COLS " << cov.cols() << std::endl;
+	
+	assert(cov.rows() == 3);
+	assert(cov.cols() == 3);
 	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << std::endl; 
 	link.cov = cov;
 	
@@ -341,7 +353,7 @@ public:
   void updateLinksUsingNDTRegistration(std::vector<NDTFeatureLink> &links, int nb_neighbours, bool keepScore) {
 
     for (size_t i = 0; i < links.size(); i++) {
-      std::cout << "updating link : " << i << " (" << links.size() << ")" << std::endl;
+      std::cout << "updating link : " << i << " (size of links :" << links.size() << ")" << std::endl;
       updateLinkUsingNDTRegistration(links[i], nb_neighbours, keepScore);
     }
   }
