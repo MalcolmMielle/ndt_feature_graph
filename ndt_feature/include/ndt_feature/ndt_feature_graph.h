@@ -325,22 +325,33 @@ public:
 	std::cout << "Matching : " << link.getRefIdx() << " with " << link.getMovIdx() << std::endl;
 	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
 	std::cout << "Transform between the two " << link.T.matrix().format(cleanFmt) << std::endl; 
-    
-    bool converged = matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T,true);
+    int a ;
+	std::cout << "PAUSE before match" << std::endl;
+// 	std::cin >> a;
+    bool converged = matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, true);
 	
 	assert(converged == true);
 	
 	std::cout << "Transform between the two new " << link.T.matrix().format(cleanFmt) << std::endl; 
+	
+// 	int a ;
+	std::cout << "PAUSE before cov" << std::endl;
+// 	std::cin >> a;
+	
 	//Adding the covariance into the link
-	Eigen::MatrixXd cov;
+	Eigen::MatrixXd cov(6,6);
+	cov.setZero();
 	matcher_d2d.covariance(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, cov);
 	
 	std::cout << "Size of Covariance : " << cov.rows() << " AND COLS " << cov.cols() << std::endl;
 	
-	assert(cov.rows() == 3);
-	assert(cov.cols() == 3);
+	assert(cov.rows() == 6);
+	assert(cov.cols() == 6);
 	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << std::endl; 
-	link.cov = cov;
+	link.cov_3d = cov;
+	
+	std::cout << "PAUSE got cov : " << cov << std::endl;
+	std::cin >> a;
 	
     if (!keepScore) {
       link.score = ndt_feature::overlapNDTOccupancyScore(nodes_[link.getRefIdx()],

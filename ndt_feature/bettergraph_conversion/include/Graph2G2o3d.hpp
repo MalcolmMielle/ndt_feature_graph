@@ -88,24 +88,16 @@ namespace ndt_feature {
 			
 		}
 		
+		//NEW : 
 		void updateGraph(NDTFeatureGraph& graph){
 			std::cout << "Updating the graph : " << graph.getNbNodes() << " " << graph.getNbLinks() << std::endl;
 			_optimizer.clear();
 			if(graph.getNbNodes() > 0){
 				//FIrst update Links
-				auto links_odom = graph.getOdometryLinks();
 				
-				for(auto tmp = 0 ; tmp < links_odom.size() ; ++tmp){
-				Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
-					std::cout <<"Estimate before anything " << links_odom[tmp].getRelCov().inverse().format(cleanFmt) << std::endl;
-					std::cout << "Adding Edge" << std::endl;	
-				}
-				
-// 				graph.appendLinks(links_odom);
-				std::cout << graph.getNbNodes() - 1 << " ? ==" <<  links_odom.size() << std::endl;
-				assert(graph.getNbNodes() - 1 == links_odom.size() );
 				addRobotPoses(graph);
-				addOdometry(links_odom);
+// 				addOdometry(graph);
+				addLinkRegistration(graph);
 				std::cout << "SAVE" << std::endl;
 				_optimizer.save("tutorial_real_final.g2o");
 				std::cout << "Done saving " << std::endl;
@@ -117,7 +109,9 @@ namespace ndt_feature {
 		/**
 		 * @brief Add edges between Robot poses
 		 */
-		void addOdometry(const std::vector<NDTFeatureLink>& links){
+		void addOdometry(NDTFeatureGraph& graph){
+			
+			auto links = graph.getOdometryLinks();
 			
 			for (size_t i = 0 ; i <links.size() ; ++i) {
 				Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
@@ -125,13 +119,37 @@ namespace ndt_feature {
 				std::cout << "Adding Edge" << std::endl;
 // 				NDTFeatureLink link = NDTFeatureLink((const NDTFeatureLink&) graph.getLinkInterface(i));
 				g2o::EdgeSE3* odometry = new g2o::EdgeSE3;
-				NDTFeatureLink2EdgeSE2(links[i], *odometry);
+				NDTFeatureLink2EdgeSE3(links[i], *odometry, true);
 				_optimizer.addEdge(odometry);
 			} 
 			std::cout << "SAVE now" << std::endl;
 			_optimizer.save("tutorial_links.g2o");
 			
 		}
+		
+		
+		void addLinkRegistration(NDTFeatureGraph& graph){
+			
+			//What number ot use for the neighbor
+			auto links = graph.getOdometryLinks();
+			graph.updateLinksUsingNDTRegistration(links, 10, true);
+			
+			for (size_t i = 0 ; i <links.size() ; ++i) {
+				Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+				std::cout <<"Estimate before anything " << links[i].getRelCov().inverse().format(cleanFmt) << std::endl;
+				std::cout << "Adding Edge" << std::endl;
+// 				NDTFeatureLink link = NDTFeatureLink((const NDTFeatureLink&) graph.getLinkInterface(i));
+				g2o::EdgeSE3* odometry = new g2o::EdgeSE3;
+				NDTFeatureLink2EdgeSE3(links[i], *odometry);
+				_optimizer.addEdge(odometry);
+			} 
+			std::cout << "SAVE now" << std::endl;
+			_optimizer.save("tutorial_links.g2o");
+			
+		}
+		
+		
+		
 		
 		/**
 		 * @brief Add all the robot poses as vertices
@@ -146,7 +164,7 @@ namespace ndt_feature {
 				feature->copyNDTFeatureNode( (const NDTFeatureNode&)graph.getNodeInterface(i) );
 				g2o::VertexSE3* robot =  new g2o::VertexSE3;
 				robot->setId(i);
-				NDTFeatureNode2VertexSE2(*feature, *robot);
+				NDTFeatureNode2VertexSE3(*feature, *robot);
 				std::cout << "Robot " << robot->estimate().matrix() << std::endl;
 				_optimizer.addVertex(robot);
 				auto Vet_test = (g2o::VertexSE3*) _optimizer.vertex(i);
@@ -176,8 +194,8 @@ namespace ndt_feature {
 		
 	private:
 		
-		void NDTFeatureLink2EdgeSE2(const NDTFeatureLink& link, g2o::EdgeSE3& edge);
-		void NDTFeatureNode2VertexSE2(const ndt_feature::NDTFeatureNode& feature, g2o::VertexSE3& vertex_se3);
+		void NDTFeatureLink2EdgeSE3(const NDTFeatureLink& link, g2o::EdgeSE3& edge, bool useCov = true);
+		void NDTFeatureNode2VertexSE3(const ndt_feature::NDTFeatureNode& feature, g2o::VertexSE3& vertex_se3);
 		
 		Eigen::Isometry3d Affine3d2Isometry3d(const Eigen::Affine3d& affine);
 		
@@ -186,7 +204,7 @@ namespace ndt_feature {
 
 	
 	
-	inline void G2OGraphOptimization3d::NDTFeatureLink2EdgeSE2(const NDTFeatureLink& link, g2o::EdgeSE3& edge)
+	inline void G2OGraphOptimization3d::NDTFeatureLink2EdgeSE3(const NDTFeatureLink& link, g2o::EdgeSE3& edge, bool useCov)
 	{
 		size_t from = link.getRefIdx() ;
 		size_t toward = link.getMovIdx() ;
@@ -220,32 +238,39 @@ namespace ndt_feature {
 // 		auto cov_fo_node = node.map.getCov();
 		
 		
-		//HACK ? : HOW IT'S DONE IN G2o. Also maybe look here : https://robotics.stackexchange.com/questions/7960/how-to-generate-edges-for-pose-graph-slam-from-known-positions-and-loops
-// 		Eigen::Vector2d transNoise(0.05, 0.01);
-// 		//Deg to radian
-// 		double rotNoise = 2. * 0.01745329251994329575;
+		Eigen::MatrixXd covariance(6,6);
+		if(useCov == false){
+			//TODO :
+// 			//HACK ? : HOW IT'S DONE IN G2o. Also maybe look here : https://robotics.stackexchange.com/questions/7960/how-to-generate-edges-for-pose-graph-slam-from-known-positions-and-loops
+// 			Eigen::Vector2d transNoise(0.05, 0.01);
+// 			//Deg to radian
+// 			double rotNoise = 2. * 0.01745329251994329575;
 // 
-// 		Eigen::Matrix3d covariance;
-// 		covariance.fill(0.);
-// 		
-// 		std::cout <<"Estimate of zero " << covariance.format(cleanFmt) << std::endl;
-// 		covariance(0, 0) = transNoise[0]*transNoise[0];
-// 		covariance(1, 1) = transNoise[1]*transNoise[1];
-// 		covariance(2, 2) = rotNoise*rotNoise;
-// 		
-// 		std::cout <<"Estimate of covariance " << covariance.format(cleanFmt) <<  std::endl << " With rot " << rotNoise*rotNoise << std::endl;
-// 		Eigen::Matrix3d information = covariance.inverse();
-// 		
-// // 		Eigen::IOFormat fmt(Eigen::StreamPrecision, Eigen::DontAlignCols, "\t", " ", "", "", "", "");
-// 		
-// 		std::cout <<"Estimate of information " << information.format(cleanFmt) << std::endl;
-// // 		std::cout <<"Estimate " << link.getRelCov().inverse().format(cleanFmt) << std::endl;
-// 
-// 		edge.setInformation(information);
+// 			
+// 			covariance.fill(0.);
+// 			
+// 			std::cout <<"Estimate of zero " << covariance.format(cleanFmt) << std::endl;
+// 			covariance(0, 0) = transNoise[0]*transNoise[0];
+// 			covariance(1, 1) = transNoise[1]*transNoise[1];
+// 			covariance(2, 2) = rotNoise*rotNoise;
+// 			
+// 			std::cout <<"Estimate of covariance " << covariance.format(cleanFmt) <<  std::endl << " With rot " << rotNoise*rotNoise << std::endl;
+		}
+		else{
+			covariance = link.cov_3d;
+		}
+		Eigen::MatrixXd information = covariance.inverse();
+		
+// 		Eigen::IOFormat fmt(Eigen::StreamPrecision, Eigen::DontAlignCols, "\t", " ", "", "", "", "");
+		
+		std::cout <<"Estimate of information " << information.format(cleanFmt) << std::endl;
+// 		std::cout <<"Estimate " << link.getRelCov().inverse().format(cleanFmt) << std::endl;
+
+		edge.setInformation(information);
 
 	}
 	
-	inline void G2OGraphOptimization3d::NDTFeatureNode2VertexSE2(const ndt_feature::NDTFeatureNode& feature, g2o::VertexSE3& vertex_se3)
+	inline void G2OGraphOptimization3d::NDTFeatureNode2VertexSE3(const ndt_feature::NDTFeatureNode& feature, g2o::VertexSE3& vertex_se3)
 	{
 		Eigen::Affine3d affine = Eigen::Affine3d(feature.getPose());
 // 		getRelPose();		

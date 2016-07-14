@@ -24,6 +24,7 @@ public:
   size_t mov_idx;
   Eigen::Affine3d T; // From ref->mov.
   Eigen::Matrix3d cov;
+  Eigen::MatrixXd cov_3d; // <-HACK for using the covairance returned by Matcher_D2D
   double score;
 
   // Interfaces
