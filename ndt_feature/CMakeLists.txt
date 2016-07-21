@@ -19,11 +19,12 @@ find_package(catkin REQUIRED COMPONENTS
   semrob_conversions
   semrob_rviz
   semrob_geometry
+  das
 )
 
 catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
-    CATKIN_DEPENDS ndt_registration ndt_map laser_geometry sensor_msgs ndt_visualisation std_srvs flirtlib_ros
+    CATKIN_DEPENDS ndt_registration ndt_map laser_geometry sensor_msgs ndt_visualisation std_srvs flirtlib_ros das
     INCLUDE_DIRS include
     LIBRARIES # TODO
 )

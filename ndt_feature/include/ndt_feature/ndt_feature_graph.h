@@ -290,9 +290,7 @@ public:
       m.score = -1.;
       ret.push_back(m);
 	  std::cout <<"Cov on push_back " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
-	  
-	  //TODO COVARIANCE BUT HOW TO :(
-    
+	      
 		
 	}
 	
@@ -328,6 +326,9 @@ public:
     int a ;
 	std::cout << "PAUSE before match" << std::endl;
 // 	std::cin >> a;
+	
+	Eigen::Affine3d before_T = link.T;
+	
     bool converged = matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, true);
 	
 	assert(converged == true);
@@ -340,9 +341,26 @@ public:
 	
 	//Adding the covariance into the link
 	Eigen::MatrixXd cov(6,6);
-	cov.setZero();
-	matcher_d2d.covariance(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, cov);
 	
+	bool same = true;
+	for(size_t i = 0; i < 4 ; ++i){
+		
+		for(size_t  j = 0 ; j < 4 ; ++j){
+			if(before_T(i,j) != link.T(i,j)){
+				same = false;
+			}
+		}
+	}
+	
+	if(same == false){
+		cov.setZero();
+		matcher_d2d.covariance(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, cov);
+	}
+	else{
+		std::cout << "NOTHING HAPPENED Creating a identity matrix" << std::endl;
+		cov = Eigen::MatrixXd::Identity(6, 6);
+// 		exit(0);
+	}
 	std::cout << "Size of Covariance : " << cov.rows() << " AND COLS " << cov.cols() << std::endl;
 	
 	assert(cov.rows() == 6);
