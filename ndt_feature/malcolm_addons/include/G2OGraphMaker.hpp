@@ -96,6 +96,8 @@ namespace ndt_feature {
 		Eigen::Vector2d getLinkNoise() {return _linkNoise;}
 		double getRotationNoise(){return _rotNoise;}
 		
+		g2o::OptimizableGraph::Vertex* getVertex(int idx){_optimizer.vertex(idx);}
+		
 		void addRobotPose(const Eigen::Vector3d& rob){
 			_robot_positions.push_back(rob);
 		}
