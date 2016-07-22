@@ -115,5 +115,5 @@ target_link_libraries(ndt_feature_mcl_node ${Boost_LIBRARIES} ${catkin_LIBRARIES
 
 find_package(bettergraph)
 if(bettergraph_FOUND)
-	add_subdirectory(bettergraph_conversion)
+	add_subdirectory(malcolm_addons)
 endif(bettergraph_FOUND)
