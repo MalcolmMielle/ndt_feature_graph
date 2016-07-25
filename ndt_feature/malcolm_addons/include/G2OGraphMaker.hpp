@@ -23,6 +23,14 @@
 
 namespace ndt_feature {
 	
+	
+	/** 
+	 * @brief Class holding a g2o graph optimization
+	 * When adding stuuf inside add all element and then call make graph. When giving the "from" "toward" for the edges, take in account than first are all the robot poses and then landmark poses. Thus when linking to landmark i send "nd_of_robot_poses + i". This is not done automoatically to allow for a landmark to landmark link
+	 * 
+	 */
+	
+	
 	class G2OGraphMarker{
 	public :
 		typedef g2o::BlockSolver< g2o::BlockSolverTraits<-1, -1> >  SlamBlockSolver;
@@ -36,9 +44,9 @@ namespace ndt_feature {
 		g2o::ParameterSE2Offset* _sensorOffset;
 		Eigen::IOFormat cleanFmt;
 		
-		std::vector<Eigen::Vector3d> _robot_positions;
-		std::vector<Eigen::Vector3d> _landmark_positions;
-		std::vector<Eigen::Vector3d> _prior_landmark_positions;
+		std::vector<g2o::SE2> _robot_positions;
+		std::vector<g2o::SE2> _landmark_positions;
+		std::vector<g2o::SE2> _prior_landmark_positions;
 		std::vector<std::tuple<g2o::SE2, int, int> > _odometry;
 		std::vector<std::tuple<g2o::SE2, int, int> > _observation_real_landmarks;
 		std::vector<std::tuple<g2o::SE2, int, int> > _edges_prior;
@@ -98,24 +106,42 @@ namespace ndt_feature {
 		
 		g2o::OptimizableGraph::Vertex* getVertex(int idx){_optimizer.vertex(idx);}
 		
+		std::vector<g2o::SE2>& getRobotPositions(){return _robot_positions;}
+		const std::vector<g2o::SE2>& getRobotPositions() const {return _robot_positions;}
+		
+		void addRobotPose(const g2o::SE2& se2){
+			_robot_positions.push_back(se2);
+		}
+		
 		void addRobotPose(const Eigen::Vector3d& rob){
-			_robot_positions.push_back(rob);
+			g2o::SE2 se2(rob(0), rob(1), rob(2));
+			_robot_positions.push_back(se2);
 		}
 		void addRobotPose(double x, double y, double theta){
 			Eigen::Vector3d robot1;
 			robot1 << x, y, theta;
 			_robot_positions.push_back(robot1);
 		}
+		
+		void addLandmarkPose(const g2o::SE2& se2){
+			_landmark_positions.push_back(se2);
+		}
 		void addLandmarkPose(const Eigen::Vector3d& lan){
-			_landmark_positions.push_back(lan);
+			g2o::SE2 se2(lan(0), lan(1), lan(2));
+			_landmark_positions.push_back(se2);
 		}
 		void addLandmarkPose(double x, double y, double theta){
 			Eigen::Vector3d lan;
 			lan << x, y, theta;
 			_landmark_positions.push_back(lan);
 		}
+		
+		void addPriorLandmarkPose(const g2o::SE2& se2){
+			_prior_landmark_positions.push_back(se2);
+		}
 		void addPriorLandmarkPose(const Eigen::Vector3d& lan){
-			_prior_landmark_positions.push_back(lan);
+			g2o::SE2 se2(lan(0), lan(1), lan(2));
+			_prior_landmark_positions.push_back(se2);
 		}
 		void addPriorLandmarkPose(double x, double y, double theta){
 			Eigen::Vector3d lan;
@@ -189,10 +215,10 @@ namespace ndt_feature {
 				++id;
 				Eigen::IOFormat fmt(Eigen::StreamPrecision, Eigen::DontAlignCols, "\t", " ", "", "", "", "");
 // 				std::cout <<"Estimate " << isometry2d.matrix().format(cleanFmt) << std::endl;
-				g2o::SE2 se2(_robot_positions[i](0), _robot_positions[i](1), _robot_positions[i](2));
+// 				g2o::SE2 se2(_robot_positions[i](0), _robot_positions[i](1), _robot_positions[i](2));
 				
-				std::cout << "SE2 " << se2.toVector() << std::endl;
-				robot->setEstimate(se2);
+				std::cout << "SE2 " << _robot_positions[i].toVector() << std::endl;
+				robot->setEstimate(_robot_positions[i]);
 				std::cout << "Robot " << robot->estimate().toVector() << std::endl;
 				_optimizer.addVertex(robot);	
 			}
@@ -231,8 +257,8 @@ namespace ndt_feature {
 				g2o::VertexSE2* landmark = new g2o::VertexSE2;
 				landmark->setId(id);
 				++id;
-				g2o::SE2 se2(_landmark_positions[i](0), _landmark_positions[i](1), _landmark_positions[i](2));
-				landmark->setEstimate(se2);
+// 				g2o::SE2 se2(_landmark_positions[i](0), _landmark_positions[i](1), _landmark_positions[i](2));
+				landmark->setEstimate(_landmark_positions[i]);
 				_optimizer.addVertex(landmark);
 			}
 			std::cerr << "done." << std::endl;
@@ -265,8 +291,8 @@ namespace ndt_feature {
 				landmark->setId(id);
 				++id;
 // 				g2o::SE2 se2(_prior_landmark_positions[i], _prior_landmark_positions[i+1], _prior_landmark_positions[i+2]);
-				g2o::SE2 se2(_prior_landmark_positions[i](0), _prior_landmark_positions[i](1), _prior_landmark_positions[i](2));
-				landmark->setEstimate(se2);
+// 				g2o::SE2 se2(_prior_landmark_positions[i](0), _prior_landmark_positions[i](1), _prior_landmark_positions[i](2));
+				landmark->setEstimate(_prior_landmark_positions[i]);
 				_optimizer.addVertex(landmark);
 			}
 			std::cerr << "done." << std::endl;

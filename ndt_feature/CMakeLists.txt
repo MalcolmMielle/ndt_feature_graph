@@ -62,6 +62,7 @@ find_package(GLUT REQUIRED)
 include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(include)
+include_directories(malcolm_addons/include)
 
 find_package(OpenMP)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
@@ -115,5 +116,83 @@ target_link_libraries(ndt_feature_mcl_node ${Boost_LIBRARIES} ${catkin_LIBRARIES
 
 find_package(bettergraph)
 if(bettergraph_FOUND)
-	add_subdirectory(malcolm_addons)
+# # Libs were not linked
+# 	add_subdirectory(malcolm_addons)
+
+set(CMAKE_CXX_STANDARD 11)
+
+# add_subdirectory(cmake_modules)
+
+# get_cmake_property(_variableNames VARIABLES)
+# foreach (_variableName ${_variableNames})
+#  message(STATUS "${_variableName}=${${_variableName}}")
+# endforeach()
+
+
+#Add CMake module path
+message("Moduele path")
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules/")
+message(STATUS "${CMAKE_MODULE_PATH}=${${CMAKE_MODULE_PATH}}")
+
+find_package(G2O REQUIRED)
+# find_package(CSPARSE REQUIRED)
+# find_package(CHOLMOD REQUIRED)
+find_package(SUITESPARSE REQUIRED)
+
+if(CHOLMOD_FOUND)
+	message("FOUND CHOL YEAH")
+else(CHOLMOD_FOUND)
+	message("NOT FOUND CHOL YEAH")
+endif(CHOLMOD_FOUND)
+
+INCLUDE_DIRECTORIES(${CSPARSE_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${G2O_INCLUDE_DIR})
+message("Added includes")
+# INCLUDE_DIRECTORIES(${CSPARSE_INCLUDE_DIR})
+
+# list(APPEND CMAKE_PREFIX_PATH "/home/malcolm/external_source/SuiteSparse/lib")
+
+message(${G2O_SOLVER_CSPARSE_EXTENSION})
+
+ADD_LIBRARY(tutorial_slam2d_library_real malcolm_addons/Test/simulator.h malcolm_addons/Test/simulator.cpp ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D})
+
+# ADD_LIBRARY(tutorial_slam3d ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE} ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_TYPES_SLAM3D})
+
+
+message("Adding executable")
+add_executable(g2o_test malcolm_addons/Test/test_g2o.cpp)
+target_link_libraries(g2o_test tutorial_slam2d_library_real ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D})
+
+add_executable(manual_graph malcolm_addons/Test/manual_graph.cpp)
+target_link_libraries(manual_graph tutorial_slam2d_library_real ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D})
+
+add_executable(ndt_mapping malcolm_addons/Test/ndt_feature_g20.cpp)
+target_link_libraries(ndt_mapping ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D} 
+)
+
+add_executable(ndt_g2olandmark malcolm_addons/Test/ndt_g2olandmark.cpp)
+target_link_libraries(ndt_g2olandmark ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D} 
+)
+
+add_executable(ndt_mapping_3d malcolm_addons/Test/ndt_graph3dg2o.cpp)
+target_link_libraries(ndt_mapping_3d ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_TYPES_SLAM3D} 
+)
+
+add_executable(airport_ndt_g2o malcolm_addons/Test/airport_g2o.cpp)
+target_link_libraries(airport_ndt_g2o ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D} 
+)
+
+# add_executable(test_conversion_bettergraph test_conversion.cpp)
+# target_link_libraries(test_conversion_bettergraph ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils)
+
+add_executable(test_cov malcolm_addons/Test/test_cov.cpp)
+target_link_libraries(test_cov ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils)
+
+
+
+
 endif(bettergraph_FOUND)
+
+# add_executable(ndt_g2olandmark malcolm_addons/Test/ndt_g2olandmark.cpp)
+# target_link_libraries(ndt_g2olandmark ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D} 
+# )

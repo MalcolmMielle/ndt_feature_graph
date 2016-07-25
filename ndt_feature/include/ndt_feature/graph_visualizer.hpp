@@ -97,10 +97,10 @@ namespace ndt_feature {
 			origins_odom.color.b = 1.0f;
 			origins_odom.color.a = 1.0;
 			
-			std::cout << "Getting incre :" << graph.getNbLinks() << std::endl;
+// 			std::cout << "Getting incre :" << graph.getNbLinks() << std::endl;
 			std::vector<NDTFeatureLink> links_odom = graph.getOdometryLinks();
 			std::vector<NDTFeatureLink> links = graph.getIncrementalLinks();
-			std::cout << "Got incre" << std::endl;
+// 			std::cout << "Got incre" << std::endl;
 			//Apply transformations.
 			//Prints
 			
@@ -110,9 +110,9 @@ namespace ndt_feature {
 		}
 		
 		void printLinks(const std::vector<NDTFeatureLink>& links, visualization_msgs::Marker& origins){
-			std::cout << "Got incre" << std::endl;
-			std::ofstream ofs;
-			ofs.open("allpositions.txt", std::ofstream::out | std::ofstream::trunc);
+// 			std::cout << "Got incre" << std::endl;
+// 			std::ofstream ofs;
+// 			ofs.open("allpositions.txt", std::ofstream::out | std::ofstream::trunc);
 			//Apply transformations.
 			//Prints
 			geometry_msgs::Point p;
@@ -121,14 +121,14 @@ namespace ndt_feature {
 			p.y = _start_pose(1, 3);
 			p.z = 0;
 			origins.points.push_back(p);
-			ofs << p.x << " " << p.y << std::endl;
+// 			ofs << p.x << " " << p.y << std::endl;
 			
 // 			geometry_msgs::Point cumulated_translation = p;
 			
 			Eigen::Affine3d cumulated_translation = _start_pose;
 			
 			for(size_t i = 0; i < links.size() ; ++i){
-				std::cout << "Making poitns " << links.size() << std::endl;
+// 				std::cout << "Making poitns " << links.size() << std::endl;
 				//Getting the translation out of the transform : https://en.wikipedia.org/wiki/Transformation_matrix
 				Eigen::Affine3d T = links[i].T;
 				
@@ -138,11 +138,11 @@ namespace ndt_feature {
 				p.x = cumulated_translation(0, 3);
 				p.y = cumulated_translation(1, 3);
 				p.z = 0;
-				ofs << p.x << " " << p.y << std::endl;
+// 				ofs << p.x << " " << p.y << std::endl;
 				origins.points.push_back(p);
 			}
-			ofs.close();
-			std::cout << "Point made.............." << std::endl;
+// 			ofs.close();
+// 			std::cout << "Point made.............." << std::endl;
 // 			marker_pub.publish(points);
 		}
 		

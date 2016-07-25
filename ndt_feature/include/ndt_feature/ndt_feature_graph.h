@@ -4,6 +4,9 @@
 #include <ndt_feature/ndt_feature_link.h>
 #include <ndt_feature/ndt_feature_node.h>
 //#include <ndt_feature/serialization.h>
+#include <ndt_map/NDTMapMsg.h>
+#include <ndt_map/ndt_conversions.h>
+#include <ndt_map/ndt_map.h>
 
 namespace ndt_feature {
 
@@ -98,12 +101,12 @@ public:
     node.map->setSensorPose(sensor_pose_);
     // Keep each map in it's own ref frame (that is node.T)
     initPose.setIdentity();
-	std::cout << "Initializing node " << std::endl;
+// 	std::cout << "Initializing node " << std::endl;
     node.map->initialize(initPose, cloud, pts, preLoad);
 
     // Add the cloud...
     if (params_.storePtsInNodes) {
-		std::cout << "STORING THE POINT CLOUD" << std::endl;
+// 		std::cout << "STORING THE POINT CLOUD" << std::endl;
 		Eigen::Affine3d Tnow_local_sensor = initPose*sensor_pose_;
 		node.addCloud(Tnow_local_sensor, cloud);
     }
@@ -114,7 +117,7 @@ public:
 	assert(nodes_[0].map->wasInit() == true);
 	
 	if(fullInit() == false){
-		std::cout << "GRAPH NOT FULLY INIT " << std::endl;
+// 		std::cout << "GRAPH NOT FULLY INIT " << std::endl;
 		assert(fullInit());
 	}
     std::cout << "initialize -> done" << std::endl;
@@ -138,7 +141,7 @@ public:
       // The returned pose is the local map coord
       // Do not update the feature map in this step.
       
-	  std::cout << "Updating node " << std::endl;
+// 	  std::cout << "Updating node " << std::endl;
       Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts, false, false);
       Tnow = node.T*Tnow_local;
       node.Tlocal_odom = node.Tlocal_odom*Tmotion;
@@ -161,9 +164,9 @@ public:
 	  // Add the first data...
       Eigen::Affine3d init_pose;
       init_pose.setIdentity();
-	  std::cout << "Creating new_node init " << std::endl;
+// 	  std::cout << "Creating new_node init " << std::endl;
       new_node.map->initialize(init_pose, cloud, pts, false);
-	  std::cout << "Done new_node init " << std::endl;
+// 	  std::cout << "Done new_node init " << std::endl;
 
       // Add the cloud...
 //       if (params_.storePtsInNodes) {
@@ -181,12 +184,12 @@ public:
     }
     
     
-	std::cout << "Update the node without creating any new node ?" << std::endl;
+// 	std::cout << "Update the node without creating any new node ?" << std::endl;
 
     // The returned pose is the local map coord.
 	assert(node.map->wasInit() == true);
     Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts);
-	std::cout << "Updated the node without creating any new node" << std::endl;
+// 	std::cout << "Updated the node without creating any new node" << std::endl;
 
     Tnow = node.T*Tnow_local;
     node.Tlocal_odom = node.Tlocal_odom*Tmotion;
@@ -272,7 +275,7 @@ public:
     for (size_t i = 0; i < (int) nodes_.size() - 1 ; i++) {
       NDTFeatureLink m(i, i+1);
 	  Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
-	  std::cout <<"Cov on creation " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
+// 	  std::cout <<"Cov on creation " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
       //m.T = nodes_[i].T.rotation()*nodes_[i].T.inverse()*nodes_[i+1].T;;
       //m.T = Eigen::Translation<double,3>(nodes_[i+1].T.translation()-nodes_[i].T.translation())*nodes_[i+1].T.rotation();
       m.T = nodes_[i].Tlocal_odom; //<-Not multiuplied since it's alwasy starts at zero again so we don't need a difference
@@ -289,15 +292,15 @@ public:
 	  m.T.rotation().eulerAngles(0,1,2) << std::endl;
       m.score = -1.;
       ret.push_back(m);
-	  std::cout <<"Cov on push_back " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
+// 	  std::cout <<"Cov on push_back " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
 	      
 		
 	}
 	
 	for(int tmp = 0 ; tmp < ret.size() ; ++tmp){
 		Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
-			std::cout <<"Estimate before return " << ret[tmp].getRelCov().inverse().format(cleanFmt) << std::endl;
-			std::cout << "Adding Edge" << std::endl;	
+// 			std::cout <<"Estimate before return " << ret[tmp].getRelCov().inverse().format(cleanFmt) << std::endl;
+// 			std::cout << "Adding Edge" << std::endl;	
 		}
     
     
@@ -320,11 +323,11 @@ public:
     lslgeneric::NDTMatcherD2D matcher_d2d;
     matcher_d2d.n_neighbours = nb_neighbours;
 	
-	std::cout << "Matching : " << link.getRefIdx() << " with " << link.getMovIdx() << std::endl;
-	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
-	std::cout << "Transform between the two " << link.T.matrix().format(cleanFmt) << std::endl; 
+// 	std::cout << "Matching : " << link.getRefIdx() << " with " << link.getMovIdx() << std::endl;
+// 	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+// 	std::cout << "Transform between the two " << link.T.matrix().format(cleanFmt) << std::endl; 
     int a ;
-	std::cout << "PAUSE before match" << std::endl;
+// 	std::cout << "PAUSE before match" << std::endl;
 // 	std::cin >> a;
 	
 	Eigen::Affine3d before_T = link.T;
@@ -333,10 +336,10 @@ public:
 	
 	assert(converged == true);
 	
-	std::cout << "Transform between the two new " << link.T.matrix().format(cleanFmt) << std::endl; 
+// 	std::cout << "Transform between the two new " << link.T.matrix().format(cleanFmt) << std::endl; 
 	
 // 	int a ;
-	std::cout << "PAUSE before cov" << std::endl;
+// 	std::cout << "PAUSE before cov" << std::endl;
 // 	std::cin >> a;
 	
 	//Adding the covariance into the link
@@ -357,32 +360,32 @@ public:
 		matcher_d2d.covariance(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, cov);
 	}
 	else{
-		std::cout << "NOTHING HAPPENED Creating a identity matrix" << std::endl;
+// 		std::cout << "NOTHING HAPPENED Creating a identity matrix" << std::endl;
 		cov = Eigen::MatrixXd::Identity(6, 6);
 // 		exit(0);
 	}
-	std::cout << "Size of Covariance : " << cov.rows() << " AND COLS " << cov.cols() << std::endl;
+// 	std::cout << "Size of Covariance : " << cov.rows() << " AND COLS " << cov.cols() << std::endl;
 	
 	assert(cov.rows() == 6);
 	assert(cov.cols() == 6);
-	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << std::endl; 
+// 	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << std::endl; 
 	link.cov_3d = cov;
 	
-	std::cout << "PAUSE got cov : " << cov << std::endl;
+// 	std::cout << "PAUSE got cov : " << cov << std::endl;
 	std::cin >> a;
 	
     if (!keepScore) {
       link.score = ndt_feature::overlapNDTOccupancyScore(nodes_[link.getRefIdx()],
                                                          nodes_[link.getMovIdx()], 
                                                          link.T);
-      std::cout << "new link.score : " << link.score << std::endl;
+//       std::cout << "new link.score : " << link.score << std::endl;
     }
   }
 
   void updateLinksUsingNDTRegistration(std::vector<NDTFeatureLink> &links, int nb_neighbours, bool keepScore) {
 
     for (size_t i = 0; i < links.size(); i++) {
-      std::cout << "updating link : " << i << " (size of links :" << links.size() << ")" << std::endl;
+//       std::cout << "updating link : " << i << " (size of links :" << links.size() << ")" << std::endl;
       updateLinkUsingNDTRegistration(links[i], nb_neighbours, keepScore);
     }
   }
@@ -593,9 +596,9 @@ public:
 	  //WARNING : CRASH HERE !
 	  std::cout << pc.points.size () << " != " << pc.width * pc.height << std::endl;
 	  assert(pc.points.size () == pc.width * pc.height);
-	  std::cout << "TRANSFORM" <<std::endl;
+// 	  std::cout << "TRANSFORM" <<std::endl;
       lslgeneric::transformPointCloudInPlace(nodes_.back().T, pc);
-	  std::cout << "TRANSFORM DONE" <<std::endl;
+// 	  std::cout << "TRANSFORM DONE" <<std::endl;
 	  std::cout << pc.points.size () << " != " << pc.width * pc.height << std::endl;
 	  assert(pc.points.size () == pc.width * pc.height);
       return pc;
@@ -656,6 +659,18 @@ public:
   const std::vector<NDTFeatureLink>& getCurrentLinks() {
     return links_;
   }
+  
+  
+	ndt_map::NDTMapMsg& getMapMessage(){
+	  //Get the last ndtMap element
+		lslgeneric::NDTMap* map = getMap();
+		ndt_map::NDTMapMsg mapmsg;
+		
+// 			lslgeneric::NDTMap* map = map->pseudoTransformNDTMap();
+		bool good = lslgeneric::toMessage(map, mapmsg, "/world");
+		return mapmsg;
+	}
+  
 
   NDTViz *viewer;
   

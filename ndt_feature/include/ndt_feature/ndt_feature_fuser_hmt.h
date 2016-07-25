@@ -299,19 +299,19 @@ class NDTFeatureFuserHMT{
 		ptsPrev = pts; // pts are always given in the sensor frame...
 
 		// Move the features to the current pose (Tnow)
-		std::cout << "Move interest point" << std::endl;
+// 		std::cout << "Move interest point" << std::endl;
 		ndt_feature::moveInterestPointVec(Tnow*sensor_pose, ptsPrev);
 		
-		std::cout << "Update futur map " <<__LINE__ << " " << __FILE__ << std::endl;
+// 		std::cout << "Update futur map " <<__LINE__ << " " << __FILE__ << std::endl;
 		featuremap.update(ptsPrev);
 
 		map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(params_.resolution));
-		std::cout << "init " <<__LINE__ << " " << __FILE__ << std::endl;
+// 		std::cout << "init " <<__LINE__ << " " << __FILE__ << std::endl;
 		map->initialize(Tnow.translation()(0),Tnow.translation()(1),0./*Tnow.translation()(2)*/,params_.map_size_x,params_.map_size_y,params_.map_size_z);
 		
 		Eigen::Affine3d Tnow_sensor = Tnow*sensor_pose; // The origin from where the sensor readings occured...
 		map->addPointCloud(Tnow_sensor.translation(),cloud, 0.1, 100.0, 0.1);
-		std::cout << "compute ndt cells " <<__LINE__ << " " << __FILE__ << std::endl;
+// 		std::cout << "compute ndt cells " <<__LINE__ << " " << __FILE__ << std::endl;
 		map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, Tnow_sensor.translation(), 0.1);
 
 		isInit = true;
@@ -693,7 +693,7 @@ class NDTFeatureFuserHMT{
         Tnow = Tnow * Tmotion;
       }
       
-      std::cout << "Tmotion_est : ";
+//       std::cout << "Tmotion_est : ";
       lslgeneric::printTransf2d(Tmotion_est);
       Eigen::Affine3d spose = Tnow*sensor_pose;
       lslgeneric::transformPointCloudInPlace(spose, cloud_orig);
