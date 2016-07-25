@@ -583,6 +583,10 @@ public:
     return nodes_.back().map->map;
   }
   
+  lslgeneric::NDTMap* getMap(int i) {
+    return nodes_[i].map->map;
+  }
+  
   Eigen::Affine3d getT() {
     return nodes_.back().T;
   }

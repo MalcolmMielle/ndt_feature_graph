@@ -121,6 +121,12 @@ if(bettergraph_FOUND)
 
 set(CMAKE_CXX_STANDARD 11)
 
+find_package(vodigrex)
+include_directories(${vodigrex_INCLUDE_DIRS})
+
+
+find_package(Cpd REQUIRED)
+
 # add_subdirectory(cmake_modules)
 
 # get_cmake_property(_variableNames VARIABLES)
@@ -188,6 +194,9 @@ target_link_libraries(airport_ndt_g2o ${catkin_LIBRARIES} ${bettergraph_LIBRARIE
 add_executable(test_cov malcolm_addons/Test/test_cov.cpp)
 target_link_libraries(test_cov ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils)
 
+
+add_executable(test_prior_g2o malcolm_addons/Test/test_prior_g2o.cpp)
+target_link_libraries(test_prior_g2o ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D} ${OpenCV_LIBS} ${PCL_LIBRARIES} ${vodigrex_LIBRARIES} Cpd::Library-C++)
 
 
 

@@ -21,6 +21,10 @@
 
 #include "Eigen/Core"
 
+#include "bettergraph/PseudoGraph.hpp"
+#include "vodigrex/linefollower/SimpleNode.hpp"
+
+
 namespace ndt_feature {
 	
 	
@@ -199,6 +203,65 @@ namespace ndt_feature {
 		void addLinkBetweenMaps(double x, double y, double theta, int from, int toward){
 			g2o::SE2 se2(x, y, theta);
 			addLinkBetweenMaps(se2, from, toward);
+			
+		}
+		
+		void addAllPriors(const bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>& graph){
+			
+			std::pair< bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::VertexIterator, bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::VertexIterator > vp;
+			
+			std::deque<bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex> vec_deque;
+			
+			for (vp = boost::vertices(graph); vp.first != vp.second; ++vp.first) {
+				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex v = *vp.first;
+				//ATTENTION Magic number
+				addPriorLandmarkPose(graph[v].getX(), graph[v].getY(), 0);
+				vec_deque.push_back(v);
+			}
+			
+			int previous_node_number = _robot_positions.size() + _landmark_positions.size();
+			int count = 0;
+			
+			for (vp = boost::vertices(graph); vp.first != vp.second; ++vp.first) {
+				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex v = *vp.first;
+				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::EdgeIterator out_i, out_end;
+				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Edge e;
+				
+				for (boost::tie(out_i, out_end) = boost::out_edges(v, (graph)); 
+					out_i != out_end; ++out_i) {
+					e = *out_i;
+					bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex targ = boost::target(e, (graph));
+				
+					int idx = -1;
+					for(size_t ii = count +1 ; ii < vec_deque.size() ; ++ii){
+						if(targ == vec_deque[ii]){
+							idx = ii;
+						}
+					}
+					if(idx == -1){
+						//SKIP
+					}
+					else{
+						int x_diff = graph[targ].getX() - graph[v].getX();
+						int y_diff = graph[targ].getY() - graph[v].getY();
+						
+						x_diff = std::abs(x_diff);
+						y_diff = std::abs(y_diff);
+						
+						g2o::SE2 se2(x_diff, y_diff, 0);
+						std::tuple<g2o::SE2, int, int> tup(se2, previous_node_number + count, previous_node_number + idx);
+						addEdgePrior(tup);
+					}
+				
+				}
+				
+				++count;
+			}
+			
+			std::cout << _edges_prior.size() << " == " << graph.getNumEdges() << std::endl;
+			
+			assert( _prior_landmark_positions.size() == graph.getNumVertices() );
+			assert(_edges_prior.size() == graph.getNumEdges());
 			
 		}
 		

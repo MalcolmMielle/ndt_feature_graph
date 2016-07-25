@@ -15,11 +15,13 @@ namespace ndt_feature {
 		
 	protected :
 		
+		int _count;
+		int _node;
 		Eigen::Affine3d _start_pose;
 		ndt_feature::NDTFeatureGraph* _graph;
 		
 	public:
-		GraphVisualizer(){
+		GraphVisualizer() : _count(0), _node(0){
 			
 		};
 		
@@ -56,10 +58,17 @@ namespace ndt_feature {
 		
 		void printAll(NDTFeatureGraph& graph, visualization_msgs::Marker& origins, visualization_msgs::Marker& origins_odom, ndt_map::NDTMapMsg& mapmsg, const std::string& frame_name){
 			
+			_count++;
 			rvizPrint(graph, origins, origins_odom, frame_name);
 			
+// 			if(_count % 10 == 0){
+				_node++;
+// 			}
+			if(_node==6) _node = 0;
+			std::cout << " count and node " << _count << " " << _node << std::endl;
+			
 			//Get the last ndtMap element
-			lslgeneric::NDTMap* map = graph.getMap();
+			lslgeneric::NDTMap* map = graph.getMap(_node);
 			
 // 			lslgeneric::NDTMap* map = map->pseudoTransformNDTMap();
 			bool good = lslgeneric::toMessage(map, mapmsg, frame_name);
