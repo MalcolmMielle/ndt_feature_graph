@@ -58,20 +58,20 @@ namespace ndt_feature {
 		
 		void printAll(NDTFeatureGraph& graph, visualization_msgs::Marker& origins, visualization_msgs::Marker& origins_odom, ndt_map::NDTMapMsg& mapmsg, const std::string& frame_name){
 			
-			_count++;
+// 			_count++;
 			rvizPrint(graph, origins, origins_odom, frame_name);
 			
 // 			if(_count % 10 == 0){
-				_node++;
+// 				_node++;
 // 			}
-			if(_node==6) _node = 0;
-			std::cout << " count and node " << _count << " " << _node << std::endl;
+// 			if(_node==6) _node = 0;
+// 			std::cout << " count and node " << _count << " " << _node << std::endl;
 			
 			//Get the last ndtMap element
-			lslgeneric::NDTMap* map = graph.getMap(_node);
+// 			lslgeneric::NDTMap* map = graph.getMap(_node);
 			
 // 			lslgeneric::NDTMap* map = map->pseudoTransformNDTMap();
-			bool good = lslgeneric::toMessage(map, mapmsg, frame_name);
+// 			bool good = lslgeneric::toMessage(map, mapmsg, frame_name);
 			
 			//TODO Change it to the fuser frame ?
 // 			printNDTMap(, mapmsg, frame_name);
@@ -113,24 +113,32 @@ namespace ndt_feature {
 			//Apply transformations.
 			//Prints
 			
+			if(graph.getNbNodes() == 1 && links_odom.size() > 0){
+				std::cout << "WRONG LINKS" << std::endl;
+				exit(0);
+			}
+			
+			
 			printLinks(links_odom, origins_odom);
 			printLinks(links, origins);
 			
 		}
 		
 		void printLinks(const std::vector<NDTFeatureLink>& links, visualization_msgs::Marker& origins){
-// 			std::cout << "Got incre" << std::endl;
-// 			std::ofstream ofs;
-// 			ofs.open("allpositions.txt", std::ofstream::out | std::ofstream::trunc);
+			std::cout << "Got incre" << std::endl;
+			std::ofstream ofs;
+			ofs.open("allpositions.txt", std::ofstream::out | std::ofstream::trunc);
 			//Apply transformations.
 			//Prints
 			geometry_msgs::Point p;
 			//Getting the translation out of the transform : https://en.wikipedia.org/wiki/Transformation_matrix
 			p.x = _start_pose(0, 3);
 			p.y = _start_pose(1, 3);
+// 			p.x = 0;
+// 			p.y = 0;
 			p.z = 0;
 			origins.points.push_back(p);
-// 			ofs << p.x << " " << p.y << std::endl;
+			ofs << p.x << " " << p.y << std::endl;
 			
 // 			geometry_msgs::Point cumulated_translation = p;
 			
@@ -147,10 +155,14 @@ namespace ndt_feature {
 				p.x = cumulated_translation(0, 3);
 				p.y = cumulated_translation(1, 3);
 				p.z = 0;
-// 				ofs << p.x << " " << p.y << std::endl;
+				ofs << p.x << " " << p.y << std::endl;
 				origins.points.push_back(p);
+				
+				std::cout << " Translation " << links[i].T.translation() << std::endl;
+				std::cout << " Rotation " << links[i].T.rotation() << std::endl;
 			}
-// 			ofs.close();
+			ofs.close();
+			exit(0);
 // 			std::cout << "Point made.............." << std::endl;
 // 			marker_pub.publish(points);
 		}

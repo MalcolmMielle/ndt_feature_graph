@@ -24,6 +24,8 @@
 #include "bettergraph/PseudoGraph.hpp"
 #include "vodigrex/linefollower/SimpleNode.hpp"
 
+#include "das/AssociationInterface.hpp"
+
 
 namespace ndt_feature {
 	
@@ -112,6 +114,89 @@ namespace ndt_feature {
 		
 		std::vector<g2o::SE2>& getRobotPositions(){return _robot_positions;}
 		const std::vector<g2o::SE2>& getRobotPositions() const {return _robot_positions;}
+		
+		void addRobotPoseAndOdometry(std::ifstream& in){
+			std::string word;
+			in >> word;
+			double garbage;
+			in >> garbage;
+			in >> garbage;
+			in >> garbage;
+			in >> garbage;
+			while(in >> word){
+				if(word == "VERTEX_SE2"){
+					double x, y, theta;
+					in >> garbage;
+					in >> x;
+					in >> y;
+					in >> theta;
+					g2o::SE2 se2(x, y, theta);
+					_robot_positions.push_back(se2);
+				}
+				else{
+					double x, y, theta;
+					int from, toward;
+					in >> from;
+					in >> toward;
+					in >> x;
+					in >> y;
+					in >> theta;
+					g2o::SE2 se2(x, y, theta);
+					std::tuple<g2o::SE2, int, int> tup(se2, from, toward);
+					_odometry.push_back(tup);
+					in >> garbage;
+					in >> garbage;
+					in >> garbage;
+					in >> garbage;
+					in >> garbage;
+					in >> garbage;
+				}
+			}
+		}
+		
+		
+		void addLandmarkAndObservation(std::ifstream& in){
+			std::string word;
+			in >> word;
+			double garbage;
+			in >> garbage;
+			in >> garbage;
+			in >> garbage;
+			in >> garbage;
+			while(in >> word){
+				if(word == "VERTEX_SE2"){
+					double x, y, theta;
+					in >> garbage;
+					in >> x;
+					in >> y;
+// 					in >> theta;
+					g2o::SE2 se2(x, y, 0);
+					_landmark_positions.push_back(se2);
+				}
+				else{
+					int from, toward;
+					in >> from;
+					in >> toward;
+					
+					//Calculate observation
+					
+					double x = _robot_positions[from].toVector()(0) - _landmark_positions[toward].toVector()(0);
+					double y = _robot_positions[from].toVector()(1) - _landmark_positions[toward].toVector()(1);
+					g2o::SE2 se2(x, y, 0);
+// 					in >> x;
+// 					in >> y;
+// 					in >> theta;
+					std::tuple<g2o::SE2, int, int> tup(se2, from, toward);
+					_observation_real_landmarks.push_back(tup);
+// 					in >> garbage;
+// 					in >> garbage;
+// 					in >> garbage;
+// 					in >> garbage;
+// 					in >> garbage;
+// 					in >> garbage;
+				}
+			}
+		}
 		
 		void addRobotPose(const g2o::SE2& se2){
 			_robot_positions.push_back(se2);
@@ -203,6 +288,90 @@ namespace ndt_feature {
 		void addLinkBetweenMaps(double x, double y, double theta, int from, int toward){
 			g2o::SE2 se2(x, y, theta);
 			addLinkBetweenMaps(se2, from, toward);
+			
+		}
+		
+		void addLinkBetweenMaps(const AASS::das::AssociationInterface& assoInter){
+
+			auto getIdenticalPoint =[this](const std::vector<cv::Point2f>& model_points, std::deque< int >& model_same) -> void{
+				for(size_t i = 0; i < model_points.size(); ++i){
+					bool more_than_one = false;
+					for(size_t j = 0 ; j < this->_landmark_positions.size(); ++j ){
+						auto translation = this->_landmark_positions[j].translation();
+						
+						if(translation(0) == model_points[i].x && translation(1) == model_points[i].y){
+							model_same.push_back(j);
+							if(more_than_one == true) throw std::runtime_error("More than one point linked to key point");
+							more_than_one = true;
+						}
+						
+					}
+				}
+				
+			};
+			
+			auto getIdenticalLandmark =[this](const cv::Point2f& model_points, int& model_same) -> void{
+				bool more_than_one = false;
+				for(size_t j = 0 ; j < this->_landmark_positions.size(); ++j ){
+					auto translation = this->_landmark_positions[j].translation();
+					
+					if(translation(0) == model_points.x && translation(1) == model_points.y){
+						model_same = j;
+						if(more_than_one == true) throw std::runtime_error("More than one point linked to key point");
+						more_than_one = true;
+					}
+					
+				}
+				
+			};
+			
+			auto getIdenticalPriorLandmark =[this](const cv::Point2f& model_points, int& model_same) -> void{
+				bool more_than_one = false;
+				for(size_t j = 0 ; j < this->_prior_landmark_positions.size(); ++j ){
+					auto translation = this->_prior_landmark_positions[j].translation();
+					
+					if(translation(0) == model_points.x && translation(1) == model_points.y){
+						model_same = j;
+						if(more_than_one == true) throw std::runtime_error("More than one point linked to key point");
+						more_than_one = true;
+					}
+					
+				}
+				
+			};
+			
+			auto all_links = assoInter.getAssociations();
+			
+// 			auto model_points = assoInter.getKeypointModel();
+// 			auto data_points = assoInter.getKeypointData();
+// 			
+// 			std::deque< int > model_same;
+// 			std::deque< int > data_same;
+// 			
+// 			getIdenticalPoint(model_points, model_same);
+// 			getIdenticalPoint(data_points, data_same);
+			
+			//Find all associated vertex of model and data_points
+			
+			int num_robot_poses = _robot_positions.size();
+			int num_landmark_poses = _landmark_positions.size();
+			
+			g2o::SE2 se2(0, 0, 0);
+			
+			//Create all the links
+			for(size_t i = 0 ; i < assoInter.getAssociations().size() ; ++i){
+				int idx = -1;
+				getIdenticalLandmark(assoInter.getAssociations()[i].second, idx);
+				int idx_prior = -1;
+				getIdenticalPriorLandmark(assoInter.getAssociations()[i].first, idx_prior);
+				
+				if(idx == -1) throw std::runtime_error("index for landmark not found");
+				if(idx_prior == -1) throw std::runtime_error("index for prior landmark not found");
+				
+				const std::tuple<g2o::SE2, int, int> lnk(se2, num_robot_poses + idx, num_robot_poses + num_landmark_poses + idx_prior);
+				addLinkBetweenMaps(lnk);
+				
+			}
 			
 		}
 		
@@ -312,11 +481,12 @@ namespace ndt_feature {
 			covariance_landmark.fill(0.);
 			covariance_landmark(0, 0) = _landmarkNoise[0]*_landmarkNoise[0];
 			covariance_landmark(1, 1) = _landmarkNoise[1]*_landmarkNoise[1];
-			covariance_landmark(2, 2) = _rotNoise*_rotNoise;
+			covariance_landmark(2, 2) = 6;//_rotNoise*_rotNoise;
 			Eigen::Matrix3d information_landmark = covariance_landmark.inverse();
 			
 			std::cerr << "Optimization: add landmark vertices ... ";
 			for (size_t i = 0; i < _landmark_positions.size() ; ++i) {
+				std::cout << "Add landmark" << std::endl;
 				g2o::VertexSE2* landmark = new g2o::VertexSE2;
 				landmark->setId(id);
 				++id;

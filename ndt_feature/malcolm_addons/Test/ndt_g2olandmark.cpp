@@ -432,9 +432,9 @@ public:
 		
 		std::cout << "DESTRUCTION" << std::endl;
 		std::cout << "Extracting corners" << std::endl;
-		graph->extractCorners();
-		ndt_feature::ndtGraphToG2O(*graph, _g2o_graph);
-		_g2o_graph.save("g2o_best_graph.g2o");
+// 		graph->extractCorners();
+// 		ndt_feature::ndtGraphToG2O(*graph, _g2o_graph);
+// 		_g2o_graph.save("g2o_best_graph.g2o");
 		
 		
 // 		graph->saveMap();
@@ -454,18 +454,18 @@ public:
 //             est_file_.close();
 // 		  
 // 		  //Last marker print
-// 		  if(use_graph_){
-// 				if (graph->wasInit() == true) {
-// 					
-// 					visualization_msgs::Marker origins;
-// 					visualization_msgs::Marker origins_odom;
-// 					ndt_map::NDTMapMsg mapmsg;
-// 					_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
-// 					_marker_pub_graph.publish(origins);
-// 					_marker_pub_graph_odom.publish(origins_odom);
-// 					_last_ndtmap.publish(mapmsg);
-// 				}
-// 			}
+		  if(use_graph_){
+				if (graph->wasInit() == true) {
+					
+					visualization_msgs::Marker origins;
+					visualization_msgs::Marker origins_odom;
+					ndt_map::NDTMapMsg mapmsg;
+					_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
+					_marker_pub_graph.publish(origins);
+					_marker_pub_graph_odom.publish(origins_odom);
+					_last_ndtmap.publish(mapmsg);
+				}
+			}
 // 		  
 // 		  
 // 		  if(use_graph_ == false){
@@ -532,34 +532,34 @@ public:
             
             //Trying to draw the graph here
             
-            if(use_graph_){
-				if (graph->wasInit() == true && graph->getNbNodes() >= 6) {
-					visualization_msgs::Marker origins;
-					visualization_msgs::Marker origins_odom;
-					ndt_map::NDTMapMsg mapmsg;
-					std::cout << "print all " << std::endl;
-					
-					
-					
-					CALLGRIND_START_INSTRUMENTATION;
-					CALLGRIND_TOGGLE_COLLECT;
-					
-					
-					
-					_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
-					
-					CALLGRIND_TOGGLE_COLLECT;
-					CALLGRIND_STOP_INSTRUMENTATION;
-					
-					
-					std::cout << "publishing " << std::endl;
-					_marker_pub_graph.publish(origins);
-					_marker_pub_graph_odom.publish(origins_odom);
-					_last_ndtmap.publish(mapmsg);
-					
-					std::cout << "published " << std::endl;
-				}
-			}
+//             if(use_graph_){
+// 				if (graph->wasInit() == true && graph->getNbNodes() >= 6) {
+// 					visualization_msgs::Marker origins;
+// 					visualization_msgs::Marker origins_odom;
+// 					ndt_map::NDTMapMsg mapmsg;
+// 					std::cout << "print all " << std::endl;
+// 					
+// 					
+// 					
+// 					CALLGRIND_START_INSTRUMENTATION;
+// 					CALLGRIND_TOGGLE_COLLECT;
+// 					
+// 					
+// 					
+// 					_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
+// 					
+// 					CALLGRIND_TOGGLE_COLLECT;
+// 					CALLGRIND_STOP_INSTRUMENTATION;
+// 					
+// 					
+// 					std::cout << "publishing " << std::endl;
+// 					_marker_pub_graph.publish(origins);
+// 					_marker_pub_graph_odom.publish(origins_odom);
+// 					_last_ndtmap.publish(mapmsg);
+// 					
+// 					std::cout << "published " << std::endl;
+// 				}
+// 			}
 
   }
 

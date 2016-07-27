@@ -258,7 +258,7 @@ public:
 		param_nh.param<bool>("fuser_optimizeOnlyYaw", fuser_params.optimizeOnlyYaw, false);
 		param_nh.param<bool>("fuser_computeCov", fuser_params.computeCov, true);
 
-		param_nh.param<bool>("use_graph", use_graph_, true);
+		param_nh.param<bool>("use_graph", use_graph_, false);
 		
 		ndt_feature::NDTFeatureGraph::Params graph_params;
 		param_nh.param<double>("graph_newNodeTranslDist", graph_params.newNodeTranslDist, 10.);
@@ -418,15 +418,15 @@ public:
 		
 		std::cout << "DESTRUCTION" << std::endl;
 		
-		graph->saveMap();
+// 		graph->saveMap();
 		
 		//Copy graph
 		  _malcolm_graph.convert(*graph);
 		  
 		  //G2o optimization and writing the files
 		  
-		  _graph_2_g2o.updateGraph(*graph);
-		  _graph_2_g2o.optimize();
+// 		  _graph_2_g2o.updateGraph(*graph);
+// 		  _graph_2_g2o.optimize();
 		
 		
           if (gt_file_.is_open())
@@ -621,14 +621,14 @@ public:
 		//Marker print
 // 		if(use_graph_){
 // 			if (graph->wasInit() == true) {
-// 				
+// 				std::cout << "PRINT" << std::endl;
 // 				visualization_msgs::Marker origins;
 // 				visualization_msgs::Marker origins_odom;
 // 				ndt_map::NDTMapMsg mapmsg;
 // 				_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
 // 				_marker_pub_graph.publish(origins);
 // 				_marker_pub_graph_odom.publish(origins_odom);
-// 				_last_ndtmap.publish(mapmsg);
+// // 				_last_ndtmap.publish(mapmsg);
 // // 				if(graph->getNbNodes() == 6){
 // // 					_graph_2_g2o.updateGraph(*graph);
 // 					
