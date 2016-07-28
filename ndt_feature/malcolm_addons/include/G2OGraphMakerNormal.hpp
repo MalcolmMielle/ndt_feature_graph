@@ -191,14 +191,13 @@ namespace ndt_feature {
 					
 					//Calculate observation
 					
-					double x = _landmark_positions[toward_access].toVector()[0] - _robot_positions[from].toVector()[0] ;
-					double y = _landmark_positions[toward_access].toVector()[1] - _robot_positions[from].toVector()[1] ;
+// 					double x = _landmark_positions[toward_access].toVector()[0] - _robot_positions[from].toVector()[0] ;
+// 					double y = _landmark_positions[toward_access].toVector()[1] - _robot_positions[from].toVector()[1] ;
 // 					double x = _landmark_positions[toward].toVector()[0]  ;
 // 					double y = _landmark_positions[toward].toVector()[1]  ;
 // 					std::cout << "Vec : : " << x << " : " << y << std::endl;
 					std::cout << "Robot position " << _robot_positions[from].toVector() << std::endl << "Landmark pos : " << _landmark_positions[toward_access].toVector() << " " << _robot_positions[from].toVector()[1] << " - " << _landmark_positions[toward_access].toVector()[1] << " same as " << _landmark_positions[toward_access].toVector()(1)<< std::endl;
 					
-					auto outout = _landmark_positions[toward_access].toVector();
 					Eigen::Vector2d real_obs ;
 					real_obs << _landmark_positions[toward_access].toVector()(0), _landmark_positions[toward_access].toVector()(1);
 					Eigen::Vector2d observation;

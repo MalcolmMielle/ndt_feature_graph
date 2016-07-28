@@ -113,7 +113,7 @@ namespace ndt_feature {
 		g2o::OptimizableGraph::Vertex* getVertex(int idx){_optimizer.vertex(idx);}
 		
 		std::vector<g2o::SE2>& getRobotPositions(){return _robot_positions;}
-		const std::vector<g2o::SE2>& getRobotPositions() const {return _robot_positions;}
+		const std::vector<g2o::SE2>& getRobotPositions() const {return _robot_positions;}		
 		
 		void addRobotPoseAndOdometry(std::ifstream& in){
 			std::string word;
@@ -141,7 +141,29 @@ namespace ndt_feature {
 					in >> x;
 					in >> y;
 					in >> theta;
+					
+					//TEST
+					//Wrong because you need composition...
+// 					double x_tmp = _robot_positions[toward].toVector()(0) - _robot_positions[from].toVector()(0) ;
+// 					double y_tmp = _robot_positions[toward].toVector()(1) - _robot_positions[from].toVector()(1) ;
+// 					double angle_tmp = _robot_positions[toward].toVector()(2) - _robot_positions[from].toVector()(2);
+// 					
+// 					
+// 					Eigen::Vector2d real_obs ;
+// 					real_obs << _robot_positions[toward].toVector()(0), _robot_positions[toward].toVector()(1);
+// 					Eigen::Vector2d observation;
+// 					//Projecting real_obs into robot coordinate frame
+// 					Eigen::Vector2d trueObservation = _robot_positions[from].inverse() * real_obs;
+// 					observation = trueObservation;
+// 					
+// 					
+// 					
+// 					std::cout << "VEC FROM RBOT " << _robot_positions[from].toVector() << std::endl;
+// 					std::cout << "VEC TOWARD RBOT " << _robot_positions[toward].toVector() << std::endl;
+// 					std::cout << "T " << x << " " << y << " " << theta <<std::endl;
+// 					std::cout << "T made up" << observation(0) << " " << observation(1) << " " << angle_tmp <<std::endl;
 					g2o::SE2 se2(x, y, theta);
+// 					g2o::SE2 se2(observation(0), observation(1), angle_tmp);
 					std::tuple<g2o::SE2, int, int> tup(se2, from, toward);
 					_odometry.push_back(tup);
 					in >> garbage;
@@ -169,23 +191,49 @@ namespace ndt_feature {
 					in >> garbage;
 					in >> x;
 					in >> y;
+					
+					std::cout << " position " << x << " " << y << std::endl;
 // 					in >> theta;
 					g2o::SE2 se2(x, y, 0);
 					_landmark_positions.push_back(se2);
 				}
-				else{
+				else if(word == "EDGE_SE2"){
 					int from, toward;
 					in >> from;
 					in >> toward;
+					assert(from >= 0);
+// 					assert(toward >= 6);
+// 					assert(from <= 5);
+// 					assert(toward <= 33);
+					
+					int toward_access = toward - _robot_positions.size();
+					assert(toward_access >= 0);
+					
+					std::cout << "Edge : " << from << " -> " << toward << std::endl;
 					
 					//Calculate observation
 					
-					double x = _robot_positions[from].toVector()(0) - _landmark_positions[toward].toVector()(0);
-					double y = _robot_positions[from].toVector()(1) - _landmark_positions[toward].toVector()(1);
-					g2o::SE2 se2(x, y, 0);
-// 					in >> x;
-// 					in >> y;
-// 					in >> theta;
+					std::cout << "VEC " << _landmark_positions[toward_access].toVector() << std::endl;
+					std::cout << "VEC RBOT " << _robot_positions[from].toVector() << std::endl;
+					
+// 					double x_tmp = _landmark_positions[toward_access].toVector()(0) - _robot_positions[from].toVector()(0) ;
+// 					double y_tmp = _landmark_positions[toward_access].toVector()(1) - _robot_positions[from].toVector()(1) ;
+					double angle_tmp = _robot_positions[toward].toVector()(2) - _robot_positions[from].toVector()(2);
+					
+					
+					Eigen::Vector2d real_obs ;
+					real_obs << _landmark_positions[toward_access].toVector()(0), _landmark_positions[toward_access].toVector()(1);
+					Eigen::Vector2d observation;
+					//Projecting real_obs into robot coordinate frame
+					Eigen::Vector2d trueObservation = _robot_positions[from].inverse() * real_obs;
+					observation = trueObservation;
+
+					std::cout << "G2O OBSERVATION " << observation << std::endl;
+					
+					g2o::SE2 se2(observation(0), observation(1), angle_tmp);
+
+					std::cout << "G2O OBSERVATION " << se2.toVector() << std::endl;
+					
 					std::tuple<g2o::SE2, int, int> tup(se2, from, toward);
 					_observation_real_landmarks.push_back(tup);
 // 					in >> garbage;
@@ -194,6 +242,9 @@ namespace ndt_feature {
 // 					in >> garbage;
 // 					in >> garbage;
 // 					in >> garbage;
+				}
+				else{
+					throw std::runtime_error("Miss read file for landmarks");
 				}
 			}
 		}

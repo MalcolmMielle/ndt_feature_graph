@@ -4,7 +4,7 @@
 
 int main(){
 	
-	ndt_feature::G2OGraphMarkerNormal g2o_graph(g2o::SE2(0.2, 0.1, -0.1), 
+	ndt_feature::G2OGraphMarker g2o_graph(g2o::SE2(0.2, 0.1, -0.1), 
 		Eigen::Vector2d(0.05, 0.01), 
 		DEG2RAD(2.),
 		Eigen::Vector2d(0.05, 0.05),
