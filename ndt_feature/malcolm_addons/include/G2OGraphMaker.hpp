@@ -465,8 +465,8 @@ namespace ndt_feature {
 						int x_diff = graph[targ].getX() - graph[v].getX();
 						int y_diff = graph[targ].getY() - graph[v].getY();
 						
-						x_diff = std::abs(x_diff);
-						y_diff = std::abs(y_diff);
+// 						x_diff = std::abs(x_diff);
+// 						y_diff = std::abs(y_diff);
 						
 						g2o::SE2 se2(x_diff, y_diff, 0);
 						std::tuple<g2o::SE2, int, int> tup(se2, previous_node_number + count, previous_node_number + idx);
@@ -532,7 +532,7 @@ namespace ndt_feature {
 			covariance_landmark.fill(0.);
 			covariance_landmark(0, 0) = _landmarkNoise[0]*_landmarkNoise[0];
 			covariance_landmark(1, 1) = _landmarkNoise[1]*_landmarkNoise[1];
-			covariance_landmark(2, 2) = 6;//_rotNoise*_rotNoise;
+			covariance_landmark(2, 2) = 13;//<- Rotation covariance landmark is more than 4PI
 			Eigen::Matrix3d information_landmark = covariance_landmark.inverse();
 			
 			std::cerr << "Optimization: add landmark vertices ... ";
@@ -566,7 +566,7 @@ namespace ndt_feature {
 			covariance_prior.fill(0.);
 			covariance_prior(0, 0) = _priorNoise[0]*_priorNoise[0];
 			covariance_prior(1, 1) = _priorNoise[1]*_priorNoise[1];
-			covariance_prior(2, 2) = _rotNoise*_rotNoise;
+			covariance_prior(2, 2) = 13;//<- Rotation covariance prior landmark is more than 4PI
 			Eigen::Matrix3d information_prior = covariance_prior.inverse();
 			
 			std::cerr << "Optimization: add prior landmark vertices ... ";
@@ -599,7 +599,7 @@ namespace ndt_feature {
 			covariance_link.fill(0.);
 			covariance_link(0, 0) = _linkNoise[0]*_linkNoise[0];
 			covariance_link(1, 1) = _linkNoise[1]*_linkNoise[1];
-			covariance_link(2, 2) = _rotNoise*_rotNoise;
+			covariance_link(2, 2) = 13;//<- Rotation covariance link is more than 4PI
 			Eigen::Matrix3d information_link = covariance_link.inverse();
 			
 			//Add link between the two maps -> edge oftransform zero
