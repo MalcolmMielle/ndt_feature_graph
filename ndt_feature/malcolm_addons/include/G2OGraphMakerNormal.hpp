@@ -180,12 +180,12 @@ namespace ndt_feature {
 					in >> from;
 					in >> toward;
 					assert(from >= 0);
-					assert(toward >= 6);
-					assert(from <= 5);
-					assert(toward <= 33);
+// 					assert(toward >= 6);
+// 					assert(from <= 5);
+// 					assert(toward <= 33);
 					
 					int toward_access = toward - _robot_positions.size();
-					assert(toward >= 0);
+					assert(toward_access >= 0);
 					
 					std::cout << "Edge : " << from << " -> " << toward << std::endl;
 					
@@ -202,15 +202,14 @@ namespace ndt_feature {
 					Eigen::Vector2d real_obs ;
 					real_obs << _landmark_positions[toward_access].toVector()(0), _landmark_positions[toward_access].toVector()(1);
 					Eigen::Vector2d observation;
+					//Projecting real_obs into robot coordinate frame
 					Eigen::Vector2d trueObservation = _robot_positions[from].inverse() * real_obs;
 					observation = trueObservation;
 
 					std::cout << "G2O OBSERVATION " << observation << std::endl;
 					
-					
-					
-					g2o::SE2 se2(x, y, 0);
-					std::cout << "PUSHING " << _landmark_positions[toward_access].toVector()(0) << " " << _landmark_positions[toward_access].toVector()(1) << std::endl;
+					g2o::SE2 se2(observation(0), observation(1), 0);
+					std::cout << "PUSHING " << observation(0) << " " << observation(1) << std::endl;
 // 					in >> x;
 // 					in >> y;
 // 					in >> theta;
