@@ -46,7 +46,13 @@ int main(){
 	cornerDetect.removeClosePoints(20);
 	auto corners_prior = cornerDetect.getGraphPoint();
 	
+	std::ifstream in_scale("association.txt");
+	double scale;
+	in_scale >> scale;
+	scale = 1 / scale;
+	g2o_graph.setScalePriorToLandmarks(scale);
 	g2o_graph.addAllPriors(cornerDetect.getGraph());
+	g2o_graph.scalePrior();
 	
 	/************** ADD LINKS BETWEEN THE MAPS ***********/
 		

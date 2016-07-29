@@ -64,6 +64,8 @@ namespace ndt_feature {
 		Eigen::Vector2d _priorNoise;
 		Eigen::Vector2d _linkNoise;
 		
+		double _scale_prior_to_landmark;
+		
 	public:
 		// :( I hate pointers
 		G2OGraphMarker(const g2o::SE2& sensoffset, 
@@ -90,11 +92,53 @@ namespace ndt_feature {
 			
 		};
 		
-		
 		void save(const std::string& file){
 			_optimizer.save(file.c_str());
 		}
 		
+		void scalePrior(){
+			auto prior_copy = _prior_landmark_positions;
+			_prior_landmark_positions.clear();
+			auto it = prior_copy.begin();
+			for(it ; it != prior_copy.end() ; ++it){
+				Eigen::Vector3d se2_tmp = it->toVector();
+				se2_tmp(0) = se2_tmp(0) * _scale_prior_to_landmark;
+				se2_tmp(1) = se2_tmp(1) * _scale_prior_to_landmark;
+				se2_tmp(2) = se2_tmp(2) * _scale_prior_to_landmark;
+				_prior_landmark_positions.push_back(se2_tmp);
+			}
+			
+			auto prior_edge_copy = _edges_prior;
+			_edges_prior.clear();
+			auto it_edge = prior_edge_copy.begin();
+			for(it_edge ; it_edge != prior_edge_copy.end() ; ++it_edge){
+				std::cout << "Pushing elements" << std::endl;
+				auto element = *it_edge;
+				Eigen::Vector3d vec = std::get<0>(element).toVector();
+				vec(0) = vec(0) * _scale_prior_to_landmark;
+				vec(1) = vec(1) * _scale_prior_to_landmark;
+				vec(2) = vec(2) * _scale_prior_to_landmark;
+				std::tuple<g2o::SE2, int, int> tup(g2o::SE2(vec(0), vec(1), vec(2)), std::get<1>(element), std::get<2>(element));
+				
+				_edges_prior.push_back(tup);
+			}
+			
+		}
+		
+		void scaleVectorPoint(std::vector<cv::Point2f>& to_scale){
+			auto to_scale_copy = to_scale;
+			to_scale.clear();
+			auto it = to_scale_copy.begin();
+			for(it ; it != to_scale_copy.end() ; ++it){
+				cv::Point2f p;
+				p.x = it->x * _scale_prior_to_landmark;
+				p.y = it->y * _scale_prior_to_landmark;
+				to_scale.push_back(p);
+			}
+			
+		}
+		
+		void setScalePriorToLandmarks(double p){_scale_prior_to_landmark = p;}
 		void setTranslationNoise(const Eigen::Vector2d& tn){_transNoise = tn;};
 		void setRotationNoise(double rn){_rotNoise = rn;}
 		void setLandmarkNoise(const Eigen::Vector2d& ln){_landmarkNoise = ln;}
@@ -281,7 +325,7 @@ namespace ndt_feature {
 		}
 		void addPriorLandmarkPose(const Eigen::Vector3d& lan){
 			g2o::SE2 se2(lan(0), lan(1), lan(2));
-			_prior_landmark_positions.push_back(se2);
+			addPriorLandmarkPose(se2);
 		}
 		void addPriorLandmarkPose(double x, double y, double theta){
 			Eigen::Vector3d lan;
@@ -346,12 +390,13 @@ namespace ndt_feature {
 		void addLinkBetweenMaps(std::ifstream& in){
 			
 			AASS::das::AssociationInterface asso;
-			asso.fromFile(in);
-			addLinkBetweenMaps(asso);
+			double scale;
+			asso.fromFile(in, scale);
+			addLinkBetweenMaps(asso, scale);
 			
 		}
 		
-		void addLinkBetweenMaps(const AASS::das::AssociationInterface& assoInter){
+		void addLinkBetweenMaps(const AASS::das::AssociationInterface& assoInter, double scale){
 
 			auto getIdenticalPoint =[this](const std::vector<cv::Point2f>& model_points, std::deque< int >& model_same) -> void{
 				for(size_t i = 0; i < model_points.size(); ++i){
@@ -426,7 +471,22 @@ namespace ndt_feature {
 				
 			};
 			
+			auto scalePriorLink = [this](std::vector<std::pair < cv::Point2f, cv::Point2f> >& to_scale){
+				auto to_scale_copy = to_scale;
+				to_scale.clear();
+				auto it = to_scale_copy.begin();
+				for(it ; it != to_scale_copy.end() ; ++it){
+					auto p = *it;
+					p.first.x = it->first.x * this->_scale_prior_to_landmark;
+					p.first.y = it->first.y * this->_scale_prior_to_landmark;
+					to_scale.push_back(p);
+				}
+				
+			};
+			
 			auto all_links = assoInter.getAssociations();
+			
+			scalePriorLink(all_links);
 			
 // 			auto model_points = assoInter.getKeypointModel();
 // 			auto data_points = assoInter.getKeypointData();
@@ -445,12 +505,12 @@ namespace ndt_feature {
 			g2o::SE2 se2(0, 0, 0);
 			
 			//Create all the links
-			for(size_t i = 0 ; i < assoInter.getAssociations().size() ; ++i){
+			for(size_t i = 0 ; i < all_links.size() ; ++i){
 				int idx = -1;
-				std::cout << "Searching " << assoInter.getAssociations()[i].second << " landmark " << std::endl;
-				getIdenticalLandmark(assoInter.getAssociations()[i].second, idx);
+				std::cout << "Searching " << all_links[i].second << " landmark " << std::endl;
+				getIdenticalLandmark(all_links[i].second, idx);
 				int idx_prior = -1;
-				getIdenticalPriorLandmark(assoInter.getAssociations()[i].first, idx_prior);
+				getIdenticalPriorLandmark(all_links[i].first, idx_prior);
 				
 				if(idx == -1) throw std::runtime_error("index for landmark not found");
 				if(idx_prior == -1) throw std::runtime_error("index for prior landmark not found");
@@ -518,7 +578,7 @@ namespace ndt_feature {
 			std::cout << _edges_prior.size() << " == " << graph.getNumEdges() << std::endl;
 			
 			assert( _prior_landmark_positions.size() == graph.getNumVertices() );
-			assert(_edges_prior.size() == graph.getNumEdges());
+// 			assert(_edges_prior.size() == graph.getNumEdges());
 			
 		}
 		
@@ -652,6 +712,8 @@ namespace ndt_feature {
 				_optimizer.addEdge(landmarkObservation);
 			}
 
+			g2o::VertexSE2* firstRobotPose = dynamic_cast<g2o::VertexSE2*>(_optimizer.vertex(0));
+			firstRobotPose->setFixed(true);
 			
 			std::cerr << "done." << std::endl;
 			
