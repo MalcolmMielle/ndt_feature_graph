@@ -25,6 +25,7 @@ int main(){
 	std::ifstream in2("landmarks.g2o");
 	g2o_graph.addLandmarkAndObservation(in2);
 	
+	
 	/************ ADD PRIOR**************/
 	
 	AASS::das::BasementPriorLine basement;
@@ -47,10 +48,12 @@ int main(){
 	
 	g2o_graph.addAllPriors(cornerDetect.getGraph());
 	
+	/************** ADD LINKS BETWEEN THE MAPS ***********/
+		
+	std::ifstream in3("association.txt");
+	g2o_graph.addLinkBetweenMaps(in3);
+	
 	/************** MAKE GRAPH***********/
-	
-	
-	
 	
 	g2o_graph.makeGraph();
 	

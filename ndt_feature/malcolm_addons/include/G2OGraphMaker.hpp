@@ -342,6 +342,15 @@ namespace ndt_feature {
 			
 		}
 		
+		
+		void addLinkBetweenMaps(std::ifstream& in){
+			
+			AASS::das::AssociationInterface asso;
+			asso.fromFile(in);
+			addLinkBetweenMaps(asso);
+			
+		}
+		
 		void addLinkBetweenMaps(const AASS::das::AssociationInterface& assoInter){
 
 			auto getIdenticalPoint =[this](const std::vector<cv::Point2f>& model_points, std::deque< int >& model_same) -> void{
@@ -364,12 +373,29 @@ namespace ndt_feature {
 			auto getIdenticalLandmark =[this](const cv::Point2f& model_points, int& model_same) -> void{
 				bool more_than_one = false;
 				for(size_t j = 0 ; j < this->_landmark_positions.size(); ++j ){
-					auto translation = this->_landmark_positions[j].translation();
+					Eigen::Vector2d translation = this->_landmark_positions[j].translation();
+					Eigen::Vector2d vectrans;
+					vectrans << std::floor( (translation(0) * 10) + 0.5 ) /10, std::floor( (translation(1) * 10) + 0.5 ) /10;
 					
-					if(translation(0) == model_points.x && translation(1) == model_points.y){
-						model_same = j;
-						if(more_than_one == true) throw std::runtime_error("More than one point linked to key point");
-						more_than_one = true;
+					std::cout << "T : " << translation << std::endl;
+					std::cout << "Point : " << model_points << std::endl;
+					Eigen::Vector2d vec;
+					vec << std::floor( (model_points.x * 10) + 0.5 ) /10, std::floor( (model_points.y * 10) + 0.5 ) /10;
+					
+					std::cout <<  translation(0) << " == " << vec(0) << std::endl;
+					if(vectrans(0) == vec(0)){
+						std::cout << "FIRST GOOD" << std::endl;
+						
+						std::cout <<  translation(1) << " == " << vec(1) << std::endl;
+						if(vectrans(1) == vec(1)){
+							std::cout << "FOUND" << std::endl;
+							model_same = j;
+							if(more_than_one == true) throw std::runtime_error("More than one point linked to key point");
+							more_than_one = true;
+						}
+						else{
+							std::cout << "Not the same " << translation(1) - vec(1) << std::endl;
+						}
 					}
 					
 				}
@@ -378,10 +404,19 @@ namespace ndt_feature {
 			
 			auto getIdenticalPriorLandmark =[this](const cv::Point2f& model_points, int& model_same) -> void{
 				bool more_than_one = false;
+				std::cout << std::endl << "-------------------------------------> PRIOR" << std::endl;
 				for(size_t j = 0 ; j < this->_prior_landmark_positions.size(); ++j ){
 					auto translation = this->_prior_landmark_positions[j].translation();
+					Eigen::Vector2d vectrans;
+					vectrans << std::floor( (translation(0) * 10) + 0.5 ) /10, std::floor( (translation(1) * 10) + 0.5 ) /10;
 					
-					if(translation(0) == model_points.x && translation(1) == model_points.y){
+					std::cout << "T : " << translation << std::endl;
+					std::cout << "Point : " << model_points << std::endl;
+					Eigen::Vector2d vec;
+					vec << std::floor( (model_points.x * 10) + 0.5 ) /10, std::floor( (model_points.y * 10) + 0.5 ) /10;
+					
+					
+					if(vectrans(0) == vec(0) && vectrans(1) == vec(1)){
 						model_same = j;
 						if(more_than_one == true) throw std::runtime_error("More than one point linked to key point");
 						more_than_one = true;
@@ -412,6 +447,7 @@ namespace ndt_feature {
 			//Create all the links
 			for(size_t i = 0 ; i < assoInter.getAssociations().size() ; ++i){
 				int idx = -1;
+				std::cout << "Searching " << assoInter.getAssociations()[i].second << " landmark " << std::endl;
 				getIdenticalLandmark(assoInter.getAssociations()[i].second, idx);
 				int idx_prior = -1;
 				getIdenticalPriorLandmark(assoInter.getAssociations()[i].first, idx_prior);
@@ -436,6 +472,7 @@ namespace ndt_feature {
 				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex v = *vp.first;
 				//ATTENTION Magic number
 				addPriorLandmarkPose(graph[v].getX(), graph[v].getY(), 0);
+				std::cout << "Prior Landmark : " << graph[v].getX() << " " << graph[v].getY() << std::endl;
 				vec_deque.push_back(v);
 			}
 			
