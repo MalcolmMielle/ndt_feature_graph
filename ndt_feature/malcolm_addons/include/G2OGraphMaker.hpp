@@ -25,14 +25,14 @@
 #include "vodigrex/linefollower/SimpleNode.hpp"
 
 #include "das/AssociationInterface.hpp"
-
+#include "covariance.hpp"
 
 namespace ndt_feature {
 	
 	
 	/** 
 	 * @brief Class holding a g2o graph optimization
-	 * When adding stuuf inside add all element and then call make graph. When giving the "from" "toward" for the edges, take in account than first are all the robot poses and then landmark poses. Thus when linking to landmark i send "nd_of_robot_poses + i". This is not done automoatically to allow for a landmark to landmark link
+	 * When adding stuuf inside add all element and then call make graph. When giving the "from" "toward" for the edges, take in account than first are all the robot poses and then landmark poses then the prior poses. Thus when linking to landmark i send "nd_of_robot_poses + i". This is not done automoatically to allow for a landmark to landmark link
 	 * 
 	 */
 	
@@ -659,12 +659,38 @@ namespace ndt_feature {
 			
 			/****************** Adding Prior nodes *************/
 			
-			Eigen::Matrix3d covariance_prior; 
-			covariance_prior.fill(0.);
-			covariance_prior(0, 0) = _priorNoise[0]*_priorNoise[0];
-			covariance_prior(1, 1) = _priorNoise[1]*_priorNoise[1];
-			covariance_prior(2, 2) = 13;//<- Rotation covariance prior landmark is more than 4PI
-			Eigen::Matrix3d information_prior = covariance_prior.inverse();
+// 			Eigen::Matrix3d covariance_prior; 
+// 			covariance_prior.fill(0.);
+// 			covariance_prior(0, 0) = _priorNoise[0]*_priorNoise[0];
+// 			covariance_prior(1, 1) = _priorNoise[1]*_priorNoise[1];
+// 			covariance_prior(2, 2) = 13;//<- Rotation covariance prior landmark is more than 4PI
+// 			Eigen::Matrix3d information_prior = covariance_prior.inverse();
+			
+			
+			auto makeInformationMat = [this](int index, int index2) -> Eigen::Matrix3d{
+				
+				//Get Eigen vector
+				Eigen::Vector3d pose1 = _prior_landmark_positions[index - _robot_positions.size() - _landmark_positions.size()].toVector();
+				Eigen::Vector3d pose2 = _prior_landmark_positions[index2 - _robot_positions.size() - _landmark_positions.size()].toVector();
+				
+				Eigen::Vector2d eigenvec;
+				eigenvec << pose1(0) - pose2(0), pose1(1) - pose2(1);
+				std::pair<double, double> eigenval(10, 1);
+				
+				Eigen::Matrix2d cov = getCovarianceVec(eigenvec, eigenval);
+				Eigen::Matrix3d covariance_prior;
+				covariance_prior.fill(0.);
+				covariance_prior(0, 0) = cov(0, 0);
+				covariance_prior(0, 1) = cov(0, 1);
+				covariance_prior(1, 0) = cov(1, 0);
+				covariance_prior(1, 1) = cov(1, 1);
+				covariance_prior(2, 2) = 13;//<- Rotation covariance prior landmark is more than 4PI
+				Eigen::Matrix3d information_prior = covariance_prior.inverse();
+				
+				return information_prior;
+				
+			};
+			
 			
 			std::cerr << "Optimization: add prior landmark vertices ... ";
 			for (size_t i = 0; i < _prior_landmark_positions.size(); ++i) {
@@ -684,6 +710,7 @@ namespace ndt_feature {
 				landmarkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_edges_prior[i]));
 				landmarkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_edges_prior[i]));
 				landmarkObservation->setMeasurement(std::get<0>(_edges_prior[i]));
+				Eigen::Matrix3d information_prior = makeInformationMat(std::get<1>(_edges_prior[i]), std::get<2>(_edges_prior[i]));
 				landmarkObservation->setInformation(information_prior);
 				//TODO
 				landmarkObservation->setParameterId(0, _sensorOffset->id());
