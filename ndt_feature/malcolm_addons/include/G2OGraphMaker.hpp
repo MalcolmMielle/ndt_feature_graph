@@ -6,6 +6,8 @@
 #include "g2o/types/slam2d/edge_se2.h"
 #include "g2o/types/slam2d/edge_se2_pointxy.h"
 #include "g2o/types/slam2d/parameter_se2_offset.h"
+#include "g2o/types/slam2d/edge_se2_prior.h"
+#include "g2o/types/slam2d/edge_se2_link.h"
 // #include "types_tutorial_slam2d.h"
 
 
@@ -675,7 +677,7 @@ namespace ndt_feature {
 				
 				Eigen::Vector2d eigenvec;
 				eigenvec << pose1(0) - pose2(0), pose1(1) - pose2(1);
-				std::pair<double, double> eigenval(10, 1);
+				std::pair<double, double> eigenval(_priorNoise(0), _priorNoise(1));
 				
 				Eigen::Matrix2d cov = getCovarianceVec(eigenvec, eigenval);
 				Eigen::Matrix3d covariance_prior;
@@ -706,7 +708,7 @@ namespace ndt_feature {
 			
 			std::cerr << "Optimization: add wall prior ... ";
 			for (size_t i = 0; i < _edges_prior.size(); ++i) {
-				g2o::EdgeSE2* landmarkObservation =  new g2o::EdgeSE2;
+				g2o::EdgeSE2Prior_malcolm* landmarkObservation =  new g2o::EdgeSE2Prior_malcolm;
 				landmarkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_edges_prior[i]));
 				landmarkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_edges_prior[i]));
 				landmarkObservation->setMeasurement(std::get<0>(_edges_prior[i]));
@@ -729,7 +731,7 @@ namespace ndt_feature {
 			//Add link between the two maps -> edge oftransform zero
 			std::cerr << "Optimization: add wall prior link to ndt ... ";
 			for (size_t i = 0; i < _link_in_between_maps.size(); ++i) {
-				g2o::EdgeSE2* landmarkObservation =  new g2o::EdgeSE2;
+				g2o::EdgeSE2Link_malcolm* landmarkObservation =  new g2o::EdgeSE2Link_malcolm;
 				landmarkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_link_in_between_maps[i]));
 				landmarkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_link_in_between_maps[i]));
 				landmarkObservation->setMeasurement(std::get<0>(_link_in_between_maps[i]));
