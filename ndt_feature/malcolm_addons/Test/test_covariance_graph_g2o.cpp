@@ -14,7 +14,7 @@ int main(){
 		Eigen::Vector2d(0.05, 0.01), //Robot translation noise
 		DEG2RAD(2.), 				//Rotation noise for robot
 		Eigen::Vector2d(0.05, 0.05), //Landmarks noise
-		Eigen::Vector2d(0, 0), //Prior noise
+		Eigen::Vector2d(0.001, 0.001), //Prior noise
 		Eigen::Vector2d(0.2, 0.2)); //Link noise
 	
 	/************* ADD LANDMARKS*********/

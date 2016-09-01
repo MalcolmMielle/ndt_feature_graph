@@ -675,11 +675,18 @@ namespace ndt_feature {
 				Eigen::Vector3d pose1 = _prior_landmark_positions[index - _robot_positions.size() - _landmark_positions.size()].toVector();
 				Eigen::Vector3d pose2 = _prior_landmark_positions[index2 - _robot_positions.size() - _landmark_positions.size()].toVector();
 				
+				std::cout << "Poses 1 " << std::endl << pose1.format(cleanFmt) << std::endl;
+				std::cout << "Poses 2 " << std::endl << pose2.format(cleanFmt) << std::endl;
+				
 				Eigen::Vector2d eigenvec;
 				eigenvec << pose1(0) - pose2(0), pose1(1) - pose2(1);
+				std::cout << "EigenVec " << std::endl << eigenvec.format(cleanFmt) << std::endl;
 				std::pair<double, double> eigenval(_priorNoise(0), _priorNoise(1));
 				
 				Eigen::Matrix2d cov = getCovarianceVec(eigenvec, eigenval);
+				
+				std::cout << "Covariance prior " << std::endl << cov.format(cleanFmt) << std::endl;
+				
 				Eigen::Matrix3d covariance_prior;
 				covariance_prior.fill(0.);
 				covariance_prior(0, 0) = cov(0, 0);
@@ -688,6 +695,7 @@ namespace ndt_feature {
 				covariance_prior(1, 1) = cov(1, 1);
 				covariance_prior(2, 2) = 13;//<- Rotation covariance prior landmark is more than 4PI
 				Eigen::Matrix3d information_prior = covariance_prior.inverse();
+				std::cout << "Information prior " << std::endl << cov.format(cleanFmt) << std::endl;
 				
 				return information_prior;
 				
