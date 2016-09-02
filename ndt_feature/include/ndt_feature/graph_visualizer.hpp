@@ -68,12 +68,12 @@ namespace ndt_feature {
 // 			std::cout << " count and node " << _count << " " << _node << std::endl;
 			
 			//Get the last ndtMap element
-// 			lslgeneric::NDTMap* map = graph.getMap(_node);
+			lslgeneric::NDTMap* map = graph.getMap(_node);
 			
 // 			lslgeneric::NDTMap* map = map->pseudoTransformNDTMap();
-// 			bool good = lslgeneric::toMessage(map, mapmsg, frame_name);
+			bool good = lslgeneric::toMessage(map, mapmsg, frame_name);
 			
-			//TODO Change it to the fuser frame ?
+// 			TODO Change it to the fuser frame ?
 // 			printNDTMap(, mapmsg, frame_name);
 			
 		}

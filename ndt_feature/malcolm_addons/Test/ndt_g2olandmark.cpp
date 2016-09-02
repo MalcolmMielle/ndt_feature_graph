@@ -204,17 +204,17 @@ public:
 	    param_nh.param("sensor_pose_t",sensor_pose_t,0.);
 	    
 	    ///size of the map in x/y/z. if using HMT, this is the size of the central tile
-	    param_nh.param("size_x_meters",size_x,10.);
-	    param_nh.param("size_y_meters",size_y,10.);
+	    param_nh.param("size_x_meters",size_x,100.);
+	    param_nh.param("size_y_meters",size_y,100.);
 	    param_nh.param("size_z_meters",size_z,10.);
             
 	    ///range to cutoff sensor measurements
-	    param_nh.param("sensor_range",sensor_range,3.);
+	    param_nh.param("sensor_range",sensor_range,20.);
             ///range to cutoff sensor measurements
 	    param_nh.param("min_laser_range",min_laser_range_,0.1);
 	    
 	    //map resolution
-	    param_nh.param("resolution",resolution,0.10);
+	    param_nh.param("resolution",resolution,0.50);
             
 	    param_nh.param("laser_variance_z",varz,resolution/4);
 
