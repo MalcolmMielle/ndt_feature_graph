@@ -2,7 +2,7 @@
 
 
     <arg name="file" default="$(find ndt_feature)/data/cthsurvey1.bag" />
-    <arg name="rate" default="2" />
+    <arg name="rate" default="0.5"/>
     <arg name="start_time" default="0" />
 
     <param name="/use_sim_time" value="true" />

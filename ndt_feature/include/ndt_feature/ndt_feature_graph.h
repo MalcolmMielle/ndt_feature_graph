@@ -507,7 +507,9 @@ public:
     
     std::vector<NDTFeatureNode>::iterator it;
     int i = 0; 
+	std::cout << "Saving : " << getNbNodes() << " nodes " << std::endl;
     for (it = nodes_.begin(); it != nodes_.end(); it++) {
+	  std::cout << "Saving : " << i << " nodes, in : " << filename + semrob_generic::toString(i) << std::endl;
       it->save(filename + semrob_generic::toString(i));
       i++;
     }

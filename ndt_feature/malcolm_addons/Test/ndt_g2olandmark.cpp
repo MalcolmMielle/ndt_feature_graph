@@ -418,7 +418,7 @@ public:
 		_marker_pub_graph_odom= nh_.advertise<visualization_msgs::Marker>("visualization_marker_graph_odom", 10);
 		_last_ndtmap= nh_.advertise<ndt_map::NDTMapMsg>("lastgraphmap", 10);
 
-		heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(4.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
+		heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(1.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
 		
 		Todom.setIdentity();
 		
@@ -436,9 +436,9 @@ public:
 // 		ndt_feature::ndtGraphToG2O(*graph, _g2o_graph);
 // 		_g2o_graph.save("g2o_best_graph.g2o");
 		
-		
-// 		graph->saveMap();
-		
+		ROS_ERROR_STREAM("SAVING THE MAP");
+		graph->saveMap();
+		std::cout << "Map saved : " << graph->getNbNodes() << std::endl;
 		//Copy graph
 // 		  _malcolm_graph.convert(*graph);
 // 		  
@@ -541,15 +541,15 @@ public:
 // 					
 // 					
 // 					
-// 					CALLGRIND_START_INSTRUMENTATION;
-// 					CALLGRIND_TOGGLE_COLLECT;
+// // 					CALLGRIND_START_INSTRUMENTATION;
+// // 					CALLGRIND_TOGGLE_COLLECT;
 // 					
 // 					
 // 					
 // 					_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
 // 					
-// 					CALLGRIND_TOGGLE_COLLECT;
-// 					CALLGRIND_STOP_INSTRUMENTATION;
+// // 					CALLGRIND_TOGGLE_COLLECT;
+// // 					CALLGRIND_STOP_INSTRUMENTATION;
 // 					
 // 					
 // 					std::cout << "publishing " << std::endl;

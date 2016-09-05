@@ -634,6 +634,8 @@ namespace ndt_feature {
 			covariance_landmark(2, 2) = 13;//<- Rotation covariance landmark is more than 4PI
 			Eigen::Matrix3d information_landmark = covariance_landmark.inverse();
 			
+			std::cout << "Landmark cov " << std::endl << covariance_landmark.format(cleanFmt) << std::endl;
+			
 			std::cerr << "Optimization: add landmark vertices ... ";
 			for (size_t i = 0; i < _landmark_positions.size() ; ++i) {
 				std::cout << "Add landmark" << std::endl;
@@ -675,12 +677,12 @@ namespace ndt_feature {
 				Eigen::Vector3d pose1 = _prior_landmark_positions[index - _robot_positions.size() - _landmark_positions.size()].toVector();
 				Eigen::Vector3d pose2 = _prior_landmark_positions[index2 - _robot_positions.size() - _landmark_positions.size()].toVector();
 				
-				std::cout << "Poses 1 " << std::endl << pose1.format(cleanFmt) << std::endl;
-				std::cout << "Poses 2 " << std::endl << pose2.format(cleanFmt) << std::endl;
+// 				std::cout << "Poses 1 " << std::endl << pose1.format(cleanFmt) << std::endl;
+// 				std::cout << "Poses 2 " << std::endl << pose2.format(cleanFmt) << std::endl;
 				
 				Eigen::Vector2d eigenvec;
 				eigenvec << pose1(0) - pose2(0), pose1(1) - pose2(1);
-				std::cout << "EigenVec " << std::endl << eigenvec.format(cleanFmt) << std::endl;
+// 				std::cout << "EigenVec " << std::endl << eigenvec.format(cleanFmt) << std::endl;
 				std::pair<double, double> eigenval(_priorNoise(0), _priorNoise(1));
 				
 				Eigen::Matrix2d cov = getCovarianceVec(eigenvec, eigenval);
@@ -704,27 +706,27 @@ namespace ndt_feature {
 			
 			std::cerr << "Optimization: add prior landmark vertices ... ";
 			for (size_t i = 0; i < _prior_landmark_positions.size(); ++i) {
-				g2o::VertexSE2* landmark = new g2o::VertexSE2;
-				landmark->setId(id);
+				g2o::VertexSE2* priorlandmark = new g2o::VertexSE2;
+				priorlandmark->setId(id);
 				++id;
 // 				g2o::SE2 se2(_prior_landmark_positions[i], _prior_landmark_positions[i+1], _prior_landmark_positions[i+2]);
 // 				g2o::SE2 se2(_prior_landmark_positions[i](0), _prior_landmark_positions[i](1), _prior_landmark_positions[i](2));
-				landmark->setEstimate(_prior_landmark_positions[i]);
-				_optimizer.addVertex(landmark);
+				priorlandmark->setEstimate(_prior_landmark_positions[i]);
+				_optimizer.addVertex(priorlandmark);
 			}
 			std::cerr << "done." << std::endl;
 			
 			std::cerr << "Optimization: add wall prior ... ";
 			for (size_t i = 0; i < _edges_prior.size(); ++i) {
-				g2o::EdgeSE2Prior_malcolm* landmarkObservation =  new g2o::EdgeSE2Prior_malcolm;
-				landmarkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_edges_prior[i]));
-				landmarkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_edges_prior[i]));
-				landmarkObservation->setMeasurement(std::get<0>(_edges_prior[i]));
+				g2o::EdgeSE2Prior_malcolm* priorObservation =  new g2o::EdgeSE2Prior_malcolm;
+				priorObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_edges_prior[i]));
+				priorObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_edges_prior[i]));
+				priorObservation->setMeasurement(std::get<0>(_edges_prior[i]));
 				Eigen::Matrix3d information_prior = makeInformationMat(std::get<1>(_edges_prior[i]), std::get<2>(_edges_prior[i]));
-				landmarkObservation->setInformation(information_prior);
+				priorObservation->setInformation(information_prior);
 				//TODO
-				landmarkObservation->setParameterId(0, _sensorOffset->id());
-				_optimizer.addEdge(landmarkObservation);
+				priorObservation->setParameterId(0, _sensorOffset->id());
+				_optimizer.addEdge(priorObservation);
 			}
 			
 			/****************** Adding prior to ndt edges *************/
@@ -739,14 +741,14 @@ namespace ndt_feature {
 			//Add link between the two maps -> edge oftransform zero
 			std::cerr << "Optimization: add wall prior link to ndt ... ";
 			for (size_t i = 0; i < _link_in_between_maps.size(); ++i) {
-				g2o::EdgeSE2Link_malcolm* landmarkObservation =  new g2o::EdgeSE2Link_malcolm;
-				landmarkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_link_in_between_maps[i]));
-				landmarkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_link_in_between_maps[i]));
-				landmarkObservation->setMeasurement(std::get<0>(_link_in_between_maps[i]));
-				landmarkObservation->setInformation(information_link);
+				g2o::EdgeSE2Link_malcolm* linkObservation =  new g2o::EdgeSE2Link_malcolm;
+				linkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_link_in_between_maps[i]));
+				linkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_link_in_between_maps[i]));
+				linkObservation->setMeasurement(std::get<0>(_link_in_between_maps[i]));
+				linkObservation->setInformation(information_link);
 				//TODO
-				landmarkObservation->setParameterId(0, _sensorOffset->id());
-				_optimizer.addEdge(landmarkObservation);
+				linkObservation->setParameterId(0, _sensorOffset->id());
+				_optimizer.addEdge(linkObservation);
 			}
 
 			g2o::VertexSE2* firstRobotPose = dynamic_cast<g2o::VertexSE2*>(_optimizer.vertex(0));

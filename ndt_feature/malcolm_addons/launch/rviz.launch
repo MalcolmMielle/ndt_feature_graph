@@ -1,0 +1,12 @@
+<launch>
+
+	<node pkg="rviz" type="rviz" name="rviz" args="-d $(find ndt_feature)/launch/fuser_laser2d.rviz" />
+
+   
+
+   
+    <node pkg="tf" type="static_transform_publisher" name="world_map_frame" args="0 0 0 0 0 0 /world /map 10"/>
+    <node pkg="tf" type="static_transform_publisher" name="laser_scan_frame" args="0 0 0 0 0 0 /base_laser_link /laserscan 10"/>  
+    <node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="1.66 0.18 0 0 0 0.016 /fuser /base_laser_link 10"/>  
+    
+</launch>
