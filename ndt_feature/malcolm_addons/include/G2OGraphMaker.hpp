@@ -398,6 +398,7 @@ namespace ndt_feature {
 			
 		}
 		
+		///Scale is a useless var !
 		void addLinkBetweenMaps(const AASS::das::AssociationInterface& assoInter, double scale){
 
 			auto getIdenticalPoint =[this](const std::vector<cv::Point2f>& model_points, std::deque< int >& model_same) -> void{
