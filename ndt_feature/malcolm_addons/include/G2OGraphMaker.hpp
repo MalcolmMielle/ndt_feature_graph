@@ -8,6 +8,7 @@
 #include "g2o/types/slam2d/parameter_se2_offset.h"
 #include "g2o/types/slam2d/edge_se2_prior.h"
 #include "g2o/types/slam2d/edge_se2_link.h"
+#include "g2o/types/slam2d/edge_landmark_se2.h"
 // #include "types_tutorial_slam2d.h"
 
 
@@ -18,8 +19,8 @@
 #include "g2o/core/optimization_algorithm_gauss_newton.h"
 #include "g2o/solvers/csparse/linear_solver_csparse.h"
 
-// #include "ndt_feature/ndt_feature_graph.h"
-// #include "ndt_feature/utils.h"
+#include "ndt_feature/ndt_feature_graph.h"
+#include "ndt_feature/utils.h"
 
 #include "Eigen/Core"
 
@@ -27,6 +28,7 @@
 #include "vodigrex/linefollower/SimpleNode.hpp"
 
 #include "das/AssociationInterface.hpp"
+#include "das/NDTCorner.hpp"
 #include "covariance.hpp"
 
 namespace ndt_feature {
@@ -223,6 +225,79 @@ namespace ndt_feature {
 		}
 		
 		
+		void addRobotPoseAndOdometry(ndt_feature::NDTFeatureGraph& ndt_graph){
+			
+			
+			auto Affine3d2Isometry2d = [](const Eigen::Affine3d& affine) -> Eigen::Isometry2d{
+		
+				Eigen::Affine2d affine2d = lslgeneric::eigenAffine3dTo2d(affine);
+				Eigen::Isometry2d isometry2d;
+				isometry2d.translation() = affine2d.translation();
+				isometry2d.linear() = affine2d.rotation();
+				return isometry2d;
+				
+			};
+			
+			auto NDTFeatureNode2VertexSE2 = [Affine3d2Isometry2d](const NDTFeatureNode& feature) -> g2o::SE2
+			{
+				Eigen::Affine3d affine = Eigen::Affine3d(feature.getPose());
+				Eigen::Isometry2d isometry2d = Affine3d2Isometry2d(affine);
+				g2o::SE2 se2(isometry2d);
+				return se2;
+// 				std::cout << "SE2 " << se2.toVector() << std::endl;
+			};
+			
+			
+			auto NDTFeatureLink2EdgeSE2 = [Affine3d2Isometry2d](const NDTFeatureLink& link) -> g2o::SE2
+			{
+				
+				
+				Eigen::Affine3d affine = link.getRelPose();		
+				Eigen::Isometry2d isometry2d = Affine3d2Isometry2d(affine);
+		// 		double x = cumulated_translation(0, 3);
+		// 		double y = cumulated_translation(1, 3);
+				g2o::SE2 se2(isometry2d);
+				return se2;
+				
+				
+			};
+			
+			//ADDING ROBOT POSES
+			for (size_t i = 0; i < ndt_graph.getNbNodes(); ++i) {
+				std::cout << "Adding node " << i << std::endl;
+				NDTFeatureNode* feature = new NDTFeatureNode();
+				std::cout << "Copy feature" << std::endl;
+				feature->copyNDTFeatureNode( (const NDTFeatureNode&)ndt_graph.getNodeInterface(i) );
+				g2o::SE2 robot_se2 = NDTFeatureNode2VertexSE2(*feature);
+// 				std::cout << "Robot " << robot->estimate().toVector() << std::endl;
+				std::cout << "Add : " << robot_se2.toVector() <<std::endl;
+				addRobotPose(robot_se2);				
+			}
+			
+			//ADDING ODOMETRY
+			auto links = ndt_graph.getOdometryLinks();
+			ndt_graph.updateLinksUsingNDTRegistration(links, 10, true);
+			
+			std::cout << "Number of links " << links.size() << std::endl;
+			
+			for (size_t i = 0 ; i <links.size() ; ++i) {
+				Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+				std::cout <<"Estimate before anything " << links[i].getRelCov().inverse().format(cleanFmt) << std::endl;
+				std::cout << "Adding Edge" << std::endl;
+// 				NDTFeatureLink link = NDTFeatureLink((const NDTFeatureLink&) graph.getLinkInterface(i));
+				g2o::SE2 odometry = NDTFeatureLink2EdgeSE2(links[i]);
+				size_t from = links[i].getRefIdx() ;
+				size_t toward = links[i].getMovIdx() ;
+				std::cout << "from " << from << " toward " << toward << std::endl;
+				addOdometry(odometry, from, toward);
+			}
+			
+			
+			std::cout << "Stopped there " << std::endl;
+			
+// 			throw std::runtime_error("Can't use that function yet !!");
+		}
+		
 		void addLandmarkAndObservation(std::ifstream& in){
 			std::string word;
 			in >> word;
@@ -294,6 +369,58 @@ namespace ndt_feature {
 				}
 			}
 		}
+		
+		void addLandmarkAndObservation(ndt_feature::NDTFeatureGraph& ndt_graph){
+			
+			//For every node in the graph : extract NDT map
+			//ADDING ROBOT POSES
+			std::cout << "/******************************** LANDMARKS " << std::endl << std::endl;
+			for (size_t i = 0; i < ndt_graph.getNbNodes(); ++i) {
+				std::cout << "Adding landmark for node " << i << std::endl;
+// 				NDTFeatureNode* feature = new NDTFeatureNode();
+// 				feature->copyNDTFeatureNode( (const NDTFeatureNode&)ndt_graph.getNodeInterface(i) );
+// // 				g2o::SE2 robot_se2 = NDTFeatureNode2VertexSE2(*feature);
+				
+				lslgeneric::NDTMap* map = ndt_graph.getMap(i);
+				auto cells = map->getAllInitializedCells();
+	
+				double x, y, z;
+				map->getCellSizeInMeters(x, y, z);
+				
+				AASS::das::NDTCorner cornersExtractor;
+				std::cout << "Searching for corners in map with " << cells.size() << " initialized cells, and celle size is " << x << " " << y << " " << z << std::endl;
+				auto ret_export = cornersExtractor.getAllCorners(*map);
+				auto ret_opencv_point_corner = cornersExtractor.getAccurateCvCorners();			
+				std::cout << "Corner extracted. Nb of them " << ret_opencv_point_corner.size() << std::endl;
+				//Extract the corners
+				auto it = ret_opencv_point_corner.begin();
+				int count = 0 ;
+				for(it ; it != ret_opencv_point_corner.end() ; ++it){
+					
+					addLandmarkPose(it->x, it->y, 0);
+					Eigen::Vector2d real_obs ;
+					real_obs << it->x, it->y;
+					Eigen::Vector2d observation;
+					//Projecting real_obs into robot coordinate frame
+					Eigen::Vector2d trueObservation = _robot_positions[i].inverse() * real_obs;
+					observation = trueObservation;
+					std::cout << "G2O OBSERVATION " << observation << std::endl;
+					//HACK magic number
+					g2o::SE2 se2(observation(0), observation(1), 0);
+					std::cout << "G2O OBSERVATION " << se2.toVector() << std::endl;
+					std::tuple<g2o::SE2, int, int> tup(se2, i, _robot_positions.size() + count);
+					_observation_real_landmarks.push_back(tup);
+					count++;
+					
+				}
+				
+				//Add the landmarks
+			}
+			
+			
+// 			throw std::runtime_error("Can't use that function yet !!");
+		}		
+		
 		
 		void addRobotPose(const g2o::SE2& se2){
 			_robot_positions.push_back(se2);
@@ -651,7 +778,7 @@ namespace ndt_feature {
 
 			std::cerr << "Optimization: add landmark observations ... ";
 			for (size_t i = 0; i < _observation_real_landmarks.size(); ++i) {
-				g2o::EdgeSE2* landmarkObservation =  new g2o::EdgeSE2;
+				g2o::EdgeSE2Landmark_malcolm* landmarkObservation =  new g2o::EdgeSE2Landmark_malcolm;
 				landmarkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_observation_real_landmarks[i]) );
 				landmarkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_observation_real_landmarks[i]));
 				landmarkObservation->setMeasurement(std::get<0>(_observation_real_landmarks[i]));

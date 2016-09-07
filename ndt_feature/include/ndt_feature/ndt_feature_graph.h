@@ -273,6 +273,7 @@ public:
   std::vector<NDTFeatureLink> getOdometryLinks() const {
     std::vector<NDTFeatureLink> ret;
     for (size_t i = 0; i < (int) nodes_.size() - 1 ; i++) {
+	  std::cout << "Checking out node " << std::endl;
       NDTFeatureLink m(i, i+1);
 	  Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
 // 	  std::cout <<"Cov on creation " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
@@ -292,16 +293,16 @@ public:
 	  m.T.rotation().eulerAngles(0,1,2) << std::endl;
       m.score = -1.;
       ret.push_back(m);
-// 	  std::cout <<"Cov on push_back " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
+	  std::cout <<"Cov on push_back " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
 	      
 		
 	}
 	
 	for(int tmp = 0 ; tmp < ret.size() ; ++tmp){
-		Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
 // 			std::cout <<"Estimate before return " << ret[tmp].getRelCov().inverse().format(cleanFmt) << std::endl;
-// 			std::cout << "Adding Edge" << std::endl;	
-		}
+		std::cout << "Adding Edge" << std::endl;	
+	}
     
     
     return ret;
@@ -312,8 +313,12 @@ public:
 	  
 	  for(size_t i = 0 ; i < getNbLinks() ; ++i){
 		  
+		  std::cout << "New link" << __LINE__ << std::endl;
+		  
 		  NDTFeatureLink link = (NDTFeatureLink&) getLinkInterface(i);
 		  updateLinkUsingNDTRegistration(link, nb_neighbours, keepScore);
+		  
+		  std::cout << "OUT" << __LINE__ << std::endl;
 		  
 	  }
 	  
@@ -323,9 +328,9 @@ public:
     lslgeneric::NDTMatcherD2D matcher_d2d;
     matcher_d2d.n_neighbours = nb_neighbours;
 	
-// 	std::cout << "Matching : " << link.getRefIdx() << " with " << link.getMovIdx() << std::endl;
-// 	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
-// 	std::cout << "Transform between the two " << link.T.matrix().format(cleanFmt) << std::endl; 
+	std::cout << "Matching : " << link.getRefIdx() << " with " << link.getMovIdx() << std::endl;
+	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+	std::cout << "Transform between the two " << link.T.matrix().format(cleanFmt) << std::endl; 
     int a ;
 // 	std::cout << "PAUSE before match" << std::endl;
 // 	std::cin >> a;
@@ -336,7 +341,7 @@ public:
 	
 	assert(converged == true);
 	
-// 	std::cout << "Transform between the two new " << link.T.matrix().format(cleanFmt) << std::endl; 
+	std::cout << "Transform between the two new " << link.T.matrix().format(cleanFmt) << std::endl; 
 	
 // 	int a ;
 // 	std::cout << "PAUSE before cov" << std::endl;
@@ -360,29 +365,34 @@ public:
 		matcher_d2d.covariance(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, cov);
 	}
 	else{
-// 		std::cout << "NOTHING HAPPENED Creating a identity matrix" << std::endl;
+		std::cout << "NOTHING HAPPENED Creating a identity matrix" << std::endl;
 		cov = Eigen::MatrixXd::Identity(6, 6);
 		cov << 	0.02, 	0, 		0,
 				0, 		0.02, 	0,
 				0, 		0, 		0.02;
 // 		exit(0);
 	}
-// 	std::cout << "Size of Covariance : " << cov.rows() << " AND COLS " << cov.cols() << std::endl;
+	std::cout << "Size of Covariance : " << cov.rows() << " AND COLS " << cov.cols() << std::endl;
 	
 	assert(cov.rows() == 6);
 	assert(cov.cols() == 6);
-// 	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << std::endl; 
+	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << std::endl; 
 	link.cov_3d = cov;
+	std::cout << "How my god" << std::endl;
 	
-// 	std::cout << "PAUSE got cov : " << cov << std::endl;
-	std::cin >> a;
+	std::cout << "PAUSE got cov : " << cov << std::endl;
+// 	std::cin >> a;
 	
     if (!keepScore) {
+      std::cout << "old link.score : " <<std::endl;
+	  std::cout << link.score << std::endl;
       link.score = ndt_feature::overlapNDTOccupancyScore(nodes_[link.getRefIdx()],
                                                          nodes_[link.getMovIdx()], 
                                                          link.T);
-//       std::cout << "new link.score : " << link.score << std::endl;
+      std::cout << "new link.score : " << link.score << std::endl;
     }
+    
+    std::cout << "End of link" << std::endl;
   }
 
   void updateLinksUsingNDTRegistration(std::vector<NDTFeatureLink> &links, int nb_neighbours, bool keepScore) {

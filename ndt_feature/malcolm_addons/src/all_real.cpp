@@ -1,4 +1,4 @@
-#include "das/RANSACAndCPD.hpp"
+#include "das/RANSACAssociation.hpp"
 #include "das/RANSAC.hpp"
 #include "das/priors/BasementPriorLine.hpp"
 #include "das/Utils.hpp"
@@ -216,7 +216,7 @@ int main( int argc, char** argv )
 	
 	cv::Mat homography;
 		
-	AASS::das::RANSACAndCPD rcpd;
+	AASS::das::RANSACAssociation rcpd;
 	
 	rcpd.match(corners_prior, ret_opencv, homography, fixed_points, src_gray, ndt_cv);
 	

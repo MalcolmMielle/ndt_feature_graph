@@ -11,7 +11,7 @@
 #include "ndt_feature/ndt_feature_graph.h"
 
 
-	namespace ndt_feature{
+namespace ndt_feature{
 	/**
 	* @brief class where the whole autocomplete of the slam is produced
 	* 
@@ -91,7 +91,7 @@
 		/**
 		* @brief Create the optimization graph
 		*/
-		void createGraph(const ndt_feature::NDTFeatureGraph& ndt_graph, G2OGraphMarker& g2o_graph){
+		void createGraph(ndt_feature::NDTFeatureGraph& ndt_graph, G2OGraphMarker& g2o_graph){
 			//Add NDTGraph robot poses and odometry
 			//TODO: this function :(
 			g2o_graph.addRobotPoseAndOdometry(ndt_graph);

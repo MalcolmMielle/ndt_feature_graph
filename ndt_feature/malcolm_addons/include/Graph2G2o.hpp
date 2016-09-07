@@ -6,6 +6,8 @@
 #include "g2o/types/slam2d/edge_se2.h"
 #include "g2o/types/slam2d/edge_se2_pointxy.h"
 #include "g2o/types/slam2d/parameter_se2_offset.h"
+#include "g2o/types/slam2d/edge_se2_prior.h"
+#include "g2o/types/slam2d/edge_se2_link.h"
 // #include "types_tutorial_slam2d.h"
 
 
@@ -18,6 +20,12 @@
 
 #include "ndt_feature/ndt_feature_graph.h"
 #include "ndt_feature/utils.h"
+
+#include "bettergraph/PseudoGraph.hpp"
+#include "vodigrex/linefollower/SimpleNode.hpp"
+
+#include "das/AssociationInterface.hpp"
+#include "covariance.hpp"
 
 namespace ndt_feature {
 	
