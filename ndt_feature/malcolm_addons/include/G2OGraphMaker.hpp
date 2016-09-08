@@ -382,20 +382,69 @@ namespace ndt_feature {
 // // 				g2o::SE2 robot_se2 = NDTFeatureNode2VertexSE2(*feature);
 				
 				lslgeneric::NDTMap* map = ndt_graph.getMap(i);
-				auto cells = map->getAllInitializedCells();
-	
-				double x, y, z;
-				map->getCellSizeInMeters(x, y, z);
+				
+				
+				//TODO : good way of doing it to make work
+				
+// 				Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+// 				std::cout <<"Transformation to apply" << ndt_graph.getNode(i).T.matrix().format(cleanFmt) << std::endl;
+// 				
+// // 				lslgeneric::NDTMap* map_moved = map->pseudoTransformNDTMapLazyGrid(ndt_graph.getNode(i).T);
+// 				lslgeneric::NDTMap* map_moved = map->pseudoTransformNDTMap(ndt_graph.getNode(i).T);
+// 				
+// 				std::cout <<"Transformation to apply" << ndt_graph.getNode(i).T.matrix().format(cleanFmt) << std::endl;
+// 
+// 				double x, y, z;
+// 				map_moved->getCellSizeInMeters(x, y, z);
+// 				double x2, y2, z2;
+// 				map->getCellSizeInMeters(x2, y2, z2);
+// 				
+// 				assert(x == x2);
+// 				assert(y == y2);
+// 				assert(z == z2);
+// 				
+// // 				map_moved->setMapSize(float sx, float sy, float sz)
+// 				
+// 				auto cells = map_moved->getAllCells();
+// 				auto cells2 = map->getAllCells();
+// 				
+// 				std::cout << cells.size() << " == " << cells2.size() << std::endl;
+// 				assert( cells.size() == cells2.size() );
+				
+				
+				
+				/*******************/
+				
+				//HACK For now : we translate the Corner extracted and not the ndt-maps
+				auto cells = map->getAllCells();
+				double x2, y2, z2;
+				map->getCellSizeInMeters(x2, y2, z2);
 				
 				AASS::das::NDTCorner cornersExtractor;
-				std::cout << "Searching for corners in map with " << cells.size() << " initialized cells, and celle size is " << x << " " << y << " " << z << std::endl;
+				std::cout << "Searching for corners in map with " << cells.size() << " initialized cells, and celle size is " << x2 << " " << y2 << " " << z2 << std::endl;
 				auto ret_export = cornersExtractor.getAllCorners(*map);
 				auto ret_opencv_point_corner = cornersExtractor.getAccurateCvCorners();			
 				std::cout << "Corner extracted. Nb of them " << ret_opencv_point_corner.size() << std::endl;
-				//Extract the corners
+				
+				//HACK: translate the corners now :
 				auto it = ret_opencv_point_corner.begin();
-				int count = 0 ;
+				std::vector<cv::Point2f> _final_corners;
 				for(it ; it != ret_opencv_point_corner.end() ; ++it){
+					std::cout << "MOVE : "<< it -> x << " " << it-> y << std::endl;
+					Eigen::Vector3d vec;
+					vec << it->x, it->y, 0;
+					Eigen::Vector3d vec_out = ndt_graph.getNode(i).T * vec;
+					cv::Point2f p_out(vec_out(0), vec_out(1));
+					_final_corners.push_back(p_out);
+				}
+				
+				//Copy them back to opencv
+				
+				//Extract the corners
+				it = _final_corners.begin();
+				int count = 0 ;
+				int nb_of_landmark = _landmark_positions.size();
+				for(it ; it != _final_corners.end() ; ++it){
 					
 					addLandmarkPose(it->x, it->y, 0);
 					Eigen::Vector2d real_obs ;
@@ -408,11 +457,13 @@ namespace ndt_feature {
 					//HACK magic number
 					g2o::SE2 se2(observation(0), observation(1), 0);
 					std::cout << "G2O OBSERVATION " << se2.toVector() << std::endl;
-					std::tuple<g2o::SE2, int, int> tup(se2, i, _robot_positions.size() + count);
+					std::tuple<g2o::SE2, int, int> tup(se2, i, _robot_positions.size() + nb_of_landmark + count);
 					_observation_real_landmarks.push_back(tup);
 					count++;
 					
 				}
+				
+				std::cout << std::endl << " //////////------> "<<count << " corners here " << std::endl;
 				
 				//Add the landmarks
 			}
