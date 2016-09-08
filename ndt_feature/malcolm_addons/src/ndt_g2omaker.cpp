@@ -679,23 +679,23 @@ public:
 // 			}
 // 		}
 
-		if(graph->getNbNodes() == 4){
-			_g2o_graph.addRobotPoseAndOdometry(*graph);
-			
-			_g2o_graph.addLandmarkAndObservation(*graph);
-			
-			
-			std::cout << "G2O MADE :)" << std::endl;
-			
-			
-			_g2o_graph.makeGraph();
-			const std::string file = "/home/malcolm/AWESOME.g2o";
-			_g2o_graph.save(file);
-			
-			std::cout << "DONE SAVING :)" << std::endl;
-			graph->saveMap();
-			exit(0);
-		}
+// 		if(graph->getNbNodes() == 4){
+// 			_g2o_graph.addRobotPoseAndOdometry(*graph);
+// 			
+// 			_g2o_graph.addLandmarkAndObservation(*graph);
+// 			
+// 			
+// 			std::cout << "G2O MADE :)" << std::endl;
+// 			
+// 			
+// 			_g2o_graph.makeGraph();
+// 			const std::string file = "/home/malcolm/AWESOME.g2o";
+// 			_g2o_graph.save(file);
+// 			
+// 			std::cout << "DONE SAVING :)" << std::endl;
+// 			graph->saveMap();
+// 			exit(0);
+// 		}
 		
 		std::cout << "Transform sent" << std::endl;
 
@@ -736,6 +736,7 @@ public:
 			const std::string file = "/home/malcolm/AWESOME.g2o";
 			_g2o_graph.save(file);
 			
+			graph->saveMap();
 			std::cout << "DONE SAVING :)" << std::endl;
 		}
 	}
