@@ -48,6 +48,8 @@
 #include "ndt_feature/graph_visualizer.hpp"
 // #include "G2OGraphMaker.hpp"
 #include "conversion.hpp"
+#include "PriorAutoComplete.hpp"
+#include <thread>
 
 #ifndef SYNC_FRAMES
 #define SYNC_FRAMES 20
@@ -66,6 +68,10 @@ class NDTFeatureFuserNode {
     protected:
 		
 	ndt_feature::G2OGraphMarker _g2o_graph;
+	ndt_feature::G2OGraphMarker _g2o_graph_linked;
+	ndt_feature::G2OGraphMarker _g2o_graph_linked_oriented;
+	ndt_feature::G2OGraphMarker _g2o_graph_no_prior;
+	ndt_feature::PriorAutoComplete _priorAutoComplete;
 		
 	// Our NodeHandle
 	ros::NodeHandle nh_;
@@ -153,6 +159,8 @@ class NDTFeatureFuserNode {
 
 	bool clear_odometry_estimate_;
 	
+	int _count_of_node;
+	
 	//RegistrationGraph from betterGraph Library
 // 	ndt_feature::NDTFeatureRegistrationGraph _malcolm_graph;
 	ndt_feature::GraphVisualizer _gvisu;
@@ -162,19 +170,52 @@ public:
 	// Constructor
 		NDTFeatureFuserNode(ros::NodeHandle param_nh) : 
 		
-		_g2o_graph(g2o::SE2(0.2, 0.1, -0.1), 
-			Eigen::Vector2d(0.05, 0.01), 
-			DEG2RAD(2.),
-			Eigen::Vector2d(0.05, 0.05),
-			Eigen::Vector2d(0.05, 0.01),
-			Eigen::Vector2d(0.2, 0.2)), 
+		_g2o_graph(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
+		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
+		DEG2RAD(2.), 				//Rotation noise for robot
+		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
+		Eigen::Vector2d(1, 0.001), //Prior noise
+		Eigen::Vector2d(0.2, 0.2)), //Link noise, 
 // 						_sensorOffsetTransf(0.2, 0.1, -0.1), 
+
+		_g2o_graph_linked(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
+		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
+		DEG2RAD(2.), 				//Rotation noise for robot
+		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
+		Eigen::Vector2d(1, 0.001), //Prior noise
+		Eigen::Vector2d(0.2, 0.2)), //Link noise,
+		
+		_g2o_graph_linked_oriented(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
+		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
+		DEG2RAD(2.), 				//Rotation noise for robot
+		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
+		Eigen::Vector2d(1, 0.001), //Prior noise
+		Eigen::Vector2d(0.2, 0.2)), //Link noise,
+		
+		_g2o_graph_no_prior(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
+		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
+		DEG2RAD(2.), 				//Rotation noise for robot
+		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
+		Eigen::Vector2d(1, 0.001), //Prior noise
+		Eigen::Vector2d(0.2, 0.2)), //Link noise,
+		
 		nb_added_clouds_(0),
         peak_finder_(ndt_feature::createPeakFinder()),
         histogram_dist_(new SymmetricChi2Distance<double>()),
         detector_(ndt_feature::createDetector(peak_finder_.get())),
-        descriptor_(ndt_feature::createDescriptor(histogram_dist_.get()))
+        descriptor_(ndt_feature::createDescriptor(histogram_dist_.get())),
+        _count_of_node(0)
 	{
+		
+		
+		
+		std::string file = "/home/malcolm/Documents/map.jpg";
+		_priorAutoComplete.extractCornerPrior(file);
+// 		_priorAutoComplete.transformOntoSLAM();
+		
+		
+		
+		
           seq_odom_fuser_ = 0;
 		  std::cout << "start added cloud " << nb_added_clouds_ << std::endl;
 	    ///topic to wait for point clouds, if available
@@ -477,61 +518,61 @@ public:
 	}
 
   void publish_visualization_slow(const ros::TimerEvent &event) {
-	  std::cout << "DRAW" << std::endl;
-            // Add some drawing
-            if (use_graph_) 
-            {
-              if (graph->wasInit()) {
-
-                if (do_pub_debug_markers_) {
-                  // Draw the debug stuff...
-                  ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
-                  for (size_t i = 0; i < f->debug_markers_.size(); i++) {
-                    f->debug_markers_[i].header.stamp = frameTime_;
-                    marker_pub_.publish(f->debug_markers_[i]);
-                  }
-                }
-                if (do_pub_ndtmap_marker_)
-                {
-                  // visualization_msgs::Marker markers_ndt;
-                  // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
-                  //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
-                  // marker_pub_.publish(markers_ndt);
-				  lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
-                  
-				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
-// 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
-
-                }
-                if (do_pub_occ_map_) {
-                  nav_msgs::OccupancyGrid omap; 
-                  lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
-                  moveOccupancyMap(omap, graph->getT());
-                  map_pub_.publish(omap);
-                }
-              }
-            }
-            else {
-              if (fuser->wasInit()) {
-                
-                if (do_pub_debug_markers_) {
-                  for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
-                    fuser->debug_markers_[i].header.stamp = frameTime_;
-                    marker_pub_.publish(fuser->debug_markers_[i]);
-                  }
-                }
-                if (do_pub_ndtmap_marker_) {
-                  Eigen::Affine3d p; p.setIdentity();
-                  marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1, "nd_global_map"));
-                }
-                if (do_pub_occ_map_) {
-                  nav_msgs::OccupancyGrid omap;
-                  lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, world_frame);
-                  map_pub_.publish(omap);
-                }
-              }
-            }
-            
+// 	  std::cout << "DRAW" << std::endl;
+//             // Add some drawing
+//             if (use_graph_) 
+//             {
+//               if (graph->wasInit()) {
+// 
+//                 if (do_pub_debug_markers_) {
+//                   // Draw the debug stuff...
+//                   ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
+//                   for (size_t i = 0; i < f->debug_markers_.size(); i++) {
+//                     f->debug_markers_[i].header.stamp = frameTime_;
+//                     marker_pub_.publish(f->debug_markers_[i]);
+//                   }
+//                 }
+//                 if (do_pub_ndtmap_marker_)
+//                 {
+//                   // visualization_msgs::Marker markers_ndt;
+//                   // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
+//                   //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
+//                   // marker_pub_.publish(markers_ndt);
+// 				  lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
+//                   
+// 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
+// // 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
+// 
+//                 }
+//                 if (do_pub_occ_map_) {
+//                   nav_msgs::OccupancyGrid omap; 
+//                   lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
+//                   moveOccupancyMap(omap, graph->getT());
+//                   map_pub_.publish(omap);
+//                 }
+//               }
+//             }
+//             else {
+//               if (fuser->wasInit()) {
+//                 
+//                 if (do_pub_debug_markers_) {
+//                   for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
+//                     fuser->debug_markers_[i].header.stamp = frameTime_;
+//                     marker_pub_.publish(fuser->debug_markers_[i]);
+//                   }
+//                 }
+//                 if (do_pub_ndtmap_marker_) {
+//                   Eigen::Affine3d p; p.setIdentity();
+//                   marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1, "nd_global_map"));
+//                 }
+//                 if (do_pub_occ_map_) {
+//                   nav_msgs::OccupancyGrid omap;
+//                   lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, world_frame);
+//                   map_pub_.publish(omap);
+//                 }
+//               }
+//             }
+//             
             
             //Trying to draw the graph here
             
@@ -679,29 +720,45 @@ public:
 // 			}
 // 		}
 
-// 		if(graph->getNbNodes() == 3){
-// 			_g2o_graph.addRobotPoseAndOdometry(*graph);
-// 			
-// 			_g2o_graph.addLandmarkAndObservation(*graph);
-// 			
-// 			
-// 			std::cout << "G2O MADE :)" << std::endl;
-// 			
-// 			
-// 			_g2o_graph.makeGraph();
-// 			const std::string file = "/home/malcolm/AWESOME.g2o";
-// 			_g2o_graph.save(file);
-// 			
-// 			std::cout << "DONE SAVING :)" << std::endl;
-// 			graph->saveMap();
-// 			exit(0);
-// 		}
+// 		std::thread first(&NDTFeatureFuserNode::createGraphThread, this);
+
+// 		createGraphThread();
 		
 		std::cout << "Transform sent" << std::endl;
 
     }
 
 
+    void createGraphThread(){
+		
+		if(graph->getNbNodes() == 4 && _count_of_node != graph->getNbNodes()){
+			std::cout << "OPTIMIZE" << std::endl;
+			/**Get corner from prior**/
+	// 		std::string file = "/home/malcolm/Document/map.jpg";
+	// 		_priorAutoComplete.extractCornerPrior(file);
+			_priorAutoComplete.extractCornerNDT(*graph);
+	// 		_priorAutoComplete.findScale();
+			_priorAutoComplete.transformOntoSLAM();
+			
+			_priorAutoComplete.createGraph(*graph, _g2o_graph);
+			
+			
+			
+			std::string file_out = "/home/malcolm/ACG_folder/AWESOME_";
+			std::ostringstream convert;   // stream used for the conversion
+			convert << graph->getNbNodes(); 
+			file_out = file_out + convert.str();
+			file_out = file_out + "nodes.g2o";
+			_g2o_graph.save(file_out);
+			
+			std::cout << "saved to " << file_out << std::endl;
+			
+			
+			_count_of_node = graph->getNbNodes();
+			
+			exit(0);
+		}
+	}
 	
 	bool save_map_callback(std_srvs::Empty::Request  &req,
 		std_srvs::Empty::Response &res ) {
@@ -721,24 +778,55 @@ public:
 	}
 	
 	void optimize(const std_msgs::Bool::ConstPtr& bool_msg){
+		
+		
 		std::cout << "OPTIMIZE" << std::endl;
-		if(bool_msg->data == true){
-			
-			_g2o_graph.addRobotPoseAndOdometry(*graph);
-			
-			_g2o_graph.addLandmarkAndObservation(*graph);
-			
-			
-			std::cout << "G2O MADE :)" << std::endl;
-			
-			
-			_g2o_graph.makeGraph();
-			const std::string file = "/home/malcolm/AWESOME.g2o";
-			_g2o_graph.save(file);
-			
-			graph->saveMap();
-			std::cout << "DONE SAVING :)" << std::endl;
-		}
+		/**Get corner from prior**/
+// 		std::string file = "/home/malcolm/Document/map.jpg";
+// 		_priorAutoComplete.extractCornerPrior(file);
+		_priorAutoComplete.extractCornerNDT(*graph);
+// 		_priorAutoComplete.findScale();
+		_priorAutoComplete.transformOntoSLAM();
+		
+		_priorAutoComplete.createGraph(*graph, _g2o_graph);
+		_priorAutoComplete.createGraphLinked(*graph, _g2o_graph_linked);
+		_priorAutoComplete.createGraphLinkedOriented(*graph, _g2o_graph_linked_oriented);
+		_priorAutoComplete.createGraphLinkedOrientedNoPrior(*graph, _g2o_graph_no_prior);
+		
+// 		_g2o_graph_no_prior.addRobotPoseAndOdometry(*graph);
+		//Add landmark and observations
+// 		_g2o_graph_no_prior.addLandmarkAndObservation(*graph);
+// 		_g2o_graph_no_prior.makeGraphAllOriented();
+		
+		
+		
+		std::string file_out = "/home/malcolm/ACG_folder/AWESOME_manual_";
+		std::ostringstream convert;   // stream used for the conversion
+		convert << graph->getNbNodes(); 
+		file_out = file_out + convert.str();
+		file_out = file_out + "nodes.g2o";
+		_g2o_graph.save(file_out);
+		std::cout << "saved to " << file_out << std::endl;
+		
+		std::string file_out_linked = "/home/malcolm/ACG_folder/AWESOME_manual_linked_";
+		file_out_linked = file_out_linked + convert.str();
+		file_out_linked = file_out_linked + "nodes.g2o";
+		_g2o_graph_linked.save(file_out_linked);
+		std::cout << "saved to " << file_out_linked << std::endl;
+		
+		std::string file_out_linked_oritented = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_";
+		file_out_linked_oritented = file_out_linked_oritented + convert.str();
+		file_out_linked_oritented = file_out_linked_oritented + "nodes.g2o";
+		_g2o_graph_linked_oriented.save(file_out_linked_oritented);
+		std::cout << "saved to " << file_out_linked_oritented << std::endl;
+		
+		std::string file_out_linked_oritented_no_prior = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_no_prior";
+		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + convert.str();
+		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + "nodes.g2o";
+		_g2o_graph_no_prior.save(file_out_linked_oritented_no_prior);
+		std::cout << "saved to " << file_out_linked_oritented_no_prior << std::endl;
+		
+		exit(0);
 	}
 
 

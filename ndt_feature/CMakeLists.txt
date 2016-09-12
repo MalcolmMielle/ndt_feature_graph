@@ -184,6 +184,15 @@ add_executable(ndt_g2omaker malcolm_addons/src/ndt_g2omaker.cpp)
 target_link_libraries(ndt_g2omaker ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS} 
 )
 
+add_executable(test_auto_complete malcolm_addons/Test/test_auto_complete.cpp)
+target_link_libraries(test_auto_complete 
+${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS}
+${OpenCV_LIBS} 
+# ${PCL_LIBRARIES} 
+${vodigrex_LIBRARIES} 
+# Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
+)
+
 add_executable(ndt_g2olandmark malcolm_addons/Test/ndt_g2olandmark.cpp)
 target_link_libraries(ndt_g2olandmark ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS} 
 )
@@ -222,6 +231,15 @@ target_link_libraries(test_read_g2p ${catkin_LIBRARIES} ${bettergraph_LIBRARIES}
 
 add_executable(test_covariance_graph_g2o malcolm_addons/Test/test_covariance_graph_g2o.cpp)
 target_link_libraries(test_covariance_graph_g2o 
+${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS}
+${OpenCV_LIBS} 
+# ${PCL_LIBRARIES} 
+${vodigrex_LIBRARIES} 
+# Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
+)
+
+add_executable(test_same_graph_bigger malcolm_addons/Test/test_same_graph_bigger.cpp)
+target_link_libraries(test_same_graph_bigger 
 ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS}
 ${OpenCV_LIBS} 
 # ${PCL_LIBRARIES} 

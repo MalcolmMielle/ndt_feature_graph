@@ -33,6 +33,44 @@
 
 namespace ndt_feature {
 	
+	//ATTENTION I don't inheritating from this
+	class NDTCornerGraphElement{
+	public:
+		
+		cv::Point2f point;
+		//TODO : change it to a set
+		std::vector<int> nodes_linked;
+		
+		NDTCornerGraphElement(float x, float y) : point(x, y){};
+		
+		std::vector<int>& getNodeLinked(){return nodes_linked;}
+		const std::vector<int>& getNodeLinked() const {return nodes_linked;}
+		void push_back(int i){nodes_linked.push_back(i);}
+		void addNodes(const NDTCornerGraphElement& cor){
+			for(size_t i = 0 ; i < cor.getNodeLinked().size() ; ++i){
+				bool seen = false;
+				for(size_t j = 0 ; j < nodes_linked.size() ; ++j){
+					if(cor.getNodeLinked()[i] == nodes_linked[j]){
+						seen = true;
+					}
+				}
+				if(seen == false){
+					nodes_linked.push_back(cor.getNodeLinked()[i]);
+				}
+			}
+		}
+		void print() const {std::cout << point << " nodes : ";
+			
+			for(size_t i = 0 ; i < nodes_linked.size()  ; ++i){
+				std::cout << nodes_linked[i] << " " ;
+			}
+			
+		}
+		
+	};
+	
+	
+	
 	
 	/** 
 	 * @brief Class holding a g2o graph optimization
@@ -55,7 +93,8 @@ namespace ndt_feature {
 		Eigen::IOFormat cleanFmt;
 		
 		std::vector<g2o::SE2> _robot_positions;
-		std::vector<g2o::SE2> _landmark_positions;
+		std::vector<std::pair <g2o::SE2, int> > _landmark_positions; //Position + number of time it was seen
+
 		std::vector<g2o::SE2> _prior_landmark_positions;
 		std::vector<std::tuple<g2o::SE2, int, int> > _odometry;
 		std::vector<std::tuple<g2o::SE2, int, int> > _observation_real_landmarks;
@@ -78,7 +117,7 @@ namespace ndt_feature {
 						const Eigen::Vector2d& ln,
 						const Eigen::Vector2d& pn,
 						const Eigen::Vector2d& linkn
-  					) : _sensorOffsetTransf(sensoffset), _transNoise(tn), _rotNoise(rn), _landmarkNoise(ln), _priorNoise(pn), _linkNoise(linkn){
+  					) : _sensorOffsetTransf(sensoffset), _transNoise(tn), _rotNoise(rn), _landmarkNoise(ln), _priorNoise(pn), _linkNoise(linkn), _scale_prior_to_landmark(1){
 			
 			_linearSolver = new SlamLinearSolver();
 			_linearSolver->setBlockOrdering(false);
@@ -316,7 +355,7 @@ namespace ndt_feature {
 					std::cout << " position " << x << " " << y << std::endl;
 // 					in >> theta;
 					g2o::SE2 se2(x, y, 0);
-					_landmark_positions.push_back(se2);
+					_landmark_positions.push_back(std::pair<g2o::SE2, int>(se2, 1));
 				}
 				else if(word == "EDGE_SE2"){
 					int from, toward;
@@ -334,7 +373,7 @@ namespace ndt_feature {
 					
 					//Calculate observation
 					
-					std::cout << "VEC " << _landmark_positions[toward_access].toVector() << std::endl;
+					std::cout << "VEC " << _landmark_positions[toward_access].first.toVector() << std::endl;
 					std::cout << "VEC RBOT " << _robot_positions[from].toVector() << std::endl;
 					
 // 					double x_tmp = _landmark_positions[toward_access].toVector()(0) - _robot_positions[from].toVector()(0) ;
@@ -343,7 +382,7 @@ namespace ndt_feature {
 					
 					
 					Eigen::Vector2d real_obs ;
-					real_obs << _landmark_positions[toward_access].toVector()(0), _landmark_positions[toward_access].toVector()(1);
+					real_obs << _landmark_positions[toward_access].first.toVector()(0), _landmark_positions[toward_access].first.toVector()(1);
 					Eigen::Vector2d observation;
 					//Projecting real_obs into robot coordinate frame
 					Eigen::Vector2d trueObservation = _robot_positions[from].inverse() * real_obs;
@@ -367,6 +406,37 @@ namespace ndt_feature {
 				else{
 					throw std::runtime_error("Miss read file for landmarks");
 				}
+			}
+		}
+		
+		void addLandmarkAndObservation(const std::vector<NDTCornerGraphElement>& ndt_corn){
+			
+			int nb_of_landmark = _landmark_positions.size();
+			int count = 0;
+			for(size_t ilandmark = 0 ; ilandmark < ndt_corn.size() ; ++ilandmark){	
+				
+				addLandmarkPose(ndt_corn[ilandmark].point.x, ndt_corn[ilandmark].point.y, 0);
+				Eigen::Vector2d real_obs ;
+				real_obs << ndt_corn[ilandmark].point.x, ndt_corn[ilandmark].point.y;
+				
+				for(size_t jrobot = 0 ; jrobot < ndt_corn[ilandmark].getNodeLinked().size() ; ++jrobot){
+				
+					int robot_node = ndt_corn[ilandmark].getNodeLinked()[jrobot];
+					//Projecting real_obs into robot coordinate frame
+					Eigen::Vector2d trueObservation = _robot_positions[robot_node].inverse() * real_obs;
+					
+					Eigen::Vector2d observation;
+					observation = trueObservation;
+					std::cout << "G2O OBSERVATION " << observation << std::endl;
+					std::cout << "FROM "<< _robot_positions[robot_node].toVector() << std::endl;
+					//HACK magic number
+					g2o::SE2 se2(observation(0), observation(1), 0);
+					std::cout << "G2O OBSERVATION " << se2.toVector() << std::endl;
+					std::tuple<g2o::SE2, int, int> tup(se2, robot_node, _robot_positions.size() + nb_of_landmark + count);
+					_observation_real_landmarks.push_back(tup);
+					
+				}
+				count++;
 			}
 		}
 		
@@ -435,6 +505,8 @@ namespace ndt_feature {
 					vec << it->x, it->y, 0;
 					Eigen::Vector3d vec_out = ndt_graph.getNode(i).T * vec;
 					cv::Point2f p_out(vec_out(0), vec_out(1));
+					
+					std::cout << "NEW POINT : "<< p_out << std::endl;
 					_final_corners.push_back(p_out);
 				}
 				
@@ -487,17 +559,17 @@ namespace ndt_feature {
 			_robot_positions.push_back(robot1);
 		}
 		
-		void addLandmarkPose(const g2o::SE2& se2){
-			_landmark_positions.push_back(se2);
+		void addLandmarkPose(const g2o::SE2& se2, int strength = 1){
+			_landmark_positions.push_back(std::pair<g2o::SE2, int>(se2, strength) );
 		}
-		void addLandmarkPose(const Eigen::Vector3d& lan){
+		void addLandmarkPose(const Eigen::Vector3d& lan, int strength = 1){
 			g2o::SE2 se2(lan(0), lan(1), lan(2));
-			_landmark_positions.push_back(se2);
+			_landmark_positions.push_back(std::pair<g2o::SE2, int>(se2, strength) );
 		}
-		void addLandmarkPose(double x, double y, double theta){
+		void addLandmarkPose(double x, double y, double theta, int strength = 1){
 			Eigen::Vector3d lan;
 			lan << x, y, theta;
-			_landmark_positions.push_back(lan);
+			addLandmarkPose(lan, strength);
 		}
 		
 		void addPriorLandmarkPose(const g2o::SE2& se2){
@@ -583,7 +655,7 @@ namespace ndt_feature {
 				for(size_t i = 0; i < model_points.size(); ++i){
 					bool more_than_one = false;
 					for(size_t j = 0 ; j < this->_landmark_positions.size(); ++j ){
-						auto translation = this->_landmark_positions[j].translation();
+						auto translation = this->_landmark_positions[j].first.translation();
 						
 						if(translation(0) == model_points[i].x && translation(1) == model_points[i].y){
 							model_same.push_back(j);
@@ -599,28 +671,38 @@ namespace ndt_feature {
 			auto getIdenticalLandmark =[this](const cv::Point2f& model_points, int& model_same) -> void{
 				bool more_than_one = false;
 				for(size_t j = 0 ; j < this->_landmark_positions.size(); ++j ){
-					Eigen::Vector2d translation = this->_landmark_positions[j].translation();
+					Eigen::Vector2d translation = this->_landmark_positions[j].first.translation();
 					Eigen::Vector2d vectrans;
 					vectrans << std::floor( (translation(0) * 10) + 0.5 ) /10, std::floor( (translation(1) * 10) + 0.5 ) /10;
 					
-					std::cout << "T : " << translation << std::endl;
-					std::cout << "Point : " << model_points << std::endl;
+// 					std::cout << "T : " << translation << std::endl;
+// 					std::cout << "Point : " << model_points << std::endl;
 					Eigen::Vector2d vec;
 					vec << std::floor( (model_points.x * 10) + 0.5 ) /10, std::floor( (model_points.y * 10) + 0.5 ) /10;
 					
 					std::cout <<  translation(0) << " == " << vec(0) << std::endl;
+					std::cout <<  translation(1) << " == " << vec(1) << std::endl;
+					std::cout <<std::endl;
 					if(vectrans(0) == vec(0)){
 						std::cout << "FIRST GOOD" << std::endl;
-						
-						std::cout <<  translation(1) << " == " << vec(1) << std::endl;
+// 						std::cout <<  translation(0) << " == " << vec(0) << std::endl;
+// 						std::cout <<  translation(1) << " == " << vec(1) << std::endl;
+// 						std::cout <<std::endl;
 						if(vectrans(1) == vec(1)){
-							std::cout << "FOUND" << std::endl;
+// 							std::cout << "FOUND" << std::endl;
+// 							std::cout << "Looking out " << std::endl;
+							if(more_than_one == true){
+// 								std::cout << "FUCK" << std::endl;
+								std::cout << "model_same : " << model_same << " new j " << j << std::endl;
+	// 							std::cout << "searching for " << vec << " and now I have  " << 
+								
+							}
 							model_same = j;
 							if(more_than_one == true) throw std::runtime_error("More than one point linked to key point");
 							more_than_one = true;
 						}
 						else{
-							std::cout << "Not the same " << translation(1) - vec(1) << std::endl;
+// 							std::cout << "Not the same " << translation(1) - vec(1) << std::endl;
 						}
 					}
 					
@@ -631,19 +713,29 @@ namespace ndt_feature {
 			auto getIdenticalPriorLandmark =[this](const cv::Point2f& model_points, int& model_same) -> void{
 				bool more_than_one = false;
 				std::cout << std::endl << "-------------------------------------> PRIOR" << std::endl;
+				
+				Eigen::Vector2d vec;
+				vec << std::floor( (model_points.x * 10) + 0.5 ) /10, std::floor( (model_points.y * 10) + 0.5 ) /10;
+				
+				
 				for(size_t j = 0 ; j < this->_prior_landmark_positions.size(); ++j ){
 					auto translation = this->_prior_landmark_positions[j].translation();
 					Eigen::Vector2d vectrans;
 					vectrans << std::floor( (translation(0) * 10) + 0.5 ) /10, std::floor( (translation(1) * 10) + 0.5 ) /10;
 					
-					std::cout << "T : " << translation << std::endl;
-					std::cout << "Point : " << model_points << std::endl;
-					Eigen::Vector2d vec;
-					vec << std::floor( (model_points.x * 10) + 0.5 ) /10, std::floor( (model_points.y * 10) + 0.5 ) /10;
-					
+// 					std::cout << "T : " << translation << std::endl;
+// 					std::cout << "Point : " << model_points << std::endl;
 					
 					if(vectrans(0) == vec(0) && vectrans(1) == vec(1)){
-						model_same = j;
+// 						std::cout << "Looking out " << std::endl;
+						if(more_than_one == true){
+// 							std::cout << "FUCK" << std::endl;
+							std::cout << "model_same : " << model_same << " new j " << j << std::endl;
+// 							std::cout << "searching for " << vec << " and now I have  " << 
+							
+						}
+						
+						model_same = j;						
 						if(more_than_one == true) throw std::runtime_error("More than one point linked to key point");
 						more_than_one = true;
 					}
@@ -667,6 +759,20 @@ namespace ndt_feature {
 			
 			auto all_links = assoInter.getAssociations();
 			
+			std::cout << "Print asso" << std::endl;
+			
+			for(size_t i = 0; i < assoInter.getAssociations().size() ; ++i){
+				std::cout << assoInter.getAssociations()[i].first << " " << assoInter.getAssociations()[i].second << std::endl;
+				
+			}
+			
+			std::cout << "Print asso2" << std::endl;
+			
+			for(size_t i = 0; i < all_links.size() ; ++i){
+				std::cout << all_links[i].first << " " << all_links[i].second << std::endl;
+				
+			}
+			
 			scalePriorLink(all_links);
 			
 // 			auto model_points = assoInter.getKeypointModel();
@@ -688,15 +794,19 @@ namespace ndt_feature {
 			//Create all the links
 			for(size_t i = 0 ; i < all_links.size() ; ++i){
 				int idx = -1;
-				std::cout << "Searching " << all_links[i].second << " landmark " << std::endl;
+				std::cout << "NDT " << all_links[i].second << std::endl;
+				std::cout << "PRIOR" << all_links[i].first << std::endl;
 				getIdenticalLandmark(all_links[i].second, idx);
 				int idx_prior = -1;
 				getIdenticalPriorLandmark(all_links[i].first, idx_prior);
 				
+
 				if(idx == -1) throw std::runtime_error("index for landmark not found");
 				if(idx_prior == -1) throw std::runtime_error("index for prior landmark not found");
 				
-				const std::tuple<g2o::SE2, int, int> lnk(se2, num_robot_poses + idx, num_robot_poses + num_landmark_poses + idx_prior);
+				
+				
+				const std::tuple<g2o::SE2, int, int> lnk(se2, num_robot_poses + num_landmark_poses + idx_prior, num_robot_poses + idx);
 				addLinkBetweenMaps(lnk);
 				
 			}
@@ -806,6 +916,235 @@ namespace ndt_feature {
 			
 			/****************** Adding Landmarks nodes *************/
 			
+			//HACK When using VertexPointXY:
+			Eigen::Matrix2d covariance_landmark; 
+			covariance_landmark.fill(0.);
+			covariance_landmark(0, 0) = _landmarkNoise[0]*_landmarkNoise[0];
+			covariance_landmark(1, 1) = _landmarkNoise[1]*_landmarkNoise[1];
+// 			covariance_landmark(2, 2) = 13;//<- Rotation covariance landmark is more than 4PI
+			Eigen::Matrix2d information_landmark = covariance_landmark.inverse();
+			
+			//HACK Valid for when an orientation is there
+// 			Eigen::Matrix3d covariance_landmark; 
+// 			covariance_landmark.fill(0.);
+// 			covariance_landmark(0, 0) = _landmarkNoise[0]*_landmarkNoise[0];
+// 			covariance_landmark(1, 1) = _landmarkNoise[1]*_landmarkNoise[1];
+// 			covariance_landmark(2, 2) = 13;//<- Rotation covariance landmark is more than 4PI
+// 			Eigen::Matrix3d information_landmark = covariance_landmark.inverse();
+			
+			std::cout << "Landmark cov " << std::endl << covariance_landmark.format(cleanFmt) << std::endl;
+			
+			std::cerr << "Optimization: add landmark vertices ... ";
+			for (size_t i = 0; i < _landmark_positions.size() ; ++i) {
+				std::cout << "Add landmark" << std::endl;
+				g2o::VertexPointXY* landmark = new g2o::VertexPointXY;
+				landmark->setId(id);
+				++id;
+// 				g2o::SE2 se2(_landmark_positions[i](0), _landmark_positions[i](1), _landmark_positions[i](2));
+				
+				//HACK When using VertexPointXY:
+				Eigen::Vector3d vec_tmp = _landmark_positions[i].first.toVector();
+				Eigen::Vector2d vec;
+				vec << vec_tmp(0), vec_tmp(1);
+				landmark->setEstimate(vec);
+				
+				//HACK Valid for when an orientation is there
+// 				landmark->setEstimate(_landmark_positions[i]);
+				
+				_optimizer.addVertex(landmark);
+			}
+			std::cerr << "done." << std::endl;
+
+			std::cerr << "Optimization: add landmark observations ... ";
+			for (size_t i = 0; i < _observation_real_landmarks.size(); ++i) {
+				g2o::EdgeSE2PointXY* landmarkObservation =  new g2o::EdgeSE2PointXY;
+				landmarkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_observation_real_landmarks[i]) );
+				landmarkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_observation_real_landmarks[i]));
+				
+				
+				//HACK When using EdgeSE2PointXY:
+				Eigen::Vector3d meas = std::get<0>(_observation_real_landmarks[i]).toVector();
+				Eigen::Vector2d meas2d;
+				meas2d << meas(0), meas(1);
+// 				std::cout << "Edge : " << std::get<1>(_observation_real_landmarks[i]) << " -> " << std::get<2>(_observation_real_landmarks[i]) << std::endl;
+// 				std::cout << "POBSER : " << meas2d << std::endl;
+				landmarkObservation->setMeasurement(meas2d);
+				landmarkObservation->setInformation(information_landmark);
+				landmarkObservation->setParameterId(0, _sensorOffset->id());
+				
+				//HACK Valid for when an orientation is there
+// 				landmarkObservation->setMeasurement(std::get<0>(_observation_real_landmarks[i]));
+// 				landmarkObservation->setInformation(information_landmark);
+// 				landmarkObservation->setParameterId(0, _sensorOffset->id());
+				
+				
+				_optimizer.addEdge(landmarkObservation);
+			}
+			std::cerr << "done." << std::endl;
+			
+			/****************** Adding Prior nodes *************/
+			
+// 			Eigen::Matrix3d covariance_prior; 
+// 			covariance_prior.fill(0.);
+// 			covariance_prior(0, 0) = _priorNoise[0]*_priorNoise[0];
+// 			covariance_prior(1, 1) = _priorNoise[1]*_priorNoise[1];
+// 			covariance_prior(2, 2) = 13;//<- Rotation covariance prior landmark is more than 4PI
+// 			Eigen::Matrix3d information_prior = covariance_prior.inverse();
+			
+			
+			auto makeInformationMat = [this](int index, int index2) -> Eigen::Matrix3d{
+				
+				//Get Eigen vector
+				Eigen::Vector3d pose1 = _prior_landmark_positions[index - _robot_positions.size() - _landmark_positions.size()].toVector();
+				Eigen::Vector3d pose2 = _prior_landmark_positions[index2 - _robot_positions.size() - _landmark_positions.size()].toVector();
+				
+// 				std::cout << "Poses 1 " << std::endl << pose1.format(cleanFmt) << std::endl;
+// 				std::cout << "Poses 2 " << std::endl << pose2.format(cleanFmt) << std::endl;
+				
+				Eigen::Vector2d eigenvec;
+				eigenvec << pose1(0) - pose2(0), pose1(1) - pose2(1);
+// 				std::cout << "EigenVec " << std::endl << eigenvec.format(cleanFmt) << std::endl;
+				std::pair<double, double> eigenval(_priorNoise(0), _priorNoise(1));
+				
+				Eigen::Matrix2d cov = getCovarianceVec(eigenvec, eigenval);
+				
+				std::cout << "Covariance prior " << std::endl << cov.format(cleanFmt) << std::endl;
+				
+				Eigen::Matrix3d covariance_prior;
+				covariance_prior.fill(0.);
+				covariance_prior(0, 0) = cov(0, 0);
+				covariance_prior(0, 1) = cov(0, 1);
+				covariance_prior(1, 0) = cov(1, 0);
+				covariance_prior(1, 1) = cov(1, 1);
+				covariance_prior(2, 2) = 13;//<- Rotation covariance prior landmark is more than 4PI
+				Eigen::Matrix3d information_prior = covariance_prior.inverse();
+				std::cout << "Information prior " << std::endl << cov.format(cleanFmt) << std::endl;
+				
+				return information_prior;
+				
+			};
+			
+			
+			std::cerr << "Optimization: add prior landmark vertices ... ";
+			for (size_t i = 0; i < _prior_landmark_positions.size(); ++i) {
+				g2o::VertexSE2* priorlandmark = new g2o::VertexSE2;
+				priorlandmark->setId(id);
+				++id;
+// 				g2o::SE2 se2(_prior_landmark_positions[i], _prior_landmark_positions[i+1], _prior_landmark_positions[i+2]);
+// 				g2o::SE2 se2(_prior_landmark_positions[i](0), _prior_landmark_positions[i](1), _prior_landmark_positions[i](2));
+				priorlandmark->setEstimate(_prior_landmark_positions[i]);
+				_optimizer.addVertex(priorlandmark);
+			}
+			std::cerr << "done." << std::endl;
+			
+			std::cerr << "Optimization: add wall prior ... ";
+			for (size_t i = 0; i < _edges_prior.size(); ++i) {
+				g2o::EdgeSE2Prior_malcolm* priorObservation =  new g2o::EdgeSE2Prior_malcolm;
+				priorObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_edges_prior[i]));
+				priorObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_edges_prior[i]));
+				priorObservation->setMeasurement(std::get<0>(_edges_prior[i]));
+				Eigen::Matrix3d information_prior = makeInformationMat(std::get<1>(_edges_prior[i]), std::get<2>(_edges_prior[i]));
+				priorObservation->setInformation(information_prior);
+				//TODO
+				priorObservation->setParameterId(0, _sensorOffset->id());
+				_optimizer.addEdge(priorObservation);
+			}
+			
+			/****************** Adding prior to ndt edges *************/
+			
+			Eigen::Matrix2d covariance_link; 
+			covariance_link.fill(0.);
+			covariance_link(0, 0) = _linkNoise[0]*_linkNoise[0];
+			covariance_link(1, 1) = _linkNoise[1]*_linkNoise[1];
+// 			covariance_link(2, 2) = 13;//<- Rotation covariance link is more than 4PI
+			Eigen::Matrix2d information_link = covariance_link.inverse();
+			
+			//Add link between the two maps -> edge oftransform zero
+			std::cerr << "Optimization: add wall prior link to ndt ... ";
+			for (size_t i = 0; i < _link_in_between_maps.size(); ++i) {
+				
+				g2o::EdgeSE2PointXY* linkObservation =  new g2o::EdgeSE2PointXY;
+				linkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_link_in_between_maps[i]) );
+				linkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_link_in_between_maps[i]));
+				
+				
+				//HACK When using EdgeSE2PointXY:
+				Eigen::Vector3d meas = std::get<0>(_link_in_between_maps[i]).toVector();
+				Eigen::Vector2d meas2d;
+				meas2d << meas(0), meas(1);
+// 				std::cout << "Edge : " << std::get<1>(_observation_real_landmarks[i]) << " -> " << std::get<2>(_observation_real_landmarks[i]) << std::endl;
+// 				std::cout << "POBSER : " << meas2d << std::endl;
+				linkObservation->setMeasurement(meas2d);
+				linkObservation->setInformation(information_link);
+				linkObservation->setParameterId(0, _sensorOffset->id());
+				
+				
+// 				g2o::EdgeSE2Link_malcolm* linkObservation =  new g2o::EdgeSE2Link_malcolm;
+// 				linkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_link_in_between_maps[i]));
+// 				linkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_link_in_between_maps[i]));
+// 				linkObservation->setMeasurement(std::get<0>(_link_in_between_maps[i]));
+// 				linkObservation->setInformation(information_link);
+// 				//TODO
+// 				linkObservation->setParameterId(0, _sensorOffset->id());
+				
+				
+				_optimizer.addEdge(linkObservation);
+			}
+
+			g2o::VertexSE2* firstRobotPose = dynamic_cast<g2o::VertexSE2*>(_optimizer.vertex(0));
+			firstRobotPose->setFixed(true);
+			
+			std::cerr << "done." << std::endl;
+			
+			
+		}
+		
+		
+		
+		void makeGraphAllOriented(){
+			
+			int id = 0;
+			
+			/******************Adding robot nodes*************/
+			
+			for (size_t i = 0; i < _robot_positions.size(); ++i) {
+				std::cout << "Adding robot node " << i/3 << std::endl;
+				g2o::VertexSE2* robot =  new g2o::VertexSE2;
+				robot->setId(id);
+				++id;
+				Eigen::IOFormat fmt(Eigen::StreamPrecision, Eigen::DontAlignCols, "\t", " ", "", "", "", "");
+// 				std::cout <<"Estimate " << isometry2d.matrix().format(cleanFmt) << std::endl;
+// 				g2o::SE2 se2(_robot_positions[i](0), _robot_positions[i](1), _robot_positions[i](2));
+				
+				std::cout << "SE2 " << _robot_positions[i].toVector() << std::endl;
+				robot->setEstimate(_robot_positions[i]);
+				std::cout << "Robot " << robot->estimate().toVector() << std::endl;
+				_optimizer.addVertex(robot);	
+			}
+			
+			Eigen::Matrix3d covariance;
+			covariance.fill(0.);
+			covariance(0, 0) = _transNoise[0]*_transNoise[0];
+			covariance(1, 1) = _transNoise[1]*_transNoise[1];
+			covariance(2, 2) = _rotNoise*_rotNoise;
+			Eigen::Matrix3d information = covariance.inverse();
+			
+			//Adding odometry
+			for(size_t i = 0 ; i < _odometry.size() ; ++i){
+				
+				g2o::EdgeSE2* odometry = new g2o::EdgeSE2;
+				odometry->vertices()[0] = _optimizer.vertex(std::get<1>(_odometry[i])) ;
+				odometry->vertices()[1] = _optimizer.vertex(std::get<2>(_odometry[i])) ;
+				odometry->setMeasurement(std::get<0>(_odometry[i]) /*simEdge.simulatorTransf*/);
+				odometry->setInformation(information);
+				_optimizer.addEdge(odometry);
+				
+				
+			}
+			
+			/****************** Adding Landmarks nodes *************/
+			
+			
 			Eigen::Matrix3d covariance_landmark; 
 			covariance_landmark.fill(0.);
 			covariance_landmark(0, 0) = _landmarkNoise[0]*_landmarkNoise[0];
@@ -822,7 +1161,9 @@ namespace ndt_feature {
 				landmark->setId(id);
 				++id;
 // 				g2o::SE2 se2(_landmark_positions[i](0), _landmark_positions[i](1), _landmark_positions[i](2));
-				landmark->setEstimate(_landmark_positions[i]);
+				
+				landmark->setEstimate(_landmark_positions[i].first);
+				
 				_optimizer.addVertex(landmark);
 			}
 			std::cerr << "done." << std::endl;
@@ -832,10 +1173,12 @@ namespace ndt_feature {
 				g2o::EdgeSE2Landmark_malcolm* landmarkObservation =  new g2o::EdgeSE2Landmark_malcolm;
 				landmarkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_observation_real_landmarks[i]) );
 				landmarkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_observation_real_landmarks[i]));
+				
 				landmarkObservation->setMeasurement(std::get<0>(_observation_real_landmarks[i]));
 				landmarkObservation->setInformation(information_landmark);
-				//TODO
 				landmarkObservation->setParameterId(0, _sensorOffset->id());
+				
+				
 				_optimizer.addEdge(landmarkObservation);
 			}
 			std::cerr << "done." << std::endl;
@@ -937,7 +1280,6 @@ namespace ndt_feature {
 			
 			
 		}
-		
 		
 		
 		
