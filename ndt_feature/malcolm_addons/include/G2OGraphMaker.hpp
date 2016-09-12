@@ -9,6 +9,7 @@
 #include "g2o/types/slam2d/edge_se2_prior.h"
 #include "g2o/types/slam2d/edge_se2_link.h"
 #include "g2o/types/slam2d/edge_landmark_se2.h"
+#include "g2o/types/slam2d/edge_link_xy.h"
 // #include "types_tutorial_slam2d.h"
 
 
@@ -1063,7 +1064,7 @@ namespace ndt_feature {
 			std::cerr << "Optimization: add wall prior link to ndt ... ";
 			for (size_t i = 0; i < _link_in_between_maps.size(); ++i) {
 				
-				g2o::EdgeSE2PointXY* linkObservation =  new g2o::EdgeSE2PointXY;
+				g2o::EdgeLinkXY_malcolm* linkObservation =  new g2o::EdgeLinkXY_malcolm;
 				linkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_link_in_between_maps[i]) );
 				linkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_link_in_between_maps[i]));
 				
