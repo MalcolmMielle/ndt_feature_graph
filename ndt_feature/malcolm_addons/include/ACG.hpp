@@ -69,52 +69,55 @@ namespace ndt_feature {
 		
 		
 		/***FUNCTIONS TO ADD THE NODES***/
-		void addRobotPose(const g2o::SE2& se2){
+		g2o::VertexSE2* addRobotPose(const g2o::SE2& se2){
 			
 			g2o::VertexSE2* robot =  new g2o::VertexSE2;
 			robot->setEstimate(se2);
 			robot->setId(_optimizable_graph.vertices().size());
 			_optimizable_graph.addVertex(robot);
 			_nodes_ndt.push_back(robot);
+			return robot;
 		}
-		void addRobotPose(const Eigen::Vector3d& rob){
+		g2o::VertexSE2* addRobotPose(const Eigen::Vector3d& rob){
 			g2o::SE2 se2(rob(0), rob(1), rob(2));
-			addRobotPose(se2);
+			return addRobotPose(se2);
 		}
-		void addRobotPose(double x, double y, double theta){
+		g2o::VertexSE2* addRobotPose(double x, double y, double theta){
 			Eigen::Vector3d robot1;
 			robot1 << x, y, theta;
-			addRobotPose(robot1);
+			return addRobotPose(robot1);
 		}
 		
-		void addLandmarkPose(const g2o::Vector2D& pos, int strength = 1){
+		g2o::VertexPointXY* addLandmarkPose(const g2o::Vector2D& pos, int strength = 1){
 			g2o::VertexPointXY* landmark = new g2o::VertexPointXY;
 			landmark->setId(_optimizable_graph.vertices().size());
 			landmark->setEstimate(pos);
 			_optimizable_graph.addVertex(landmark);
 			_nodes_landmark.push_back(landmark);
+			return landmark;
 		}
-		void addLandmarkPose(double x, double y, int strength = 1){
+		g2o::VertexPointXY* addLandmarkPose(double x, double y, int strength = 1){
 			g2o::Vector2D lan;
 			lan << x, y;
-			addLandmarkPose(lan, strength);
+			return addLandmarkPose(lan, strength);
 		}
 		
-		void addPriorLandmarkPose(const g2o::SE2& se2){
+		ndt_feature::VertexPrior* addPriorLandmarkPose(const g2o::SE2& se2){
 			ndt_feature::VertexPrior* priorlandmark = new ndt_feature::VertexPrior;
 			priorlandmark->setId(_optimizable_graph.vertices().size());
 			priorlandmark->setEstimate(se2);
 			_optimizable_graph.addVertex(priorlandmark);
 			_nodes_prior.push_back(priorlandmark);
+			return priorlandmark;
 		}
-		void addPriorLandmarkPose(const Eigen::Vector3d& lan){
+		ndt_feature::VertexPrior* addPriorLandmarkPose(const Eigen::Vector3d& lan){
 			g2o::SE2 se2(lan(0), lan(1), lan(2));
-			addPriorLandmarkPose(se2);
+			return addPriorLandmarkPose(se2);
 		}
-		void addPriorLandmarkPose(double x, double y, double theta){
+		ndt_feature::VertexPrior* addPriorLandmarkPose(double x, double y, double theta){
 			Eigen::Vector3d lan;
 			lan << x, y, theta;
-			addPriorLandmarkPose(lan);
+			return addPriorLandmarkPose(lan);
 		}
 		
 		
@@ -255,6 +258,62 @@ namespace ndt_feature {
 			return -1;
 			
 		}
+		
+		
+		//FUNTION TO ADD A PRIOR GRAPH INTO THE GRAPH
+		void addPriorGraph(const bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>& graph){
+			
+			std::pair< bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::VertexIterator, bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::VertexIterator > vp;
+			std::deque<bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex> vec_deque;
+			std::vector<ndt_feature::VertexPrior*> out_prior;
+			
+			for (vp = boost::vertices(graph); vp.first != vp.second; ++vp.first) {
+				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex v = *vp.first;
+				//ATTENTION Magic number
+				ndt_feature::VertexPrior* res = addPriorLandmarkPose(graph[v].getX(), graph[v].getY(), 0);
+				vec_deque.push_back(v);
+				out_prior.push_back(res);
+			}
+			
+			int count = 0;
+			for (vp = boost::vertices(graph); vp.first != vp.second; ++vp.first) {
+				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex v = *vp.first;
+				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::EdgeIterator out_i, out_end;
+				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Edge e;
+				
+				for (boost::tie(out_i, out_end) = boost::out_edges(v, (graph)); 
+					out_i != out_end; ++out_i) {
+					e = *out_i;
+					bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex targ = boost::target(e, (graph));
+				
+					int idx = -1;
+					for(size_t ii = count +1 ; ii < vec_deque.size() ; ++ii){
+						if(targ == vec_deque[ii]){
+							idx = ii;
+						}
+					}
+					if(idx == -1){
+						//SKIP
+					}
+					else{
+						ndt_feature::VertexPrior* from = out_prior[count];
+						ndt_feature::VertexPrior* toward = out_prior[idx];
+						int x_diff = graph[targ].getX() - graph[v].getX();
+						int y_diff = graph[targ].getY() - graph[v].getY();
+						g2o::SE2 se2(x_diff, y_diff, 0);
+						addEdgePrior(se2, from, toward);
+					}
+				
+				}
+				++count;
+			}
+			
+			std::cout << _edge_prior.size() << " == " << graph.getNumEdges() << std::endl;
+			assert( _nodes_landmark.size() == graph.getNumVertices() );
+			assert( _edge_prior.size() == graph.getNumEdges());
+			
+		}
+		
 	
 	};
 }
