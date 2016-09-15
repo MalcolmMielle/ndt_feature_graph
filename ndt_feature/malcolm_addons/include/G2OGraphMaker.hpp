@@ -980,6 +980,7 @@ namespace ndt_feature {
 				
 				
 				_optimizer.addEdge(landmarkObservation);
+				
 			}
 			std::cerr << "done." << std::endl;
 			
