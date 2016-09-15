@@ -38,6 +38,45 @@ namespace ndt_feature {
 	class VertexPrior : public g2o::VertexSE2{
 		
 	};
+	
+	class NDTCornerGraphElement{
+	public:
+		
+		cv::Point2f point;
+		//TODO : change it to a set
+		std::vector<int> nodes_linked;
+		std::vector<g2o::Vector2D> observations;
+		
+		NDTCornerGraphElement(float x, float y) : point(x, y){};
+		
+		std::vector<int>& getNodeLinked(){return nodes_linked;}
+		const std::vector<int>& getNodeLinked() const {return nodes_linked;}
+		const std::vector<g2o::Vector2D>& getObservations() const {return observations;}
+		void push_back(int i){nodes_linked.push_back(i);}
+		
+		void addNodes(const NDTCornerGraphElement& cor){
+			for(size_t i = 0 ; i < cor.getNodeLinked().size() ; ++i){
+				bool seen = false;
+				for(size_t j = 0 ; j < nodes_linked.size() ; ++j){
+					if(cor.getNodeLinked()[i] == nodes_linked[j]){
+						seen = true;
+					}
+				}
+				if(seen == false){
+					nodes_linked.push_back(cor.getNodeLinked()[i]);
+					observations.push_back(cor.getObservations()[i]);
+				}
+			}
+		}
+		void print() const {std::cout << point << " nodes : ";
+			
+			for(size_t i = 0 ; i < nodes_linked.size()  ; ++i){
+				std::cout << nodes_linked[i] << " " ;
+			}
+			
+		}
+		
+	};
 
 	
 	
@@ -72,6 +111,10 @@ namespace ndt_feature {
 		g2o::OptimizableGraph _optimizable_graph;
 		
 		
+	private:
+		int _previous_number_of_node_in_ndtgraph;
+		
+		
 	public:
 		
 		AutoCompleteGraph(const g2o::SE2& sensoffset, 
@@ -80,7 +123,7 @@ namespace ndt_feature {
 						const Eigen::Vector2d& ln,
 						const Eigen::Vector2d& pn,
 						const Eigen::Vector2d& linkn
-  					) : _sensorOffsetTransf(sensoffset), _transNoise(tn), _rotNoise(rn), _landmarkNoise(ln), _priorNoise(pn), _linkNoise(linkn){
+  					) : _sensorOffsetTransf(sensoffset), _transNoise(tn), _rotNoise(rn), _landmarkNoise(ln), _priorNoise(pn), _linkNoise(linkn), _previous_number_of_node_in_ndtgraph(0){
 						// add the parameter representing the sensor offset ATTENTION was ist das ?
 						_sensorOffset = new g2o::ParameterSE2Offset;
 						_sensorOffset->setOffset(_sensorOffsetTransf);
@@ -160,7 +203,79 @@ namespace ndt_feature {
 		 */
 		void addPriorGraph(const bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>& graph);
 		
-		
+		void updateNDTGraph(ndt_feature::NDTFeatureGraph& ndt_graph){
+			
+			std::vector<NDTCornerGraphElement> corners_end;
+			double cell_size = 0;
+			
+			if(ndt_graph.getNbNodes() > _previous_number_of_node_in_ndtgraph){
+				
+				for (size_t i = _previous_number_of_node_in_ndtgraph; i < ndt_graph.getNbNodes(); ++i) {
+					lslgeneric::NDTMap* map = ndt_graph.getMap(i);
+					
+					//HACK For now : we translate the Corner extracted and not the ndt-maps
+					auto cells = map->getAllCells();
+					double x2, y2, z2;
+					map->getCellSizeInMeters(x2, y2, z2);
+					cell_size = x2;
+					
+					AASS::das::NDTCorner cornersExtractor;
+// 					std::cout << "Searching for corners in map with " << cells.size() << " initialized cells, and celle size is " << x2 << " " << y2 << " " << z2 << std::endl;
+					auto ret_export = cornersExtractor.getAllCorners(*map);
+					auto ret_opencv_point_corner = cornersExtractor.getAccurateCvCorners();			
+// 					std::cout << "Corner extracted. Nb of them " << ret_opencv_point_corner.size() << std::endl;
+					
+					//HACK: translate the corners now :
+					auto it = ret_opencv_point_corner.begin();
+					std::vector<cv::Point2f> _final_corners;
+					for(it ; it != ret_opencv_point_corner.end() ; ++it){
+// 						std::cout << "MOVE : "<< it -> x << " " << it-> y << std::endl;
+						Eigen::Vector3d vec;
+						vec << it->x, it->y, 0;
+						Eigen::Vector3d vec_out = ndt_graph.getNode(i).T * vec;
+						cv::Point2f p_out(vec_out(0), vec_out(1));
+						
+// 						std::cout << "NEW POINT : "<< p_out << std::endl;
+						_final_corners.push_back(p_out);
+					}
+					//At this point, we have all the corners
+				}
+				//Save new number of nodes to update
+				
+				
+			}
+			
+			//Clean up TODO -> Add the observations !
+			//Clear the corner. Indeed they have been cleared in the node but not in between the getNbNodes
+			std::vector < NDTCornerGraphElement > tmp;
+			for(size_t i = 0 ; i < corners_end.size() ; ++i){
+				std::cout << "data : " ;  corners_end[i].print() ; std::cout << std::endl;	
+				bool seen = false;
+				int ind = -1;
+				for(size_t j = 0 ; j < tmp.size() ; ++j){
+		// 			if(tmp[j] == _corners_position[i]){
+					double res = cv::norm(tmp[j].point - corners_end[i].point);
+					
+					std::cout << "res : " << res << " points "  << tmp[j].point << " " << corners_end[i].point << "  cell size " << cell_size << std::endl;
+					
+					if( res < cell_size){
+						seen = true;
+						ind = j;
+					}
+				}
+				if(seen == false){	
+					std::cout << "New point" << std::endl;
+					tmp.push_back(corners_end[i]);
+				}
+				else{
+					std::cout << "Point seen " << std::endl;
+					tmp[ind].addNodes(corners_end[i]);
+				}
+			}
+			
+			_previous_number_of_node_in_ndtgraph = ndt_graph.getNbNodes();
+			
+		}
 		
 	private:
 		
