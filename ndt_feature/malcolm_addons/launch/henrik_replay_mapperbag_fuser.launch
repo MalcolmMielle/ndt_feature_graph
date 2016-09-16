@@ -3,7 +3,7 @@
 	
    
    
-    <node pkg="ndt_feature" type="test_auto_complete" name="ndt_feature2d_fuser2" output="screen">
+    <node pkg="ndt_feature" type="ndt_duplicate_graph" name="ndt_feature2d_fuser2" output="screen">
 
 	<param name="laser_topic" value="/laserscan" />
 	<param name="matchLaser" value="true" />
