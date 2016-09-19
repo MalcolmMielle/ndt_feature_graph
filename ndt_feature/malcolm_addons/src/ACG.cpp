@@ -306,6 +306,7 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 	std::vector<NDTCornerGraphElement> corners_end;
 	double cell_size = 0;
 	
+	
 	if(ndt_graph.getNbNodes() > _previous_number_of_node_in_ndtgraph){
 		
 		
@@ -365,13 +366,14 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 		//Save new number of nodes to update
 		
 		
-	}			
+	}		
+	
+	std::vector<g2o::VertexPointXY*> all_new_landmarks;
 	
 	//Add stuff directly in the optimization graph : 
 	for(size_t i = 0 ; i < corners_end.size() ; ++i){
 		std::cout << "data : " ;  corners_end[i].print() ; std::cout << std::endl;	
 		bool seen = false;
-		int ind = -1;
 		g2o::VertexPointXY* ptr_landmark_seen = NULL;
 		for(size_t j = 0 ; j <_nodes_landmark.size() ; ++j){
 // 			if(tmp[j] == _corners_position[i]){
@@ -385,7 +387,6 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 			//If we found the landmark, we save the data
 			if( res < cell_size){
 				seen = true;
-				ind = j;
 				ptr_landmark_seen = _nodes_landmark[j];
 			}
 		}
@@ -394,17 +395,15 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 			g2o::Vector2D vec;
 			vec << corners_end[i].point.x, corners_end[i].point.y ;
 			g2o::VertexPointXY* ptr = addLandmarkPose(vec, 1);
-			
+			all_new_landmarks.push_back(ptr);
 			//Adding all links
 			for(int no = 0 ; no < corners_end[i].getNodeLinked().size() ; ++no){
 // 						addLandmarkObservation(corners_end[i].getObservations()[no], _nodes_ndt[corners_end[i].getNodeLinked()[no], ptr);
 				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr);
 			}
-			_ndt_corners.push_back(corners_end[i]);
 		}
 		else{
 			std::cout << "Point seen " << std::endl;
-			_ndt_corners[ind].fuse(corners_end[i]);
 			for(int no = 0 ; no < corners_end[i].getNodeLinked().size() ; ++no){
 				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr_landmark_seen);
 			}				
@@ -412,4 +411,48 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 	}
 	_previous_number_of_node_in_ndtgraph = ndt_graph.getNbNodes();
 	
+	
+	//TODO, update links using the newly found landmarks. No need to update the rest obviously
+	
+	updateLinksAfterNDTGraph(all_new_landmarks);
+
+	
+}
+
+
+void ndt_feature::AutoCompleteGraph::updateLinksAfterNDTGraph(const std::vector<g2o::VertexPointXY*>& new_landmarks)
+{
+	std::vector < std::pair < g2o::VertexPointXY*, ndt_feature::VertexPrior*> > links;
+	
+	auto it = new_landmarks.begin();
+	for(it ; it != new_landmarks.end() ; it++){
+		Eigen::Vector2d pose_landmark = it->estimate().toVector(); 
+		auto it_prior = _nodes_prior.begin();
+		
+		Eigen::Vector3d pose_tmp = it_prior->estimate().toVector();
+		Eigen::Vector2d pose_prior; pose_prior << pose_tmp(0), pose_tmp(1);
+		double norm = (pose_tmp - pose_landmark).norm();
+		ndt_feature::VertexPrior* ptr_closest = it_prior;
+		
+		for(it_prior ; it_prior != _nodes_prior.end() ; ++it_prior){
+			pose_tmp = it_prior->estimate().toVector();
+			pose_prior << pose_tmp(0), pose_tmp(1);
+			double norm_tmp = (pose_tmp - pose_landmark).norm();
+			
+			//Update the link
+			if(norm_tmp < norm){
+				ptr_closest = it_prior;
+			}			
+		}
+		//Pushing the link
+		links.push_back(std::pair<g2o::VertexPointXY*, ndt_feature::VertexPrior*>(it, ptr_closest));
+	}
+	
+	
+	auto it_links = links.begin();
+	for(it_links ; it_links != links.end() ; it_links++){
+		g2o::SE2 se2(0, 0, 0);
+		addEdgePrior(se2, it_links->second, it_links->first);
+	}
+
 }
