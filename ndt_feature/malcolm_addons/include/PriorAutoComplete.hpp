@@ -29,7 +29,7 @@ namespace ndt_feature{
 		
 		//TODO : should be one element
 		std::vector<cv::Point2f> _ndt_corner_opencv;
-		std::vector<NDTCornerGraphElement> _ndt_corner_opencv_and_nodes;
+		std::vector<NDTCornerGraphElement_DEPRECATED> _ndt_corner_opencv_and_nodes;
 		
 		
 		AASS::das::AssociationInterface _associations;
@@ -134,14 +134,14 @@ namespace ndt_feature{
 				//HACK: translate the corners now :
 				auto it = ret_opencv_point_corner.begin();
 				
-				std::vector<NDTCornerGraphElement> _final_corners;
+				std::vector<NDTCornerGraphElement_DEPRECATED> _final_corners;
 				
 				for(it ; it != ret_opencv_point_corner.end() ; ++it){
 					std::cout << "MOVE : "<< it -> x << " " << it-> y << std::endl;
 					Eigen::Vector3d vec;
 					vec << it->x, it->y, 0;
 					Eigen::Vector3d vec_out = ndt_graph.getNode(inode_number).T * vec;
-					NDTCornerGraphElement p_out(vec_out(0), vec_out(1));
+					NDTCornerGraphElement_DEPRECATED p_out(vec_out(0), vec_out(1));
 					//Push the number of node
 					p_out.push_back(inode_number);
 					
@@ -186,7 +186,7 @@ namespace ndt_feature{
 			
 			
 			//Clear the corner. Indeed they have been cleared in the node but not in between the getNbNodes
-			std::vector < NDTCornerGraphElement > tmp;
+			std::vector < NDTCornerGraphElement_DEPRECATED > tmp;
 			for(size_t i = 0 ; i < _ndt_corner_opencv_and_nodes.size() ; ++i){
 				std::cout << "data : " ;  _ndt_corner_opencv_and_nodes[i].print() ; std::cout << std::endl;	
 				bool seen = false;

@@ -50,6 +50,7 @@ namespace ndt_feature {
 		std::vector<g2o::VertexSE2*> nodes_linked_ptr;
 		std::vector<g2o::Vector2D> observations;
 		
+	public:
 		NDTCornerGraphElement(float x, float y) : point(x, y){};
 		NDTCornerGraphElement(const cv::Point2f& p) : point(p){};
 		
@@ -123,7 +124,7 @@ namespace ndt_feature {
 		///@brief vector storing all linking edges
 		std::vector<g2o::EdgeLinkXY_malcolm*> _edge_link;
 		///@brief vector storing all edges between a landmark and the robot
-		std::vector<g2o::EdgeSE2Landmark_malcolm*> _edge_landmark;
+		std::vector<g2o::EdgeSE2PointXY*> _edge_landmark;
 		///@brief vector storing all edge between the prior nodes
 		std::vector<g2o::EdgeSE2Prior_malcolm*> _edge_prior;
 		///@brief vector storing the odometry
@@ -151,7 +152,7 @@ namespace ndt_feature {
 						const Eigen::Vector2d& pn,
 						const Eigen::Vector2d& linkn,
 						ndt_feature::NDTFeatureGraph* ndt_graph
-  					) : _sensorOffsetTransf(sensoffset), _transNoise(tn), _rotNoise(rn), _landmarkNoise(ln), _priorNoise(pn), _linkNoise(linkn), _previous_number_of_node_in_ndtgraph(0), _ndt_graph(graph){
+  					) : _sensorOffsetTransf(sensoffset), _transNoise(tn), _rotNoise(rn), _landmarkNoise(ln), _priorNoise(pn), _linkNoise(linkn), _previous_number_of_node_in_ndtgraph(0), _ndt_graph(ndt_graph){
 						// add the parameter representing the sensor offset ATTENTION was ist das ?
 						_sensorOffset = new g2o::ParameterSE2Offset;
 						_sensorOffset->setOffset(_sensorOffsetTransf);
@@ -172,8 +173,8 @@ namespace ndt_feature {
 		std::vector<g2o::EdgeLinkXY_malcolm*>& getLinkEdges(){return _edge_link;}
 		const std::vector<g2o::EdgeLinkXY_malcolm*>& getLinkEdges() const {return _edge_link;}
 		///@brief vector storing all edges between a landmark and the robot
-		std::vector<g2o::EdgeSE2Landmark_malcolm*>& getLandmarkEdges(){return _edge_landmark;}
-		const std::vector<g2o::EdgeSE2Landmark_malcolm*>& getLandmarkEdges() const {return _edge_landmark;}
+		std::vector<g2o::EdgeSE2PointXY*>& getLandmarkEdges(){return _edge_landmark;}
+		const std::vector<g2o::EdgeSE2PointXY*>& getLandmarkEdges() const {return _edge_landmark;}
 		///@brief vector storing all edge between the prior nodes
 		std::vector<g2o::EdgeSE2Prior_malcolm*>& getPriorEdges(){ return _edge_prior;}
 		const std::vector<g2o::EdgeSE2Prior_malcolm*>& getPriorEdges() const { return _edge_prior;}
@@ -208,8 +209,8 @@ namespace ndt_feature {
 		void addLandmarkObservation(const g2o::Vector2D& pos, int from, int toward);
 		
 		void addEdgePrior(const g2o::SE2& se2, g2o::HyperGraph::Vertex* v1, g2o::HyperGraph::Vertex* v2);
-		void addEdgePrior(g2o::SE2 observ, int from, int toward);
-		void addEdgePrior(double x, double y, double theta, int from, int toward);
+// 		void addEdgePrior(g2o::SE2 observ, int from, int toward);
+// 		void addEdgePrior(double x, double y, double theta, int from, int toward);
 		
 		void addLinkBetweenMaps(const g2o::Vector2D& pos, g2o::HyperGraph::Vertex* v1, g2o::HyperGraph::Vertex* v2);
 		void addLinkBetweenMaps(const g2o::Vector2D& pos, int from, int toward);
@@ -246,7 +247,7 @@ namespace ndt_feature {
 		
 		
 		void updateNDTGraph(){
-			updateNDTGraph(_ndt_graph);
+			updateNDTGraph(*_ndt_graph);
 		}
 		
 		/**
@@ -257,7 +258,7 @@ namespace ndt_feature {
 	private:
 		
 		//TODO
-		void updateLinksAfterNDTGraph(); 
+		void updateLinksAfterNDTGraph(const std::vector<g2o::VertexPointXY*>& new_landmarks); 
 		
 		
 	

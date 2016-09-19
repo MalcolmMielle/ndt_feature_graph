@@ -124,7 +124,6 @@ set(CMAKE_CXX_STANDARD 11)
 find_package(vodigrex)
 include_directories(${vodigrex_INCLUDE_DIRS})
 
-
 find_package(Cpd REQUIRED)
 
 # add_subdirectory(cmake_modules)
@@ -133,6 +132,8 @@ find_package(Cpd REQUIRED)
 # foreach (_variableName ${_variableNames})
 #  message(STATUS "${_variableName}=${${_variableName}}")
 # endforeach()
+
+
 
 
 #Add CMake module path
@@ -165,6 +166,12 @@ set(G2O_LIBS ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O
 set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils)
 
 ADD_LIBRARY(tutorial_slam2d_library_real malcolm_addons/Test/simulator.h malcolm_addons/Test/simulator.cpp ${G2O_LIBS})
+
+add_library(Malcolm_addons
+			malcolm_addons/src/ACG.cpp
+			)
+target_link_libraries(Malcolm_addons ${NDT_FEATURE_LIBS})
+
 
 # ADD_LIBRARY(tutorial_slam3d ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE} ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_TYPES_SLAM3D})
 
@@ -210,6 +217,7 @@ ${OpenCV_LIBS}
 # ${PCL_LIBRARIES} 
 ${vodigrex_LIBRARIES} 
 # Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
+Malcolm_addons
 )
 
 add_executable(ndt_g2olandmark malcolm_addons/Test/ndt_g2olandmark.cpp)

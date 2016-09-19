@@ -49,6 +49,7 @@
 // #include "G2OGraphMaker.hpp"
 #include "conversion.hpp"
 #include "PriorAutoComplete.hpp"
+#include "ACG.hpp"
 #include <thread>
 
 #ifndef SYNC_FRAMES
@@ -72,6 +73,7 @@ class NDTFeatureFuserNode {
 	ndt_feature::G2OGraphMarker _g2o_graph_linked_oriented;
 	ndt_feature::G2OGraphMarker _g2o_graph_no_prior;
 	ndt_feature::PriorAutoComplete _priorAutoComplete;
+	ndt_feature::AutoCompleteGraph _acg;
 		
 	// Our NodeHandle
 	ros::NodeHandle nh_;
@@ -199,6 +201,14 @@ public:
 		Eigen::Vector2d(1, 0.001), //Prior noise
 		Eigen::Vector2d(0.2, 0.2)), //Link noise,
 		
+		_acg(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
+		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
+		DEG2RAD(2.), 				//Rotation noise for robot
+		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
+		Eigen::Vector2d(1, 0.001), //Prior noise
+		Eigen::Vector2d(0.2, 0.2),
+		graph),
+						
 		nb_added_clouds_(0),
         peak_finder_(ndt_feature::createPeakFinder()),
         histogram_dist_(new SymmetricChi2Distance<double>()),
@@ -790,6 +800,8 @@ public:
 		
 		auto map_out = graph_copy.getMap();
 		
+		
+		_acg.updateNDTGraph(*graph);
 		
 		
 		exit(0);
