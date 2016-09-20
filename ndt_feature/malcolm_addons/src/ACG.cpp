@@ -461,19 +461,19 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 			std::cout << "New point" << std::endl;
 			g2o::Vector2D vec;
 			vec << corners_end[i].point.x, corners_end[i].point.y ;
-// 			g2o::VertexPointXY* ptr = addLandmarkPose(vec, 1);
-			g2o::VertexPointXY* ptr;
+			g2o::VertexPointXY* ptr = addLandmarkPose(vec, 1);
+// 			g2o::VertexPointXY* ptr;
 			all_new_landmarks.push_back(ptr);
 			//Adding all links
 			for(int no = 0 ; no < corners_end[i].getNodeLinked().size() ; ++no){
 // 						addLandmarkObservation(corners_end[i].getObservations()[no], _nodes_ndt[corners_end[i].getNodeLinked()[no], ptr);
-// 				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr);
+				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr);
 			}
 		}
 		else{
 			std::cout << "Point seen " << std::endl;
 			for(int no = 0 ; no < corners_end[i].getNodeLinked().size() ; ++no){
-// 				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr_landmark_seen);
+				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr_landmark_seen);
 			}				
 		}
 	}
