@@ -735,6 +735,9 @@ public:
 // 		createGraphThread();
 		
 		std::cout << "Transform sent" << std::endl;
+		
+		
+		
 
     }
 
@@ -800,59 +803,59 @@ public:
 		
 		auto map_out = graph_copy.getMap();
 		
-		
+		std::cout << "UPDATE "<< std::endl; 
 		_acg.updateNDTGraph(*graph);
 		
 		
-		exit(0);
+// 		exit(0);
 		
 		
 		
 		std::cout << "OPTIMIZE" << std::endl;
 		/**Get corner from prior**/
-// 		std::string file = "/home/malcolm/Document/map.jpg";
-// 		_priorAutoComplete.extractCornerPrior(file);
-		_priorAutoComplete.extractCornerNDT(*graph);
-// 		_priorAutoComplete.findScale();
-		_priorAutoComplete.transformOntoSLAM();
+// // 		std::string file = "/home/malcolm/Document/map.jpg";
+// // 		_priorAutoComplete.extractCornerPrior(file);
+// 		_priorAutoComplete.extractCornerNDT(*graph);
+// // 		_priorAutoComplete.findScale();
+// 		_priorAutoComplete.transformOntoSLAM();
+// 		
+// 		_priorAutoComplete.createGraph(*graph, _g2o_graph);
+// 		_priorAutoComplete.createGraphLinked(*graph, _g2o_graph_linked);
+// 		_priorAutoComplete.createGraphLinkedOriented(*graph, _g2o_graph_linked_oriented);
+// 		_priorAutoComplete.createGraphLinkedOrientedNoPrior(*graph, _g2o_graph_no_prior);
+// 		
+// // 		_g2o_graph_no_prior.addRobotPoseAndOdometry(*graph);
+// 		//Add landmark and observations
+// // 		_g2o_graph_no_prior.addLandmarkAndObservation(*graph);
+// // 		_g2o_graph_no_prior.makeGraphAllOriented();
+// 		
 		
-		_priorAutoComplete.createGraph(*graph, _g2o_graph);
-		_priorAutoComplete.createGraphLinked(*graph, _g2o_graph_linked);
-		_priorAutoComplete.createGraphLinkedOriented(*graph, _g2o_graph_linked_oriented);
-		_priorAutoComplete.createGraphLinkedOrientedNoPrior(*graph, _g2o_graph_no_prior);
 		
-// 		_g2o_graph_no_prior.addRobotPoseAndOdometry(*graph);
-		//Add landmark and observations
-// 		_g2o_graph_no_prior.addLandmarkAndObservation(*graph);
-// 		_g2o_graph_no_prior.makeGraphAllOriented();
-		
-		
-		
-		std::string file_out = "/home/malcolm/ACG_folder/AWESOME_manual_";
+		std::string file_out = "/home/malcolm/ACG_folder/acg_";
 		std::ostringstream convert;   // stream used for the conversion
 		convert << graph->getNbNodes(); 
 		file_out = file_out + convert.str();
 		file_out = file_out + "nodes.g2o";
-		_g2o_graph.save(file_out);
+		_acg.getGraph().save(file_out.c_str());
 		std::cout << "saved to " << file_out << std::endl;
 		
-		std::string file_out_linked = "/home/malcolm/ACG_folder/AWESOME_manual_linked_";
-		file_out_linked = file_out_linked + convert.str();
-		file_out_linked = file_out_linked + "nodes.g2o";
-		_g2o_graph_linked.save(file_out_linked);
-		std::cout << "saved to " << file_out_linked << std::endl;
-		
-		std::string file_out_linked_oritented = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_";
-		file_out_linked_oritented = file_out_linked_oritented + convert.str();
-		file_out_linked_oritented = file_out_linked_oritented + "nodes.g2o";
-		_g2o_graph_linked_oriented.save(file_out_linked_oritented);
-		std::cout << "saved to " << file_out_linked_oritented << std::endl;
-		
-		std::string file_out_linked_oritented_no_prior = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_no_prior";
-		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + convert.str();
-		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + "nodes.g2o";
-		_g2o_graph_no_prior.save(file_out_linked_oritented_no_prior);
-		std::cout << "saved to " << file_out_linked_oritented_no_prior << std::endl;
+// 		std::string file_out_linked = "/home/malcolm/ACG_folder/AWESOME_manual_linked_";
+// 		file_out_linked = file_out_linked + convert.str();
+// 		file_out_linked = file_out_linked + "nodes.g2o";
+// 		_g2o_graph_linked.save(file_out_linked);
+// 		std::cout << "saved to " << file_out_linked << std::endl;
+// 		
+// 		std::string file_out_linked_oritented = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_";
+// 		file_out_linked_oritented = file_out_linked_oritented + convert.str();
+// 		file_out_linked_oritented = file_out_linked_oritented + "nodes.g2o";
+// 		_g2o_graph_linked_oriented.save(file_out_linked_oritented);
+// 		std::cout << "saved to " << file_out_linked_oritented << std::endl;
+// 		
+// 		std::string file_out_linked_oritented_no_prior = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_no_prior";
+// 		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + convert.str();
+// 		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + "nodes.g2o";
+// 		_g2o_graph_no_prior.save(file_out_linked_oritented_no_prior);
+// 		std::cout << "saved to " << file_out_linked_oritented_no_prior << std::endl;
 		
 		exit(0);
 	}

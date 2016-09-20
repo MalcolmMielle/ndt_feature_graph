@@ -33,6 +33,7 @@
 #include "das/AssociationInterface.hpp"
 #include "das/NDTCorner.hpp"
 #include "covariance.hpp"
+#include "conversion.hpp"
 
 namespace ndt_feature {
 	
