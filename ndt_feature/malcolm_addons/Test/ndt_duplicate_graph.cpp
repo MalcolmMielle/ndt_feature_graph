@@ -477,6 +477,9 @@ public:
 		std::cout << "start added cloud and of init " << nb_added_clouds_ << std::endl;
 		
 		optimize_sub = nh_.subscribe<std_msgs::Bool>("/optimize", 10, &NDTFeatureFuserNode::optimize, this);
+		
+		
+		exit(0);
 	}
 
 	~NDTFeatureFuserNode()
@@ -732,7 +735,7 @@ public:
 
 // 		std::thread first(&NDTFeatureFuserNode::createGraphThread, this);
 
-// 		createGraphThread();
+		createGraphThread();
 		
 		std::cout << "Transform sent" << std::endl;
 		
@@ -744,32 +747,37 @@ public:
 
     void createGraphThread(){
 		
-		if(graph->getNbNodes() == 4 && _count_of_node != graph->getNbNodes()){
+		if(graph->getNbNodes() >= 2 && _count_of_node != graph->getNbNodes()){
 			std::cout << "OPTIMIZE" << std::endl;
-			/**Get corner from prior**/
-	// 		std::string file = "/home/malcolm/Document/map.jpg";
-	// 		_priorAutoComplete.extractCornerPrior(file);
-			_priorAutoComplete.extractCornerNDT(*graph);
-	// 		_priorAutoComplete.findScale();
-			_priorAutoComplete.transformOntoSLAM();
+// 			/**Get corner from prior**/
+// 	// 		std::string file = "/home/malcolm/Document/map.jpg";
+// 	// 		_priorAutoComplete.extractCornerPrior(file);
+// 			_priorAutoComplete.extractCornerNDT(*graph);
+// 	// 		_priorAutoComplete.findScale();
+// 			_priorAutoComplete.transformOntoSLAM();
+// 			
+// 			_priorAutoComplete.createGraph(*graph, _g2o_graph);
+// 			
+// 			
+// 			
+// 			std::string file_out = "/home/malcolm/ACG_folder/AWESOME_";
+// 			std::ostringstream convert;   // stream used for the conversion
+// 			convert << graph->getNbNodes(); 
+// 			file_out = file_out + convert.str();
+// 			file_out = file_out + "nodes.g2o";
+// 			_g2o_graph.save(file_out);
+// 			
+// 			std::cout << "saved to " << file_out << std::endl;
 			
-			_priorAutoComplete.createGraph(*graph, _g2o_graph);
+			std::cout << "UPDATE "<< std::endl; 
 			
-			
-			
-			std::string file_out = "/home/malcolm/ACG_folder/AWESOME_";
-			std::ostringstream convert;   // stream used for the conversion
-			convert << graph->getNbNodes(); 
-			file_out = file_out + convert.str();
-			file_out = file_out + "nodes.g2o";
-			_g2o_graph.save(file_out);
-			
-			std::cout << "saved to " << file_out << std::endl;
-			
+			auto ndt_graph = new ndt_feature::NDTFeatureGraph(*graph);
+			_acg.updateNDTGraph(*ndt_graph);
+			delete ndt_graph;
 			
 			_count_of_node = graph->getNbNodes();
 			
-			exit(0);
+// 			exit(0);
 		}
 	}
 	

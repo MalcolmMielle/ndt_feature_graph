@@ -13,12 +13,15 @@ public:
     T.setIdentity();
     score = 0.;
   }
-  NDTFeatureLink(const NDTFeatureLink& link){
-	  ref_idx = link.getRefIdx();
-	  mov_idx = link.getMovIdx();
-	  T = link.getRelPose();
-	  cov = getRelCov();
-	  score = getScore();
+  
+  NDTFeatureLink* clone(){
+	  NDTFeatureLink* newlink = new NDTFeatureLink();
+	  ref_idx = this->getRefIdx();
+	  mov_idx = this->getMovIdx();
+	  T = this->getRelPose();
+	  cov = this->getRelCov();
+	  score = this->getScore();
+	  return newlink;
   }
   size_t ref_idx; // Vector idx...
   size_t mov_idx;

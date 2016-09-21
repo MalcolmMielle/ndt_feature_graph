@@ -32,7 +32,7 @@ namespace ndt_feature {
    * camera postion.
    * \author Jari, Todor
    */
-class NDTFeatureFuserHMT{ 
+class NDTFeatureFuserHMT{
   public:
     Eigen::Affine3d Tnow, Tlast_fuse, Todom; ///< current pose
     lslgeneric::NDTMap *map;  ///< da map
@@ -204,25 +204,25 @@ class NDTFeatureFuserHMT{
         std::cerr << "NDTFeatureFuserHMT Destructor() - done " << std::endl;
       }
 
-      ///@brief Deep Copy constructor
-      NDTFeatureFuserHMT(const NDTFeatureFuserHMT& ndt_fuser){
-		  
-			this->Tnow = ndt_fuser.Tnow;
-			this->Tlast_fuse = ndt_fuser.Tlast_fuse;
-			this->Todom = ndt_fuser.Todom; ///< current pose
-			//    std::vector< std::vector<InterestPoint *> > featuremap;
-			this->featuremap = ndt_fuser.featuremap;
-
+      ///@brief Deep Copy constructor TODO
+      NDTFeatureFuserHMT* clone() const {
+			NDTFeatureFuserHMT* clone = new NDTFeatureFuserHMT(this->params_);
+			clone->Tnow = this->Tnow;
+			clone->Tlast_fuse = this->Tlast_fuse;
+			clone->Todom = this->Todom; ///< current pose
+			 //    std::vector< std::vector<InterestPoint *> > featuremap;
+			clone->featuremap = this->featuremap;
+			clone->isInit = this->isInit = true;
 			//HACK
-			this->viewer = NULL;
-// 			boost::shared_ptr<RansacFeatureSetMatcher> ransac_;
- 
-			this->ptsPrev = ndt_fuser.ptsPrev;
-			this->ctr = ndt_fuser.ctr;
-
-			// Containers used for visualizations.
-			this->debug_markers_ = ndt_fuser.debug_markers_;
-			this->pointcloud_vis = ndt_fuser.pointcloud_vis;
+			clone->viewer = NULL;
+// 			clone->Tnow = boost::shared_ptr<RansacFeatureSetMatcher> ransac_;
+             
+			clone->ptsPrev = this->ptsPrev;
+			clone->ctr = this->ctr;
+             
+			clone->Tnow = // Containers used for visualizations.
+			clone->debug_markers_ = this->debug_markers_;
+			clone->pointcloud_vis = this->pointcloud_vis;
 			
 			std::cout << "INIT" << isInit << std::endl;
 // 			//Copying the map
@@ -230,7 +230,7 @@ class NDTFeatureFuserHMT{
 // 				delete this->map;
 // 			}
 			
-			this->map = new lslgeneric::NDTMap(*(ndt_fuser.map));  ///< da map
+			clone->map = this->map->clone();  ///< da map
 	  }
       
       
