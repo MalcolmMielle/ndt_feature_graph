@@ -70,7 +70,7 @@ public:
   NDTFeatureGraph* clone(){
 	  
 // 	NDTViz *viewer;
-	NDTFeatureGraph* newgraph = new NDTFeatureGraph(this->params_, this->fuser_params_);
+	NDTFeatureGraph* newgraph = new NDTFeatureGraph(this->params_);
 	newgraph->params_ = this->params_;
 	newgraph->fuser_params_ = this->fuser_params_;
 	newgraph->motion_params_ = this->motion_params_;
