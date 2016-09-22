@@ -135,7 +135,7 @@ namespace ndt_feature {
 		//ATTENTION : I should avoid that if I want to run both thread at the same time since no copy is made. I should instead copy it
 		ndt_feature::NDTFeatureGraph* _ndt_graph;
 		
-// 		std::vector < NDTCornerGraphElement > _ndt_corners;
+		std::vector < NDTCornerGraphElement > _ndt_corners;
 		
 		
 	private:
@@ -256,8 +256,7 @@ namespace ndt_feature {
 		
 	private:
 		
-		//TODO
-		void updateLinksAfterNDTGraph(); 
+		
 		
 		
 	
