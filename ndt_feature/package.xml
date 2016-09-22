@@ -46,8 +46,12 @@
   <build_depend>semrob_rviz</build_depend>
   <build_depend>semrob_geometry</build_depend>
   <build_depend>das</build_depend>
+  <build_depend>message_generation</build_depend>
+  
   
   <!-- Dependencies needed after this package is compiled. -->
+  <run_depend>message_generation</run_depend>
+  <run_depend>message_runtime</run_depend>
   <run_depend>ndt_registration</run_depend>
   <run_depend>ndt_map</run_depend>
   <run_depend>ndt_mcl</run_depend>

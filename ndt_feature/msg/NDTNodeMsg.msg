@@ -1,0 +1,9 @@
+# NDTFeatuseFuserHMTMsg map
+geometry_msgs/Pose T
+float64[] cov
+
+geometry_msgs/Pose Tlocal_odom #Incremental odometry between successive local maps.
+
+geometry_msgs/Pose Tlocal_fuse # Incremental fuse estimates between sucessive local maps.
+
+uint32 nbUpdates

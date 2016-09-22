@@ -20,11 +20,28 @@ find_package(catkin REQUIRED COMPONENTS
   semrob_rviz
   semrob_geometry
   das
+  message_generation
+  geometry_msgs
+)
+
+
+add_message_files(
+  FILES
+  NDTGraphMsg.msg
+  NDTEdgeMsg.msg   
+  NDTNodeMsg.msg
+  NDTFeatureFuserHMTMsg.msg
+  
+)
+
+generate_messages(
+  DEPENDENCIES 
+  geometry_msgs std_msgs ndt_map
 )
 
 catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
-    CATKIN_DEPENDS ndt_registration ndt_map laser_geometry sensor_msgs ndt_visualisation std_srvs flirtlib_ros das
+    CATKIN_DEPENDS ndt_registration ndt_map laser_geometry sensor_msgs ndt_visualisation std_srvs flirtlib_ros das message_runtime
     INCLUDE_DIRS include
     LIBRARIES # TODO
 )
