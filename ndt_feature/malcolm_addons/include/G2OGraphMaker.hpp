@@ -35,19 +35,19 @@
 namespace ndt_feature {
 	
 	//ATTENTION I don't inheritating from this
-	class NDTCornerGraphElement_DEPRECATED{
+	class NDTCornerGraphElement{
 	public:
 		
 		cv::Point2f point;
 		//TODO : change it to a set
 		std::vector<int> nodes_linked;
 		
-		NDTCornerGraphElement_DEPRECATED(float x, float y) : point(x, y){};
+		NDTCornerGraphElement(float x, float y) : point(x, y){};
 		
 		std::vector<int>& getNodeLinked(){return nodes_linked;}
 		const std::vector<int>& getNodeLinked() const {return nodes_linked;}
 		void push_back(int i){nodes_linked.push_back(i);}
-		void addNodes(const NDTCornerGraphElement_DEPRECATED& cor){
+		void addNodes(const NDTCornerGraphElement& cor){
 			for(size_t i = 0 ; i < cor.getNodeLinked().size() ; ++i){
 				bool seen = false;
 				for(size_t j = 0 ; j < nodes_linked.size() ; ++j){
@@ -410,7 +410,7 @@ namespace ndt_feature {
 			}
 		}
 		
-		void addLandmarkAndObservation(const std::vector<NDTCornerGraphElement_DEPRECATED>& ndt_corn){
+		void addLandmarkAndObservation(const std::vector<NDTCornerGraphElement>& ndt_corn){
 			
 			int nb_of_landmark = _landmark_positions.size();
 			int count = 0;

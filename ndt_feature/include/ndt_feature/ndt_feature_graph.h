@@ -66,29 +66,29 @@ public:
   
   
   //Deep copy constructor
-  NDTFeatureGraph(const NDTFeatureGraph& graph){
-	  
-// 	NDTViz *viewer;
-  
-	params_ = graph.params_;
-	fuser_params_ = graph.fuser_params_;
-	motion_params_ = graph.motion_params_;
-	
-	sensor_pose_ = graph.sensor_pose_;
-	Tnow = graph.Tnow; // Current pose estimate.
-
-	pointcloud_vis = graph.pointcloud_vis;
-
-
-	// A set of ndt_feature_fuser maps are utilized, they are encoded into graph nodes.
-	nodes_ = graph.nodes_;
-	links_ = graph.links_;
-
-
-	distance_moved_in_last_node_ = graph.distance_moved_in_last_node_;
-	  
-	  
-  }
+//   NDTFeatureGraph(const NDTFeatureGraph& graph){
+// 	  
+// // 	NDTViz *viewer;
+//   
+// 	params_ = graph.params_;
+// 	fuser_params_ = graph.fuser_params_;
+// 	motion_params_ = graph.motion_params_;
+// 	
+// 	sensor_pose_ = graph.sensor_pose_;
+// 	Tnow = graph.Tnow; // Current pose estimate.
+// 
+// 	pointcloud_vis = graph.pointcloud_vis;
+// 
+// 
+// 	// A set of ndt_feature_fuser maps are utilized, they are encoded into graph nodes.
+// 	nodes_ = graph.nodes_;
+// 	links_ = graph.links_;
+// 
+// 
+// 	distance_moved_in_last_node_ = graph.distance_moved_in_last_node_;
+// 	  
+// 	  
+//   }
   
   virtual ~NDTFeatureGraph()
   {
