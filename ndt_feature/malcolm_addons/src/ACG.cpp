@@ -2,7 +2,6 @@
 
 g2o::VertexSE2* ndt_feature::AutoCompleteGraph::addRobotPose(const g2o::SE2& se2){
 	
-	std::cout << "Adding the robot pose " << std::endl;
 	g2o::VertexSE2* robot =  new g2o::VertexSE2;
 	robot->setEstimate(se2);
 	robot->setId(_optimizable_graph.vertices().size());
@@ -308,63 +307,20 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 	std::vector<NDTCornerGraphElement> corners_end;
 	double cell_size = 0;
 	
-	std::cout << "Should we check " <<ndt_graph.getNbNodes() << ">" << _previous_number_of_node_in_ndtgraph << std::endl;
 	
 	if(ndt_graph.getNbNodes() > _previous_number_of_node_in_ndtgraph){
 		
-		std::cout << "Found new nodes" << std::endl;
 		
-		size_t i;
-		auto links = ndt_graph.getOdometryLinks();
-		ndt_graph.updateLinksUsingNDTRegistration(links, 10, true);
 		
 		//Should most of the time be one but just in case it runs slowly I'll let that
-		if(_previous_number_of_node_in_ndtgraph != 0){
-			i = _previous_number_of_node_in_ndtgraph - 1;
-// 			for (size_t i = 0 ; i <links.size() ; ++i) {
-// 				Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
-// 				std::cout <<"Estimate before anything " << links[i].getRelCov().inverse().format(cleanFmt) << std::endl;
-// 				std::cout << "Adding Edge" << std::endl;
-// // 				NDTFeatureLink link = NDTFeatureLink((const NDTFeatureLink&) graph.getLinkInterface(i));
-// 				g2o::SE2 odometry = ndt_feature::NDTFeatureLink2EdgeSE2(links[i]);
-// 				size_t from = links[i].getRefIdx() ;
-// 				size_t toward = links[i].getMovIdx() ;
-// 				std::cout << "from " << from << " toward " << toward << std::endl;
-// 				addOdometry(odometry, from, toward);
-// 			}
+		for (size_t i = _previous_number_of_node_in_ndtgraph - 1; i < ndt_graph.getNbNodes() - 1; ++i) {
 			
-			
-		}
-		else{
-			i = 0;
-		}
-		for (i; i < ndt_graph.getNbNodes() - 1; ++i) {
-			
-			std::cout << "Checking node nb " << i << std::endl;
 			//RObot pose
-			NDTFeatureNode* feature = new NDTFeatureNode();
-			std::cout << "Copy feature" << std::endl;
-			feature->copyNDTFeatureNode( (const NDTFeatureNode&)ndt_graph.getNodeInterface(i) );
-			Eigen::Affine3d affine = Eigen::Affine3d(feature->getPose());
-			Eigen::Isometry2d isometry2d = Affine3d2Isometry2d(affine);
-			g2o::SE2 robot_pos(isometry2d);
-			
+			Eigen::Vector3d robot_pos = ndt_graph.getNode(i).T.translation();
 // 			Eigen::Vector2d robot_pos; robot_pos << robot_pos_tmp(0), robot_pos_tmp(1);
 // 			robot_pos << ndt_graph.getNode(i).T(0), ndt_graph.getNode(i).T(1);
 			
 			g2o::VertexSE2* robot_ptr = addRobotPose(robot_pos);
-			//Add Odometry
-			if(i > 0 ){
-				std::cout << "adding the odometry" << std::endl;
-				g2o::SE2 odometry = ndt_feature::NDTFeatureLink2EdgeSE2(links[i - 1]);
-				std::cout << " ref " << links[i-1].getRefIdx() << " and mov " << links[i-1].getMovIdx() << std::endl;
-				assert( links[i-1].getRefIdx() < _nodes_ndt.size() );
-				assert( links[i-1].getMovIdx() < _nodes_ndt.size() );
-				auto from = _nodes_ndt[ links[i-1].getRefIdx() ] ;
-				auto toward = _nodes_ndt[ links[i-1].getMovIdx() ] ;
-				addOdometry(odometry, from, toward);
-			}
-			
 			
 			lslgeneric::NDTMap* map = ndt_graph.getMap(i);
 			
@@ -383,7 +339,6 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 			//HACK: translate the corners now :
 			auto it = ret_opencv_point_corner.begin();
 			
-			std::cout << "Found " << ret_opencv_point_corner.size() << " corners " << std::endl;
 			
 			//Find all the observations :
 
@@ -392,37 +347,17 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 				Eigen::Vector3d vec;
 				vec << it->x, it->y, 0;
 				
-				//Wrong because we need to take in account the orientation
-// 				Eigen::Vector3d vec;
-// 				vec << it->x, it->y, 0;
-				
+				g2o::Vector2D observation;
+				observation << it->x - robot_pos(0), it->y  - robot_pos(1) ;
 				
 				Eigen::Vector3d vec_out = ndt_graph.getNode(i).T * vec;
 				cv::Point2f p_out(vec_out(0), vec_out(1));
 				
-// 				g2o::Vector2D observation;
-// 				observation << it->x - p_out.x, it->y  - p_out.y ;
-				
-				Eigen::Vector2d real_obs; real_obs << p_out.x, p_out.y;
-				Eigen::Vector2d observation;
-				//Projecting real_obs into robot coordinate frame
-				Eigen::Vector2d trueObservation = robot_pos.inverse() * real_obs;
-				observation = trueObservation;
-
-				
-				std::cout << "Node transfo " << ndt_graph.getNode(i).T.matrix() << std::endl;
-				std::cout << "Position node " << robot_pos.toVector() << std::endl;
-				std::cout << " vec " << vec << std::endl;
-				std::cout << "Well " << robot_pos.toVector() + vec << "==" << ndt_graph.getNode(i).T * vec << std::endl;
-				
-				//ATTENTION THIS IS NOT TRUE BUT REALLY CLOSE
-// 				assert (robot_pos + vec == ndt_graph.getNode(i).T * vec);
-				
-// 				std::cout << "NEW POINT : "<< p_out << std::endl;
+// 						std::cout << "NEW POINT : "<< p_out << std::endl;
 				
 				NDTCornerGraphElement cor(p_out);
 				cor.addAllObserv(i, robot_ptr, observation);
-				corners_end.push_back(cor);
+				
 // 						cor.addNode(i);
 // 						cor.nodes_linked_ptr.push_back(robot_ptr);
 // 						cor.addObservation(observation);
@@ -439,7 +374,7 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 	
 	//Add stuff directly in the optimization graph : 
 	for(size_t i = 0 ; i < corners_end.size() ; ++i){
-		std::cout << "checking corner : " ;  corners_end[i].print() ; std::cout << std::endl;	
+		std::cout << "data : " ;  corners_end[i].print() ; std::cout << std::endl;	
 		bool seen = false;
 		g2o::VertexPointXY* ptr_landmark_seen = NULL;
 		for(size_t j = 0 ; j <_nodes_landmark.size() ; ++j){
@@ -461,19 +396,18 @@ void ndt_feature::AutoCompleteGraph::updateNDTGraph(ndt_feature::NDTFeatureGraph
 			std::cout << "New point" << std::endl;
 			g2o::Vector2D vec;
 			vec << corners_end[i].point.x, corners_end[i].point.y ;
-// 			g2o::VertexPointXY* ptr = addLandmarkPose(vec, 1);
-			g2o::VertexPointXY* ptr;
+			g2o::VertexPointXY* ptr = addLandmarkPose(vec, 1);
 			all_new_landmarks.push_back(ptr);
 			//Adding all links
 			for(int no = 0 ; no < corners_end[i].getNodeLinked().size() ; ++no){
 // 						addLandmarkObservation(corners_end[i].getObservations()[no], _nodes_ndt[corners_end[i].getNodeLinked()[no], ptr);
-// 				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr);
+				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr);
 			}
 		}
 		else{
 			std::cout << "Point seen " << std::endl;
 			for(int no = 0 ; no < corners_end[i].getNodeLinked().size() ; ++no){
-// 				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr_landmark_seen);
+				addLandmarkObservation(corners_end[i].getObservations()[no], corners_end[i].getNodeLinkedPtr()[no], ptr_landmark_seen);
 			}				
 		}
 	}
@@ -492,41 +426,36 @@ void ndt_feature::AutoCompleteGraph::updateLinksAfterNDTGraph(const std::vector<
 {
 	std::vector < std::pair < g2o::VertexPointXY*, ndt_feature::VertexPrior*> > links;
 	
-	std::cout << "Number new landmarks " << new_landmarks.size() << std::endl;
-	std::cout << "Prior " << _nodes_prior.size() << std::endl;
-	if(_nodes_prior.size() > 0){
-		auto it = new_landmarks.begin();
-		for(it ; it != new_landmarks.end() ; it++){
-			std::cout << "Working on links " << std::endl;
-			Eigen::Vector2d pose_landmark = (*it)->estimate();
-			auto it_prior = _nodes_prior.begin();
-			
-			Eigen::Vector3d pose_tmp = (*it_prior)->estimate().toVector();
-			Eigen::Vector2d pose_prior; pose_prior << pose_tmp(0), pose_tmp(1);
-			
-			double norm = (pose_prior - pose_landmark).norm();
-			ndt_feature::VertexPrior* ptr_closest = *it_prior;
-			
-			for(it_prior ; it_prior != _nodes_prior.end() ; ++it_prior){
-				pose_tmp = (*it_prior)->estimate().toVector();
-				pose_prior << pose_tmp(0), pose_tmp(1);
-				double norm_tmp = (pose_prior - pose_landmark).norm();
-				
-				//Update the link
-				if(norm_tmp < norm){
-					ptr_closest = *it_prior;
-				}			
-			}
-			//Pushing the link
-			links.push_back(std::pair<g2o::VertexPointXY*, ndt_feature::VertexPrior*>(*it, ptr_closest));
-		}
+	auto it = new_landmarks.begin();
+	for(it ; it != new_landmarks.end() ; it++){
+		Eigen::Vector2d pose_landmark = (*it)->estimate(); 
+		auto it_prior = _nodes_prior.begin();
 		
+		Eigen::Vector3d pose_tmp = (*it_prior)->estimate().toVector();
+		Eigen::Vector2d pose_prior; pose_prior << pose_tmp(0), pose_tmp(1);
 		
-		auto it_links = links.begin();
-		for(it_links ; it_links != links.end() ; it_links++){
-			g2o::SE2 se2(0, 0, 0);
-			addEdgePrior(se2, it_links->second, it_links->first);
+		double norm = (pose_prior - pose_landmark).norm();
+		ndt_feature::VertexPrior* ptr_closest = *it_prior;
+		
+		for(it_prior ; it_prior != _nodes_prior.end() ; ++it_prior){
+			pose_tmp = (*it_prior)->estimate().toVector();
+			pose_prior << pose_tmp(0), pose_tmp(1);
+			double norm_tmp = (pose_prior - pose_landmark).norm();
+			
+			//Update the link
+			if(norm_tmp < norm){
+				ptr_closest = *it_prior;
+			}			
 		}
+		//Pushing the link
+		links.push_back(std::pair<g2o::VertexPointXY*, ndt_feature::VertexPrior*>(*it, ptr_closest));
+	}
+	
+	
+	auto it_links = links.begin();
+	for(it_links ; it_links != links.end() ; it_links++){
+		g2o::SE2 se2(0, 0, 0);
+		addEdgePrior(se2, it_links->second, it_links->first);
 	}
 
 }

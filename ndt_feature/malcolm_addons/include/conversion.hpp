@@ -7,26 +7,6 @@
 
 namespace ndt_feature{
 	
-	
-	Eigen::Isometry2d Affine3d2Isometry2d(const Eigen::Affine3d& affine) {
-		Eigen::Affine2d affine2d = lslgeneric::eigenAffine3dTo2d(affine);
-		Eigen::Isometry2d isometry2d;
-		isometry2d.translation() = affine2d.translation();
-		isometry2d.linear() = affine2d.rotation();
-		return isometry2d;
-	}
-
-	g2o::SE2 NDTFeatureLink2EdgeSE2(const NDTFeatureLink& link){
-		Eigen::Affine3d affine = link.getRelPose();		
-		Eigen::Isometry2d isometry2d = Affine3d2Isometry2d(affine);
-// 		double x = cumulated_translation(0, 3);
-// 		double y = cumulated_translation(1, 3);
-		g2o::SE2 se2(isometry2d);
-		return se2;	
-	}
-	
-	
-	
 	inline Eigen::Affine3d vector3dToAffine3d(const Eigen::Vector3d& vec){
 		Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(1,1,2)));
 		return t;
