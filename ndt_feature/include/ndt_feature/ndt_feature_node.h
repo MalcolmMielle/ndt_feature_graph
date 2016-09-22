@@ -163,6 +163,10 @@ if (!map->load(fileName)) {
     return *(map->map);
   }
 
+  const NDTFeatureFuserHMT& getFuser() const {return *map;}
+  NDTFeatureFuserHMT& getFuser() {return *map;}
+  
+  
   const lslgeneric::NDTMap& getNDTMap() const { 
     assert(map != NULL);
     assert(map->map != NULL);

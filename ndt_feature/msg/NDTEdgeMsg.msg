@@ -1,8 +1,8 @@
 uint32 ref_idx
 uint32 mov_idx
 geometry_msgs/Pose T
-float64[] cov
-float64[] cov_3d
+std_msgs/Float64MultiArray cov
+std_msgs/Float64MultiArray cov_3d
 float64 score
 
 #string first_name

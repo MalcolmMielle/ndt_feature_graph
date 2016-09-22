@@ -192,6 +192,7 @@ target_link_libraries(g2o_test tutorial_slam2d_library_real ${G2O_LIBS})
 
 add_executable(manual_graph malcolm_addons/Test/manual_graph.cpp)
 target_link_libraries(manual_graph tutorial_slam2d_library_real ${Boost_LIBRARIES} ${catkin_LIBRARIES} ${NDT_FEATURE_LIBS} ${G2O_LIBS})
+add_dependencies(manual_graph ndt_feature_generate_messages_cpp)
 
 add_executable(ndt_mapping malcolm_addons/Test/ndt_feature_g20.cpp)
 target_link_libraries(ndt_mapping ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS} 

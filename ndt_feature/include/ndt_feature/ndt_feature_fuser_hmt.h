@@ -208,6 +208,7 @@ class NDTFeatureFuserHMT{
     motion_params_ = params;
   }
 
+  
     double getDoubleTime()
     {
       struct timeval time;

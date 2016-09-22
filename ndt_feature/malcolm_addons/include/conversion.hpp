@@ -7,6 +7,8 @@
 
 namespace ndt_feature{
 	
+
+	
 	inline Eigen::Affine3d vector3dToAffine3d(const Eigen::Vector3d& vec){
 		Eigen::Affine3d t(Eigen::Translation3d(Eigen::Vector3d(1,1,2)));
 		return t;

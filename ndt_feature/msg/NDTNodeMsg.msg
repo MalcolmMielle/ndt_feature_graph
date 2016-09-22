@@ -1,6 +1,6 @@
-# NDTFeatuseFuserHMTMsg map
+NDTFeatureFuserHMTMsg map
 geometry_msgs/Pose T
-float64[] cov
+std_msgs/Float64MultiArray cov
 
 geometry_msgs/Pose Tlocal_odom #Incremental odometry between successive local maps.
 
