@@ -12,7 +12,7 @@ int main(){
 	const InterestPointVec pts; 
 	fuser->initialize(initPos, cloudOrig, pts);
 	
-	ndt_feature::NDTFeatureFuserHMT fuser2(*fuser);
+	ndt_feature::NDTFeatureFuserHMT* fuser2 = fuser->clone();
 	
 	delete fuser;
 	

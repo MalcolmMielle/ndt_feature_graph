@@ -479,7 +479,7 @@ public:
 		optimize_sub = nh_.subscribe<std_msgs::Bool>("/optimize", 10, &NDTFeatureFuserNode::optimize, this);
 		
 		
-		exit(0);
+// 		exit(0);
 	}
 
 	~NDTFeatureFuserNode()
@@ -803,17 +803,18 @@ public:
 		
 		std::cout << "TRYING TO DUPLICATE THE GRAPH AND THEN ONLY MODIFY ONE OF THEM" << std::endl;
 		
-		ndt_feature::NDTFeatureGraph graph_copy(*graph);
+		ndt_feature::NDTFeatureGraph* graph_copy = graph->clone();
 		
 		
 		graph->POP();
-		assert(graph->getNbNodes() == graph_copy.getNbNodes() - 1);
+		assert(graph->getNbNodes() == graph_copy->getNbNodes() - 1);
 		
-		auto map_out = graph_copy.getMap();
+		auto map_out = graph_copy->getMap();
 		
 		std::cout << "UPDATE "<< std::endl; 
 		_acg.updateNDTGraph(*graph);
 		
+		delete graph_copy,
 		
 // 		exit(0);
 		

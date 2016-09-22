@@ -212,7 +212,7 @@ class NDTFeatureFuserHMT{
 			clone->Todom = this->Todom; ///< current pose
 			 //    std::vector< std::vector<InterestPoint *> > featuremap;
 			clone->featuremap = this->featuremap;
-			clone->isInit = this->isInit = true;
+			clone->isInit = this->isInit;
 			//HACK
 			clone->viewer = NULL;
 // 			clone->Tnow = boost::shared_ptr<RansacFeatureSetMatcher> ransac_;
@@ -220,7 +220,7 @@ class NDTFeatureFuserHMT{
 			clone->ptsPrev = this->ptsPrev;
 			clone->ctr = this->ctr;
              
-			clone->Tnow = // Containers used for visualizations.
+			clone->Tnow = this-> Tnow; // Containers used for visualizations.
 			clone->debug_markers_ = this->debug_markers_;
 			clone->pointcloud_vis = this->pointcloud_vis;
 			
@@ -230,7 +230,8 @@ class NDTFeatureFuserHMT{
 // 				delete this->map;
 // 			}
 			
-			clone->map = this->map->clone();  ///< da map
+			clone->map = new lslgeneric::NDTMap(*(this->map));
+// 			clone->map = this->map->clone();  ///< da map
 	  }
       
       
