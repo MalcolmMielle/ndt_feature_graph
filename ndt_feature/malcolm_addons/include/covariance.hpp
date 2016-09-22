@@ -45,15 +45,6 @@ namespace ndt_feature{
 	}
 	
 	
-	Eigen::Matrix3d getCovarianceVec(const Eigen::Vector3d& pose1, const Eigen::Vector3d& pose2, const std::pair<double, double>& eigenval){
-		Eigen::Vector2d eigenvec;
-		eigenvec << pose1(0) - pose2(0), pose1(1) - pose2(1);
-		return getCovarianceVec(eigenvec, eigenval);
-		
-	};
-	
-	
-	
 	
 	
 }
