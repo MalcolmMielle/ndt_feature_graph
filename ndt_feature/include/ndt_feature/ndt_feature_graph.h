@@ -66,35 +66,27 @@ public:
   
   
   //Deep copy constructor
-  
-  NDTFeatureGraph* clone(){
+  NDTFeatureGraph(const NDTFeatureGraph& graph){
 	  
 // 	NDTViz *viewer;
-	NDTFeatureGraph* newgraph = new NDTFeatureGraph(this->params_);
-	newgraph->params_ = this->params_;
-	newgraph->fuser_params_ = this->fuser_params_;
-	newgraph->motion_params_ = this->motion_params_;
+  
+	params_ = graph.params_;
+	fuser_params_ = graph.fuser_params_;
+	motion_params_ = graph.motion_params_;
 	
-	newgraph->sensor_pose_ = this->sensor_pose_;
-	newgraph->Tnow = this->Tnow; // Current pose estimate.
+	sensor_pose_ = graph.sensor_pose_;
+	Tnow = graph.Tnow; // Current pose estimate.
 
-	newgraph->pointcloud_vis = this->pointcloud_vis;
+	pointcloud_vis = graph.pointcloud_vis;
 
 
 	// A set of ndt_feature_fuser maps are utilized, they are encoded into graph nodes.
-// 	nodes_ = graph.nodes_;
-// 	links_ = graph.links_;
-	
-	for(size_t i = 0 ; i < this->nodes_.size() ; ++i){
-		NDTFeatureNode* noode = this->nodes_[i].clone();
-		newgraph->nodes_.push_back(*noode);
-		//ATTENTION ABOUT THAT
-		delete noode;
-	}
-	newgraph->links_ = this->links_;
+	nodes_ = graph.nodes_;
+	links_ = graph.links_;
 
-	newgraph->distance_moved_in_last_node_ = this->distance_moved_in_last_node_;
-	return newgraph;
+
+	distance_moved_in_last_node_ = graph.distance_moved_in_last_node_;
+	  
 	  
   }
   
@@ -151,7 +143,7 @@ public:
 	assert(nodes_[0].map->wasInit() == true);
 	
 	if(fullInit() == false){
-		std::cout << "GRAPH NOT FULLY INIT " << std::endl;
+// 		std::cout << "GRAPH NOT FULLY INIT " << std::endl;
 		assert(fullInit());
 	}
     std::cout << "initialize -> done" << std::endl;

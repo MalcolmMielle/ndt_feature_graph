@@ -45,17 +45,14 @@ public:
   }
   
   //Bugging Henrik code
-  NDTFeatureNode* clone(){
-	  NDTFeatureNode* newnode = new NDTFeatureNode();
-	  newnode->cov = this->getCov();
-	  newnode->T = this->getPose();
-	  newnode->Tlocal_odom = this->getTLocalOdom();
-	  newnode->Tlocal_fuse = this->getTLocalFuse();
-	  newnode->pts = this->getPts();
-	  newnode->map = (this->map)->clone();
-// 	  *map = *(ndt_feat.map);
-
-// 	  NDTFeatureFuserHMT(const NDTFeatureFuserHMT& ndt_fuser)
+  NDTFeatureNode(const NDTFeatureNode& ndt_feat){
+	  cov = ndt_feat.getCov();
+	  T = ndt_feat.getPose();
+	  Tlocal_odom = ndt_feat.getTLocalOdom();
+	  Tlocal_fuse = ndt_feat.getTLocalFuse();
+	  pts = ndt_feat.getPts();
+	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
+	  *map = *(ndt_feat.map);
   }
 
   ~NDTFeatureNode() {
