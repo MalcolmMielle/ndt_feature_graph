@@ -169,16 +169,7 @@ ADD_LIBRARY(tutorial_slam2d_library_real malcolm_addons/Test/simulator.h malcolm
 # ADD_LIBRARY(tutorial_slam3d ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE} ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_TYPES_SLAM3D})
 
 
-
-
-
-
-# set(DCMAKE_BUILD_TYPE "Debug")
-
 message("Adding executable")
-add_executable(copy_graph_test malcolm_addons/Test/test_copy_graph.cpp)
-target_link_libraries(copy_graph_test ${catkin_LIBRARIES} ${NDT_FEATURE_LIBS})
-
 add_executable(g2o_test malcolm_addons/Test/test_g2o.cpp)
 target_link_libraries(g2o_test tutorial_slam2d_library_real ${G2O_LIBS})
 
@@ -195,16 +186,6 @@ target_link_libraries(ndt_g2omaker ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} 
 
 add_executable(test_auto_complete malcolm_addons/Test/test_auto_complete.cpp)
 target_link_libraries(test_auto_complete 
-${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS}
-${OpenCV_LIBS} 
-# ${PCL_LIBRARIES} 
-${vodigrex_LIBRARIES} 
-# Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
-)
-
-
-add_executable(ndt_duplicate_graph malcolm_addons/Test/ndt_duplicate_graph.cpp)
-target_link_libraries(ndt_duplicate_graph 
 ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS}
 ${OpenCV_LIBS} 
 # ${PCL_LIBRARIES} 

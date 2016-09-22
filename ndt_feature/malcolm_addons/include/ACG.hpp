@@ -1,8 +1,6 @@
 #ifndef NDTFEATURE_ACG_15102016
 #define NDTFEATURE_ACG_15102016
 
-#include <ctime>
-
 #include "g2o/types/slam2d/vertex_se2.h"
 #include "g2o/types/slam2d/vertex_point_xy.h"
 #include "g2o/types/slam2d/edge_se2.h"
@@ -112,11 +110,6 @@ namespace ndt_feature {
 		///@brief the main dish : the graph
 		g2o::OptimizableGraph _optimizable_graph;
 		
-		//ATTENTION : I should avoid that if I want to run both thread at the same time since no copy is made. I should instead copy it
-		ndt_feature::NDTFeatureGraph* _ndt_graph;
-		
-		ndt_feature::NDTFeatureGraph _ndt_graph_copied;
-		
 		
 	private:
 		int _previous_number_of_node_in_ndtgraph;
@@ -129,9 +122,8 @@ namespace ndt_feature {
 						double rn,
 						const Eigen::Vector2d& ln,
 						const Eigen::Vector2d& pn,
-						const Eigen::Vector2d& linkn,
-						ndt_feature::NDTFeatureGraph* ndt_graph
-  					) : _sensorOffsetTransf(sensoffset), _transNoise(tn), _rotNoise(rn), _landmarkNoise(ln), _priorNoise(pn), _linkNoise(linkn), _previous_number_of_node_in_ndtgraph(0), _ndt_graph(graph){
+						const Eigen::Vector2d& linkn
+  					) : _sensorOffsetTransf(sensoffset), _transNoise(tn), _rotNoise(rn), _landmarkNoise(ln), _priorNoise(pn), _linkNoise(linkn), _previous_number_of_node_in_ndtgraph(0){
 						// add the parameter representing the sensor offset ATTENTION was ist das ?
 						_sensorOffset = new g2o::ParameterSE2Offset;
 						_sensorOffset->setOffset(_sensorOffsetTransf);
@@ -211,20 +203,6 @@ namespace ndt_feature {
 		 */
 		void addPriorGraph(const bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>& graph);
 		
-		
-		
-		void copyNDTGraph(ndt_feature::NDTFeatureGraph& ndt_graph){
-			
-			
-			
-		}
-		
-		
-		
-		void updateNDTGraph(){
-			updateNDTGraph(_ndt_graph);
-		}
-		
 		void updateNDTGraph(ndt_feature::NDTFeatureGraph& ndt_graph){
 			
 			std::vector<NDTCornerGraphElement> corners_end;
@@ -232,8 +210,7 @@ namespace ndt_feature {
 			
 			if(ndt_graph.getNbNodes() > _previous_number_of_node_in_ndtgraph){
 				
-				//Should most of the time be one but just in case it runs slowly I'll let that
-				for (size_t i = _previous_number_of_node_in_ndtgraph - 1; i < ndt_graph.getNbNodes() - 1; ++i) {
+				for (size_t i = _previous_number_of_node_in_ndtgraph; i < ndt_graph.getNbNodes(); ++i) {
 					lslgeneric::NDTMap* map = ndt_graph.getMap(i);
 					
 					//HACK For now : we translate the Corner extracted and not the ndt-maps

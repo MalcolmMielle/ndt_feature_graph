@@ -32,7 +32,7 @@ namespace ndt_feature {
    * camera postion.
    * \author Jari, Todor
    */
-class NDTFeatureFuserHMT{ 
+class NDTFeatureFuserHMT{
   public:
     Eigen::Affine3d Tnow, Tlast_fuse, Todom; ///< current pose
     lslgeneric::NDTMap *map;  ///< da map
@@ -204,36 +204,6 @@ class NDTFeatureFuserHMT{
         std::cerr << "NDTFeatureFuserHMT Destructor() - done " << std::endl;
       }
 
-      ///@brief Deep Copy constructor
-      NDTFeatureFuserHMT(const NDTFeatureFuserHMT& ndt_fuser){
-		  
-			this->Tnow = ndt_fuser.Tnow;
-			this->Tlast_fuse = ndt_fuser.Tlast_fuse;
-			this->Todom = ndt_fuser.Todom; ///< current pose
-			//    std::vector< std::vector<InterestPoint *> > featuremap;
-			this->featuremap = ndt_fuser.featuremap;
-
-			//HACK
-			this->viewer = NULL;
-// 			boost::shared_ptr<RansacFeatureSetMatcher> ransac_;
- 
-			this->ptsPrev = ndt_fuser.ptsPrev;
-			this->ctr = ndt_fuser.ctr;
-
-			// Containers used for visualizations.
-			this->debug_markers_ = ndt_fuser.debug_markers_;
-			this->pointcloud_vis = ndt_fuser.pointcloud_vis;
-			
-			std::cout << "INIT" << isInit << std::endl;
-// 			//Copying the map
-// 			if(wasInit()){
-// 				delete this->map;
-// 			}
-			
-			this->map = new lslgeneric::NDTMap(*(ndt_fuser.map));  ///< da map
-	  }
-      
-      
   void setMotionParams(const semrob_generic::MotionModel2d::Params &params) {
     motion_params_ = params;
   }
