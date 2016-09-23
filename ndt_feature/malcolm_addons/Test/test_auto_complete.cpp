@@ -91,6 +91,7 @@ class NDTFeatureFuserNode {
 	ros::Publisher _marker_pub_graph;
 	ros::Publisher _marker_pub_graph_odom;
 	ros::Publisher _last_ndtmap;
+	ros::Publisher _ndt_graph_pub;
 	Eigen::Affine3d pose_, T, sensor_pose_;
 
 	tf::TransformListener listener;
@@ -460,7 +461,9 @@ public:
 		
 		_marker_pub_graph = nh_.advertise<visualization_msgs::Marker>("visualization_marker_graph", 10);
 		_marker_pub_graph_odom= nh_.advertise<visualization_msgs::Marker>("visualization_marker_graph_odom", 10);
-		_last_ndtmap= nh_.advertise<ndt_map::NDTMapMsg>("lastgraphmap", 10);
+		_last_ndtmap = nh_.advertise<ndt_map::NDTMapMsg>("lastgraphmap", 10);
+		
+		_ndt_graph_pub = nh_.advertise<ndt_feature::NDTGraphMsg>("ndt_graph", 10);
 
 		heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(1.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
 		
@@ -733,13 +736,17 @@ public:
 
     void createGraphThread(){
 		
-		if(graph->getNbNodes() == 4 && _count_of_node != graph->getNbNodes()){
+		if(graph->getNbNodes() >= 4 && _count_of_node != graph->getNbNodes()){
 			
+			std::cout << ">Pushing message for " << graph->getNbNodes() << " and " << _count_of_node << std::endl;
 			ndt_feature::NDTGraphMsg graphmsg;
 			ndt_feature::NDTGraphToMsg(*graph, graphmsg);
 			
+			_ndt_graph_pub.publish(graphmsg);
+			
 			std::cout << "Created the graph" << std::endl;
-			exit(0);
+			
+			_count_of_node = graph->getNbNodes();
 			
 		}
 	}

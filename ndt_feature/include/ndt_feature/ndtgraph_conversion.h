@@ -51,17 +51,20 @@ namespace ndt_feature {
 	
 	
 	void NDTGraphToMsg(const NDTFeatureGraph& graph, ndt_feature::NDTGraphMsg& m){
+		std::cout << "Nodes " << std::endl;
 		for(size_t i = 0 ; i < graph.getNbNodes() ; ++i){
 			ndt_feature::NDTNodeMsg nodemsg;
 			nodeToMsg(graph.getNode(i), nodemsg);
 			m.nodes.push_back(nodemsg);
 		}
+		std::cout << "Edge " << std::endl;
 		for(size_t i = 0 ; i < graph.getNbLinks() ; ++i){
 			ndt_feature::NDTEdgeMsg edgemsg;
 			edgeToMsg(graph.getLink(i), edgemsg);
 			m.edges.push_back(edgemsg);
 		}
 		
+		std::cout << "Poses" << std::endl;
 		tf::poseEigenToMsg (graph.sensor_pose_, m.sensor_pose_);
 		tf::poseEigenToMsg (graph.Tnow, m.Tnow);
 		m.distance_moved_in_last_node_ = graph.getDistanceTravelled();
