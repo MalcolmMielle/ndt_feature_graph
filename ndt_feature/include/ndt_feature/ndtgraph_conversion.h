@@ -70,6 +70,57 @@ namespace ndt_feature {
 		m.distance_moved_in_last_node_ = graph.getDistanceTravelled();
 	}
 	
+	
+	
+	
+	void msgToEdge(const ndt_feature::NDTEdgeMsg& m, NDTFeatureLink& link){
+		link.ref_idx = m.ref_idx;
+		link.mov_idx = m.mov_idx;
+		tf::poseMsgToEigen (m.T, link.T);
+		std::vector<double>::const_iterator it;
+		it=m.cov.data.begin();
+		
+		std::cout << "Cov size " << m.cov.data.size() << std::endl;
+		assert(m.cov.data.size() == 9);
+		
+		for(it ; it != m.cov.data.end() ; it++){
+			std::cout <<"Got " << *it << "\n" ;
+		}
+		
+		it=m.cov.data.begin();
+		link.cov <<   *it, *(it+1), *(it+2), 
+					*(it+3), *(it+4), *(it+5), 
+					*(it+6), *(it+7), *(it+8);
+// 		float64[] cov_3d
+		std::vector<double>::const_iterator it_2;
+		it_2=m.cov_3d.data.begin();
+		assert(m.cov_3d.data.size() == 9);
+		link.cov_3d << *it_2, *(it_2+1), *(it_2+2), 
+					*(it_2+3), *(it_2+4), *(it_2+5), 
+					*(it_2+6), *(it_2+7), *(it_2+8);
+					
+		link.score = m.score;
+	}
+	
+	void msgTofuserHMT(const ndt_feature::NDTFeatureFuserHMTMsg& m, NDTFeatureFuserHMT& fuser, std::string& frame){
+		tf::poseMsgToEigen (m.Tnow, fuser.Tnow);
+		tf::poseMsgToEigen (m.Tlast_fuse, fuser.Tlast_fuse);		
+		tf::poseMsgToEigen (m.Todom, fuser.Todom);
+		ndt_map::NDTMapMsg mapmsg;
+		
+		lslgeneric::LazyGrid *lz = dynamic_cast<lslgeneric::LazyGrid*>(fuser.map->getMyIndex() );
+		bool good = lslgeneric::fromMessage(lz, fuser.map, m.map, frame);
+		fuser.ctr = m.ctr;
+	}
+	
+	void msgToNode(){
+		
+	}
+	
+	void msgToNDTGraph(){
+		
+	}
+	
 }
 
 #endif

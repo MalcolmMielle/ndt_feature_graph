@@ -223,8 +223,13 @@ add_executable(airport_ndt_g2o malcolm_addons/Test/airport_g2o.cpp)
 target_link_libraries(airport_ndt_g2o ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D} 
 )
 
-# add_executable(test_conversion_bettergraph test_conversion.cpp)
-# target_link_libraries(test_conversion_bettergraph ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils)
+add_executable(test_conversion malcolm_addons/Test/test_conversion.cpp)
+target_link_libraries(test_conversion ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS}
+${OpenCV_LIBS} 
+# ${PCL_LIBRARIES} 
+${vodigrex_LIBRARIES} 
+# Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
+)
 
 add_executable(test_cov malcolm_addons/Test/test_cov.cpp)
 target_link_libraries(test_cov ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils)
