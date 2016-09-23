@@ -5,6 +5,7 @@
 #include "ndt_feature_graph.h"
 #include "ndt_feature/NDTEdgeMsg.h"
 #include "ndt_feature/NDTNodeMsg.h"
+#include "ndt_feature/NDTGraphMsg.h"
 #include "ndt_feature/NDTFeatureFuserHMTMsg.h"
 #include "eigen_conversions/eigen_msg.h"
 
@@ -49,9 +50,21 @@ namespace ndt_feature {
 	}
 	
 	
-	void NDTGraphToMsg(){
+	void NDTGraphToMsg(const NDTFeatureGraph& graph, ndt_feature::NDTGraphMsg& m){
+		for(size_t i = 0 ; i < graph.getNbNodes() ; ++i){
+			ndt_feature::NDTNodeMsg nodemsg;
+			nodeToMsg(graph.getNode(i), nodemsg);
+			m.nodes.push_back(nodemsg);
+		}
+		for(size_t i = 0 ; i < graph.getNbLinks() ; ++i){
+			ndt_feature::NDTEdgeMsg edgemsg;
+			edgeToMsg(graph.getLink(i), edgemsg);
+			m.edges.push_back(edgemsg);
+		}
 		
-		
+		tf::poseEigenToMsg (graph.sensor_pose_, m.sensor_pose_);
+		tf::poseEigenToMsg (graph.Tnow, m.Tnow);
+		m.distance_moved_in_last_node_ = graph.getDistanceTravelled();
 	}
 	
 }

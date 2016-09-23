@@ -4,7 +4,7 @@ geometry_msgs/Pose Tnow # Current pose estimate.
 float64 distance_moved_in_last_node_
 
 NDTNodeMsg[] nodes
-NDTEdgeMsg[] edge
+NDTEdgeMsg[] edges
  
 #  NDTFeatureGraph::Params params_;
 #  NDTFeatureFuserHMT::Params fuser_params_;

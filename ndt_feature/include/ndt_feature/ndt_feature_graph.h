@@ -633,6 +633,18 @@ public:
   const NDTFeatureNode& getNode(size_t idx) const {
     return nodes_[idx];
   }
+  
+  NDTFeatureLink& getLink(size_t idx) {
+    return links_[idx];
+  }
+
+  const NDTFeatureLink& getLink(size_t idx) const {
+    return links_[idx];
+  }
+  
+  float getDistanceTravelled() const {
+	  return distance_moved_in_last_node_;
+  }
 
   void force2D() {
     for (size_t i = 0; i < nodes_.size(); i++) {

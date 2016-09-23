@@ -49,6 +49,8 @@
 // #include "G2OGraphMaker.hpp"
 #include "conversion.hpp"
 #include "PriorAutoComplete.hpp"
+#include "ndt_feature/NDTGraphMsg.h"
+#include "ndt_feature/ndtgraph_conversion.h"
 #include <thread>
 
 #ifndef SYNC_FRAMES
@@ -722,7 +724,7 @@ public:
 
 // 		std::thread first(&NDTFeatureFuserNode::createGraphThread, this);
 
-// 		createGraphThread();
+		createGraphThread();
 		
 		std::cout << "Transform sent" << std::endl;
 
@@ -732,31 +734,13 @@ public:
     void createGraphThread(){
 		
 		if(graph->getNbNodes() == 4 && _count_of_node != graph->getNbNodes()){
-			std::cout << "OPTIMIZE" << std::endl;
-			/**Get corner from prior**/
-	// 		std::string file = "/home/malcolm/Document/map.jpg";
-	// 		_priorAutoComplete.extractCornerPrior(file);
-			_priorAutoComplete.extractCornerNDT(*graph);
-	// 		_priorAutoComplete.findScale();
-			_priorAutoComplete.transformOntoSLAM();
 			
-			_priorAutoComplete.createGraph(*graph, _g2o_graph);
+			ndt_feature::NDTGraphMsg graphmsg;
+			ndt_feature::NDTGraphToMsg(*graph, graphmsg);
 			
-			
-			
-			std::string file_out = "/home/malcolm/ACG_folder/AWESOME_";
-			std::ostringstream convert;   // stream used for the conversion
-			convert << graph->getNbNodes(); 
-			file_out = file_out + convert.str();
-			file_out = file_out + "nodes.g2o";
-			_g2o_graph.save(file_out);
-			
-			std::cout << "saved to " << file_out << std::endl;
-			
-			
-			_count_of_node = graph->getNbNodes();
-			
+			std::cout << "Created the graph" << std::endl;
 			exit(0);
+			
 		}
 	}
 	
