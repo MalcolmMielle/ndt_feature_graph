@@ -173,6 +173,13 @@ class NDTFeatureFuserHMT{
     isInit = false;
 
     visualize = false; // 
+    
+    //Init of those by Malcolm
+    Tnow.setIdentity();
+// 	std::cout << "Doing the TNOW" << Tnow.matrix() <<std::endl;
+// 	exit(0);
+	Tlast_fuse.setIdentity(); 
+	Todom.setIdentity();
 
     sensor_pose.setIdentity();
     translation_fuse_delta = 0.05;
