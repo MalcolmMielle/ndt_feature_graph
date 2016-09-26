@@ -376,20 +376,20 @@ public:
 	
 	assert(cov.rows() == 6);
 	assert(cov.cols() == 6);
-	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << std::endl; 
+	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << "\n"; 
 	link.cov_3d = cov;
-	std::cout << "How my god" << std::endl;
+	std::cout << "How my god" << "\n";
 	
-	std::cout << "PAUSE got cov : " << cov << std::endl;
+	std::cout << "PAUSE got cov : " << cov << "\n";
 // 	std::cin >> a;
 	
     if (!keepScore) {
-      std::cout << "old link.score : " <<std::endl;
-	  std::cout << link.score << std::endl;
+      std::cout << "old link.score : " << "\n";
+	  std::cout << link.score << "\n";
       link.score = ndt_feature::overlapNDTOccupancyScore(nodes_[link.getRefIdx()],
                                                          nodes_[link.getMovIdx()], 
                                                          link.T);
-      std::cout << "new link.score : " << link.score << std::endl;
+      std::cout << "new link.score : " << link.score << "\n";
     }
     
     std::cout << "End of link" << std::endl;
@@ -634,6 +634,13 @@ public:
     return nodes_[idx];
   }
   
+  void push_back(const NDTFeatureNode& n){
+	  nodes_.push_back(n);
+  }
+  void push_back(const NDTFeatureLink& n){
+	  links_.push_back(n);
+  }
+  
   NDTFeatureLink& getLink(size_t idx) {
     return links_[idx];
   }
@@ -644,6 +651,10 @@ public:
   
   float getDistanceTravelled() const {
 	  return distance_moved_in_last_node_;
+  }
+  
+  void setDistanceTravelled(float f){
+	  distance_moved_in_last_node_ = f;
   }
 
   void force2D() {
