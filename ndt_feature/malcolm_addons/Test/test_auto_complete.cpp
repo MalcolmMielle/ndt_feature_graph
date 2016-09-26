@@ -83,6 +83,7 @@ class NDTFeatureFuserNode {
 	message_filters::Subscriber<nav_msgs::Odometry> *odom_sub_;
 	ros::Subscriber gt_sub;
 	ros::Subscriber optimize_sub;
+	ros::Subscriber convert_sub;
 	// Components for publishing
 	tf::TransformBroadcaster tf_;
 	ros::Publisher pointcloud_pub_;
@@ -472,6 +473,7 @@ public:
 		std::cout << "start added cloud and of init " << nb_added_clouds_ << std::endl;
 		
 		optimize_sub = nh_.subscribe<std_msgs::Bool>("/optimize", 10, &NDTFeatureFuserNode::optimize, this);
+		convert_sub = nh_.subscribe<std_msgs::Bool>("/convert", 10, &NDTFeatureFuserNode::convert, this);
 	}
 
 	~NDTFeatureFuserNode()
@@ -736,7 +738,7 @@ public:
 
     void createGraphThread(){
 		
-		if(graph->getNbNodes() >= 4 && _count_of_node != graph->getNbNodes()){
+		if(graph->getNbNodes() >= 3 && _count_of_node != graph->getNbNodes()){
 			
 			std::cout << ">Pushing message for " << graph->getNbNodes() << " and " << _count_of_node << std::endl;
 			ndt_feature::NDTGraphMsg graphmsg;
@@ -766,6 +768,71 @@ public:
 	    m.unlock();
 
 	    return ret;
+	}
+	
+	
+	void convert(const std_msgs::Bool::ConstPtr& bool_msg){
+	
+		if(graph->getNbNodes() >1){
+			std::vector<ndt_feature::NDTFeatureLink> links = graph->getIncrementalLinks();
+			ndt_feature::NDTEdgeMsg edgemsg;
+			ndt_feature::NDTFeatureLink edge = links[0];
+			
+			std::cout << "EDGE to msg" << std::endl;
+			ndt_feature::edgeToMsg(edge, edgemsg);
+			
+			
+			std::cout << "MSG to EDGE" << std::endl;
+			ndt_feature::NDTFeatureLink edge2;
+			ndt_feature::msgToEdge(edgemsg, edge2);
+			
+			std::cout << "Done" << std::endl;
+			
+			assert(edge.cov == edge2.cov);
+			assert(edge.cov_3d == edge2.cov_3d);
+			
+		}
+		
+		ndt_feature::NDTNodeMsg nodemsg;
+		ndt_feature::NDTFeatureNode node = graph->getNode(0);
+		
+		std::cout << "GETTING THE NODE FUCKER TO WORK" << node.map->Tnow.matrix() << std::endl;
+		
+// 		node.Tlocal_odom.matrix() << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
+		
+		std::string frame;
+		std::cout << "NODE to msg" << std::endl;
+		ndt_feature::nodeToMsg(node, nodemsg);
+		
+		
+		std::cout << "MSG to node" << std::endl;
+		ndt_feature::NDTFeatureNode node2;
+		node2.map = new ndt_feature::NDTFeatureFuserHMT( ndt_feature::NDTFeatureFuserHMT::Params() );
+		
+		std::cout << "GETTING THE NODE FUCKER TO WORK" << node.map->Tnow.matrix() << std::endl;
+		
+		ndt_feature::msgToNode(nodemsg, node2, frame);
+		
+		std::cout << "Done" << std::endl;
+		
+// 		assert(node.cov == node2.cov);
+// 		if(node.getFuser().getCov() != node.getFuser().getCov()){
+// 			std::cout << node.getFuser().getCov() << " == " << node.getFuser().getCov() << std::endl;
+// 		}
+// // 		assert(node.getFuser().getCov() == node.getFuser().getCov() );
+// // 		
+// 		if(node.getTLocalOdom().matrix() != node2.getTLocalOdom().matrix()){
+// 			std::cout << node.getTLocalOdom().matrix() << " == " << node2.getTLocalOdom().matrix() << std::endl;
+// 		}
+// 		assert(node.getTLocalOdom().matrix() == node2.getTLocalOdom().matrix());
+		
+		
+		ndt_feature::NDTGraphMsg graphmsg;
+		
+		ndt_feature::NDTGraphToMsg(*graph, graphmsg);
+		_ndt_graph_pub.publish(graphmsg);
+		
+		exit(0);
 	}
 	
 	void optimize(const std_msgs::Bool::ConstPtr& bool_msg){
