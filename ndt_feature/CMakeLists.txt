@@ -39,12 +39,7 @@ generate_messages(
   geometry_msgs std_msgs ndt_map
 )
 
-catkin_package(
-    DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
-    CATKIN_DEPENDS ndt_registration ndt_map laser_geometry sensor_msgs ndt_visualisation std_srvs flirtlib_ros das message_runtime
-    INCLUDE_DIRS include
-    LIBRARIES # TODO
-)
+
 
 add_executable(ndt_feature2d_view src/ndt_feature2d_view.cpp)
 add_executable(ndt_feature2d_fuser src/ndt_feature2d_fuser.cpp)
@@ -131,18 +126,45 @@ target_link_libraries(ndt_feature_mcl_node ${Boost_LIBRARIES} ${catkin_LIBRARIES
 
 ## Better graph 
 
+set(CMAKE_CXX_STANDARD 11)
+
+add_subdirectory(cmake_modules)
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules/")
+
 find_package(bettergraph)
-if(bettergraph_FOUND)
+find_package(G2O REQUIRED)
+find_package(SUITESPARSE REQUIRED)
+find_package(vodigrex)
+find_package(Cpd REQUIRED)
+include_directories(${vodigrex_INCLUDE_DIRS})
+INCLUDE_DIRECTORIES(${CSPARSE_INCLUDE_DIR})
+INCLUDE_DIRECTORIES(${G2O_INCLUDE_DIR})
+
+set(G2O_LIBS ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D})
+
+set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils)
+
+ADD_LIBRARY(tutorial_slam2d_library_real malcolm_addons/Test/simulator.h malcolm_addons/Test/simulator.cpp ${G2O_LIBS})
+
+catkin_package(
+    DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
+    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs flirtlib_ros das message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs
+    INCLUDE_DIRS include /usr/local/include/flirtlib ${vodigrex_INCLUDE_DIRS} ${CSPARSE_INCLUDE_DIR} ${G2O_INCLUDE_DIR}
+    LIBRARIES ${G2O_LIBS} tutorial_slam2d_library_real# TODO
+)
+
+
+# if(bettergraph_FOUND)
 # # Libs were not linked
 # 	add_subdirectory(malcolm_addons)
 
-set(CMAKE_CXX_STANDARD 11)
+# set(CMAKE_CXX_STANDARD 11)
 
-find_package(vodigrex)
-include_directories(${vodigrex_INCLUDE_DIRS})
+# find_package(vodigrex)
+# include_directories(${vodigrex_INCLUDE_DIRS})
 
 
-find_package(Cpd REQUIRED)
+# find_package(Cpd REQUIRED)
 
 # add_subdirectory(cmake_modules)
 
@@ -154,34 +176,28 @@ find_package(Cpd REQUIRED)
 
 #Add CMake module path
 message("Moduele path")
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules/")
+# set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake_modules/")
 message(STATUS "${CMAKE_MODULE_PATH}=${${CMAKE_MODULE_PATH}}")
 
-find_package(G2O REQUIRED)
-# find_package(CSPARSE REQUIRED)
-# find_package(CHOLMOD REQUIRED)
-find_package(SUITESPARSE REQUIRED)
+# find_package(G2O REQUIRED)
+# # find_package(CSPARSE REQUIRED)
+# # find_package(CHOLMOD REQUIRED)
+# find_package(SUITESPARSE REQUIRED)
 
-if(CHOLMOD_FOUND)
-	message("FOUND CHOL YEAH")
-else(CHOLMOD_FOUND)
-	message("NOT FOUND CHOL YEAH")
-endif(CHOLMOD_FOUND)
+# if(CHOLMOD_FOUND)
+# 	message("FOUND CHOL YEAH")
+# else(CHOLMOD_FOUND)
+# 	message("NOT FOUND CHOL YEAH")
+# endif(CHOLMOD_FOUND)
 
-INCLUDE_DIRECTORIES(${CSPARSE_INCLUDE_DIR})
-INCLUDE_DIRECTORIES(${G2O_INCLUDE_DIR})
+# INCLUDE_DIRECTORIES(${CSPARSE_INCLUDE_DIR})
+# INCLUDE_DIRECTORIES(${G2O_INCLUDE_DIR})
 message("Added includes")
 # INCLUDE_DIRECTORIES(${CSPARSE_INCLUDE_DIR})
 
 # list(APPEND CMAKE_PREFIX_PATH "/home/malcolm/external_source/SuiteSparse/lib")
 
 message(${G2O_SOLVER_CSPARSE_EXTENSION})
-
-set(G2O_LIBS ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D})
-
-set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils)
-
-ADD_LIBRARY(tutorial_slam2d_library_real malcolm_addons/Test/simulator.h malcolm_addons/Test/simulator.cpp ${G2O_LIBS})
 
 # ADD_LIBRARY(tutorial_slam3d ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE} ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_TYPES_SLAM3D})
 
@@ -270,7 +286,7 @@ ${vodigrex_LIBRARIES}
 # Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
 )
 
-endif(bettergraph_FOUND)
+# endif(bettergraph_FOUND)
 
 # add_executable(ndt_g2olandmark malcolm_addons/Test/ndt_g2olandmark.cpp)
 # target_link_libraries(ndt_g2olandmark ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_CORE_LIBRARY} ${G2O_SOLVER_CSPARSE}  ${CSPARSE_LIBRARY} ${G2O_STUFF_LIBRARY} ${CHOLMOD_LIBRARY}  ${G2O_SOLVER_CSPARSE_EXTENSION} ${G2O_SOLVER_SLAM2D_LINEAR} ${G2O_TYPES_SLAM2D} 
