@@ -38,6 +38,7 @@ bool loadAffine3d(Eigen::Affine3d &T, const std::string& fileName) {
 class NDTFeatureNode : public NDTFeatureNodeInterface {
 
 public:
+	//TODO : would initialize NDTFeatureHMT in here prove more useful ? For now the user is forced to init everything itself otherwise you can't access the Eigen matrix straight away. Maybe a combination of a pointer destructor in the destructor and some setter getter ? I think it will be better for memory allocation also.
   NDTFeatureNode() : nbUpdates(0), map(NULL) {
     T.setIdentity();
     Tlocal_odom.setIdentity();
@@ -45,15 +46,15 @@ public:
   }
   
   //Bugging Henrik code
-  NDTFeatureNode(const NDTFeatureNode& ndt_feat){
-	  cov = ndt_feat.getCov();
-	  T = ndt_feat.getPose();
-	  Tlocal_odom = ndt_feat.getTLocalOdom();
-	  Tlocal_fuse = ndt_feat.getTLocalFuse();
-	  pts = ndt_feat.getPts();
-	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
-	  *map = *(ndt_feat.map);
-  }
+//   NDTFeatureNode(const NDTFeatureNode& ndt_feat){
+// 	  cov = ndt_feat.getCov();
+// 	  T = ndt_feat.getPose();
+// 	  Tlocal_odom = ndt_feat.getTLocalOdom();
+// 	  Tlocal_fuse = ndt_feat.getTLocalFuse();
+// 	  pts = ndt_feat.getPts();
+// 	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
+// 	  *map = *(ndt_feat.map);
+//   }
 
   ~NDTFeatureNode() {
     std::cerr << "FeatureNode Destructor" << std::endl;
