@@ -150,7 +150,7 @@ catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
     CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs flirtlib_ros das message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs
     INCLUDE_DIRS include /usr/local/include/flirtlib ${vodigrex_INCLUDE_DIRS} ${CSPARSE_INCLUDE_DIR} ${G2O_INCLUDE_DIR}
-    LIBRARIES ${G2O_LIBS} tutorial_slam2d_library_real# TODO
+    LIBRARIES ${G2O_LIBS} ${vodigrex_LIBRARIES}  tutorial_slam2d_library_real# TODO
 )
 
 
