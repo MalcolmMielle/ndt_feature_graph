@@ -409,14 +409,14 @@ namespace ndt_feature{
 			
 			std::cout << std::endl << "CREATE GRAPH" << std::endl << std::endl;
 			//Add NDTGraph robot poses and odometry
-			g2o_graph.addRobotPoseAndOdometry(ndt_graph);
+// 			g2o_graph.addRobotPoseAndOdometry(ndt_graph);
 			
 			//Add landmark and observations
-			g2o_graph.addLandmarkAndObservation(ndt_graph);
+// 			g2o_graph.addLandmarkAndObservation(ndt_graph);
 // 			g2o_graph.addLandmarkAndObservation(_ndt_corner_opencv_and_nodes);
 			
 			//Add prior graph
-// 			g2o_graph.addAllPriors(_prior_graph);
+			g2o_graph.addAllPriors(_prior_graph);
 			
 			//Add links
 			std::cout << "Printing the asociations" << std::endl;

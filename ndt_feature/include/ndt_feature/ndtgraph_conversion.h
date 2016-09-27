@@ -36,14 +36,14 @@ namespace ndt_feature {
 		tf::poseEigenToMsg (fuser.Tlast_fuse, m.Tlast_fuse);		
 		tf::poseEigenToMsg (fuser.Todom, m.Todom);
 		
-		std::cout << "Nb of init when creating message (more than 0) " << fuser.map->getAllInitializedCells().size() << std::endl;
+// 		std::cout << "Nb of init when creating message (more than 0) " << fuser.map->getAllInitializedCells().size() << std::endl;
 		bool good = lslgeneric::toMessage(fuser.map, m.map, "/world");
 		m.ctr = fuser.ctr;
 	}
 	
 	void nodeToMsg(const NDTFeatureNode& node, ndt_feature::NDTNodeMsg& m){
 		
-		std::cout << "GETTING THE NODE FUCKER TO WORK gosh" << node.map->Tnow.matrix() << std::endl;
+// 		std::cout << "GETTING THE NODE FUCKER TO WORK gosh" << node.map->Tnow.matrix() << std::endl;
 		
 		fuserHMTToMsg(node.getFuser(), m.map);
 		tf::poseEigenToMsg (node.T, m.T);
@@ -55,23 +55,25 @@ namespace ndt_feature {
 	
 	
 	void NDTGraphToMsg(const NDTFeatureGraph& graph, ndt_feature::NDTGraphMsg& m){
-		std::cout << "Nodes " << std::endl;
+		std::cout << "Nodes \n";
 		for(size_t i = 0 ; i < graph.getNbNodes() ; ++i){
 			ndt_feature::NDTNodeMsg nodemsg;
 			nodeToMsg(graph.getNode(i), nodemsg);
 			m.nodes.push_back(nodemsg);
 		}
-		std::cout << "Edge " << std::endl;
+		std::cout << "Edge \n";
 		for(size_t i = 0 ; i < graph.getNbLinks() ; ++i){
 			ndt_feature::NDTEdgeMsg edgemsg;
 			edgeToMsg(graph.getLink(i), edgemsg);
 			m.edges.push_back(edgemsg);
 		}
 		
-		std::cout << "Poses" << std::endl;
+		std::cout << "Poses \n";
 		tf::poseEigenToMsg (graph.sensor_pose_, m.sensor_pose_);
 		tf::poseEigenToMsg (graph.Tnow, m.Tnow);
 		m.distance_moved_in_last_node_ = graph.getDistanceTravelled();
+		
+		std::cout << std::endl;
 	}
 	
 	
@@ -84,12 +86,12 @@ namespace ndt_feature {
 		std::vector<double>::const_iterator it;
 		it=m.cov.data.begin();
 		
-		std::cout << "Cov size " << m.cov.data.size() << std::endl;
+// 		std::cout << "Cov size " << m.cov.data.size() << std::endl;
 		assert(m.cov.data.size() == 9);
 		
-		for(it ; it != m.cov.data.end() ; it++){
-			std::cout <<"Got " << *it << "\n" ;
-		}
+// 		for(it ; it != m.cov.data.end() ; it++){
+// 			std::cout <<"Got " << *it << "\n" ;
+// 		}
 		
 		it=m.cov.data.begin();
 		link.cov <<   *it, *(it+1), *(it+2), 
@@ -118,51 +120,51 @@ namespace ndt_feature {
 	}
 	
 	void msgTofuserHMT(const ndt_feature::NDTFeatureFuserHMTMsg& m, NDTFeatureFuserHMT& fuser, std::string& frame){
-		std::cout << "What the heck ? " << std::endl;
-		std::cout << "Doing the TNOW" << fuser.Tnow.matrix() <<std::endl;
+// 		std::cout << "What the heck ? " << std::endl;
+// 		std::cout << "Doing the TNOW" << fuser.Tnow.matrix() <<std::endl;
 		tf::poseMsgToEigen (m.Tnow, fuser.Tnow);
-		std::cout << "Doing the TLASTFUSE" << fuser.Tlast_fuse.matrix() << std::endl;
+// 		std::cout << "Doing the TLASTFUSE" << fuser.Tlast_fuse.matrix() << std::endl;
 		tf::poseMsgToEigen (m.Tlast_fuse, fuser.Tlast_fuse);	
-		std::cout << "Doing TODOM" << fuser.Todom.matrix() << std::endl;	
+// 		std::cout << "Doing TODOM" << fuser.Todom.matrix() << std::endl;	
 		tf::poseMsgToEigen (m.Todom, fuser.Todom);
 		ndt_map::NDTMapMsg mapmsg;
 		
-		std::cout << "Doing the NDT map" << std::endl;
+// 		std::cout << "Doing the NDT map" << std::endl;
 		lslgeneric::NDTMap* map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(fuser.params_.resolution));
 		
 		if(fuser.map != NULL){
-			std::cout << "DELETING THE FUSER MAP" << std::endl;
+// 			std::cout << "DELETING THE FUSER MAP" << std::endl;
 			delete fuser.map;
 		}
 		else{
-			std::cout << "No deleting the fuser's map" << std::endl;
+// 			std::cout << "No deleting the fuser's map" << std::endl;
 		}
 		fuser.map = map;
 		
 		lslgeneric::LazyGrid *lz = dynamic_cast<lslgeneric::LazyGrid*>(fuser.map->getMyIndex() );
 		
-		std::cout << "Nb of init (Should be 0) " << fuser.map->getAllInitializedCells().size() << std::endl;
+// 		std::cout << "Nb of init (Should be 0) " << fuser.map->getAllInitializedCells().size() << std::endl;
 		
 		bool good = lslgeneric::fromMessage(lz, fuser.map, m.map, frame);
 		
 		
-		std::cout << "Nb of init (Should be more) " << fuser.map->getAllInitializedCells().size() << std::endl;
+// 		std::cout << "Nb of init (Should be more) " << fuser.map->getAllInitializedCells().size() << std::endl;
 		
-		std::cout << "ctr" << std::endl;
+// 		std::cout << "ctr" << std::endl;
 		fuser.ctr = m.ctr;
 	}
 	
 	void msgToNode(const ndt_feature::NDTNodeMsg& m, NDTFeatureNode& node, std::string& frame){
 		
-		std::cout << "HMT convertion" << std::endl;
+// 		std::cout << "HMT convertion" << std::endl;
 		msgTofuserHMT(m.map, node.getFuser(), frame);
 		
-		std::cout << "All frames" << std::endl;
+// 		std::cout << "All frames" << std::endl;
 		tf::poseMsgToEigen (m.T, node.T);
 		tf::poseMsgToEigen (m.Tlocal_odom, node.Tlocal_odom);
 		tf::poseMsgToEigen (m.Tlocal_fuse, node.Tlocal_fuse);
 		
-		std::cout << "Updates" << std::endl;
+// 		std::cout << "Updates" << std::endl;
 		node.nbUpdates = m.nbUpdates;
 		
 		std::vector<double>::const_iterator it;
@@ -170,7 +172,7 @@ namespace ndt_feature {
 		Eigen::Matrix3d cov;
 		for(size_t i = 0; i < 3 ; ++i){
 			for(size_t j = 0 ; j < 3 ; ++j){
-				std::cout << "Copying data" << *it << std::endl;
+// 				std::cout << "Copying data" << *it << std::endl;
 				cov(i, j) = *it;
 				++it;
 			}
@@ -180,7 +182,7 @@ namespace ndt_feature {
 	}
 	
 	void msgToNDTGraph(const ndt_feature::NDTGraphMsg& m, NDTFeatureGraph& graph, std::string& frame){
-		std::cout << "Nodes " << std::endl;
+// 		std::cout << "Nodes " << std::endl;
 		for(size_t i = 0 ; i < m.nodes.size() ; ++i){
 			ndt_feature::NDTFeatureNode node;
 			
