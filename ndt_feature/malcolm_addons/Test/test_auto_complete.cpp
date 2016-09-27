@@ -69,6 +69,8 @@ class NDTFeatureFuserNode {
 
     protected:
 		
+	ndt_feature::NDTGraphMsg graphmsg;
+		
 	ndt_feature::G2OGraphMarker _g2o_graph;
 	ndt_feature::G2OGraphMarker _g2o_graph_linked;
 	ndt_feature::G2OGraphMarker _g2o_graph_linked_oriented;
@@ -216,8 +218,20 @@ public:
 		std::string file = "/home/malcolm/Documents/map.jpg";
 		_priorAutoComplete.extractCornerPrior(file);
 // 		_priorAutoComplete.transformOntoSLAM();
+// // 		_priorAutoComplete.transformOntoSLAM();
+// 		
+// 		_priorAutoComplete.createGraph(*graph, _g2o_graph);		
+// 		
+// 		std::string file_out = "/home/malcolm/ACG_folder/OLDPRIOR_";
+// 		std::ostringstream convert;   // stream used for the conversion
+// // 		convert << graph->getNbNodes(); 
+// 		file_out = file_out + convert.str();
+// 		file_out = file_out + "nodes.g2o";
+// 		_g2o_graph.save(file_out);
+// 		std::cout << "saved to " << file_out << std::endl;
 		
 		
+// 		exit(0);
 		
 		
           seq_odom_fuser_ = 0;
@@ -727,8 +741,11 @@ public:
 // 			}
 // 		}
 
+		//Only write the data we're not working on
+		
+		//Crash I don't know why
 // 		std::thread first(&NDTFeatureFuserNode::createGraphThread, this);
-
+// 		first.detach();
 		createGraphThread();
 		
 		std::cout << "Transform sent" << std::endl;
@@ -739,16 +756,55 @@ public:
     void createGraphThread(){
 		
 		if(graph->getNbNodes() >= 3 && _count_of_node != graph->getNbNodes()){
+		
+			std::clock_t start;
+
+			start = std::clock();
+					
+			int i = 0;
+			if(_count_of_node == 0) 
+				i = 0;
+			else 
+				i = _count_of_node - 1;
 			
-			std::cout << ">Pushing message for " << graph->getNbNodes() << " and " << _count_of_node << std::endl;
-			ndt_feature::NDTGraphMsg graphmsg;
-			ndt_feature::NDTGraphToMsg(*graph, graphmsg);
+			int end = graph->getNbNodes();
+			
+			std::cout << "Go " << std::endl;
+			for(i ; i < end - 1 ; ++i){
+				std::cout << "Transcribing the node "<< i << "\n";
+				ndt_feature::NDTNodeMsg nodemsg;
+				ndt_feature::nodeToMsg(graph->getNode(i), nodemsg);
+				graphmsg.nodes.push_back(nodemsg);
+			}
+			
+			std::cout << end - 1 << " = " << graphmsg.nodes.size() << " count node " << _count_of_node << std::endl;
+			assert(graphmsg.nodes.size() == end - 1);
+
+			//No need to do the edges since this can be done later.
+			tf::poseEigenToMsg (graph->sensor_pose_, graphmsg.sensor_pose_);
+			tf::poseEigenToMsg (graph->Tnow, graphmsg.Tnow);
+			graphmsg.distance_moved_in_last_node_ = graph->getDistanceTravelled();
+
+// 			std::cout << ">Pushing message for " << graph->getNbNodes() << " and " << _count_of_node << std::endl;
+			
+// 			ndt_feature::NDTGraphToMsg(*graph, graphmsg);
 			
 			_ndt_graph_pub.publish(graphmsg);
 			
-			std::cout << "Created the graph" << std::endl;
+// 			std::cout << "Created the graph" << std::endl;
 			
-			_count_of_node = graph->getNbNodes();
+			_count_of_node = end;
+			
+			std::cout << "Time: " << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000) << " ms" << std::endl;
+			
+			std::ofstream myfile ("/home/malcolm/time.txt");
+			if (myfile.is_open())
+			{
+				myfile << end;
+				myfile << (std::clock() - start) / (double)(CLOCKS_PER_SEC / 1000);
+				myfile.close();
+			}   
+
 			
 		}
 	}
