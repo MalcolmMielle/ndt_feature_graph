@@ -820,9 +820,15 @@ namespace ndt_feature {
 			
 			std::deque<bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex> vec_deque;
 			
+			std::cout << "NOOOOOOW" << std::endl << std::endl; 
+			
 			for (vp = boost::vertices(graph); vp.first != vp.second; ++vp.first) {
 				bettergraph::PseudoGraph<AASS::vodigrex::SimpleNode, AASS::vodigrex::SimpleEdge>::Vertex v = *vp.first;
 				//ATTENTION Magic number
+				
+// 				std::cout << graph[v].getX() << " " << graph[v].getY() << " " << 0 <<std::endl;
+				
+				
 				addPriorLandmarkPose(graph[v].getX(), graph[v].getY(), 0);
 				std::cout << "Prior Landmark : " << graph[v].getX() << " " << graph[v].getY() << std::endl;
 				vec_deque.push_back(v);
@@ -854,6 +860,8 @@ namespace ndt_feature {
 						int x_diff = graph[targ].getX() - graph[v].getX();
 						int y_diff = graph[targ].getY() - graph[v].getY();
 						
+						std::cout << "diff: " <<x_diff << " " << y_diff << std::endl;
+						
 // 						x_diff = std::abs(x_diff);
 // 						y_diff = std::abs(y_diff);
 						
@@ -871,6 +879,8 @@ namespace ndt_feature {
 			
 			assert( _prior_landmark_positions.size() == graph.getNumVertices() );
 // 			assert(_edges_prior.size() == graph.getNumEdges());
+			
+			std::cout << "DONE" << std::endl;
 			
 		}
 		
@@ -1064,6 +1074,8 @@ namespace ndt_feature {
 			std::cerr << "Optimization: add wall prior link to ndt ... ";
 			for (size_t i = 0; i < _link_in_between_maps.size(); ++i) {
 				
+				std::cout << "What ? "<< _link_in_between_maps.size() <<std::endl;
+				
 				g2o::EdgeLinkXY_malcolm* linkObservation =  new g2o::EdgeLinkXY_malcolm;
 				linkObservation->vertices()[0] = _optimizer.vertex(std::get<1>(_link_in_between_maps[i]) );
 				linkObservation->vertices()[1] = _optimizer.vertex(std::get<2>(_link_in_between_maps[i]));
@@ -1092,7 +1104,9 @@ namespace ndt_feature {
 				_optimizer.addEdge(linkObservation);
 			}
 
-			g2o::VertexSE2* firstRobotPose = dynamic_cast<g2o::VertexSE2*>(_optimizer.vertex(0));
+			std::cout << "FINAl "<< std::endl;
+			
+			auto firstRobotPose = _optimizer.vertex(0);
 			firstRobotPose->setFixed(true);
 			
 			std::cerr << "done." << std::endl;
