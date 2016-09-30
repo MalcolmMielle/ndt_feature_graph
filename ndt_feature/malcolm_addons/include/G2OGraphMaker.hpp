@@ -857,8 +857,8 @@ namespace ndt_feature {
 						//SKIP
 					}
 					else{
-						int x_diff = graph[targ].getX() - graph[v].getX();
-						int y_diff = graph[targ].getY() - graph[v].getY();
+						double x_diff = graph[targ].getX() - graph[v].getX();
+						double y_diff = graph[targ].getY() - graph[v].getY();
 						
 						std::cout << "diff: " <<x_diff << " " << y_diff << std::endl;
 						
