@@ -14,7 +14,7 @@ namespace ndt_feature {
 	
 	
 	
-	void edgeToMsg(const NDTFeatureLink& link, ndt_feature::NDTEdgeMsg& m){
+	inline void edgeToMsg(const NDTFeatureLink& link, ndt_feature::NDTEdgeMsg& m){
 		m.ref_idx = link.ref_idx;
 		m.mov_idx = link.mov_idx;
 		geometry_msgs::Pose pose;
@@ -31,7 +31,7 @@ namespace ndt_feature {
 		m.score = link.score;
 	}
 	
-	void fuserHMTToMsg(const NDTFeatureFuserHMT& fuser, ndt_feature::NDTFeatureFuserHMTMsg& m){
+	inline void fuserHMTToMsg(const NDTFeatureFuserHMT& fuser, ndt_feature::NDTFeatureFuserHMTMsg& m){
 		tf::poseEigenToMsg (fuser.Tnow, m.Tnow);
 		tf::poseEigenToMsg (fuser.Tlast_fuse, m.Tlast_fuse);		
 		tf::poseEigenToMsg (fuser.Todom, m.Todom);
@@ -41,7 +41,7 @@ namespace ndt_feature {
 		m.ctr = fuser.ctr;
 	}
 	
-	void nodeToMsg(const NDTFeatureNode& node, ndt_feature::NDTNodeMsg& m){
+	inline void nodeToMsg(const NDTFeatureNode& node, ndt_feature::NDTNodeMsg& m){
 		
 // 		std::cout << "GETTING THE NODE FUCKER TO WORK gosh" << node.map->Tnow.matrix() << std::endl;
 		
@@ -54,7 +54,7 @@ namespace ndt_feature {
 	}
 	
 	
-	void NDTGraphToMsg(const NDTFeatureGraph& graph, ndt_feature::NDTGraphMsg& m){
+	inline void NDTGraphToMsg(const NDTFeatureGraph& graph, ndt_feature::NDTGraphMsg& m){
 		std::cout << "Nodes \n";
 		for(size_t i = 0 ; i < graph.getNbNodes() ; ++i){
 			ndt_feature::NDTNodeMsg nodemsg;
@@ -79,7 +79,7 @@ namespace ndt_feature {
 	
 	
 	
-	void msgToEdge(const ndt_feature::NDTEdgeMsg& m, NDTFeatureLink& link){
+	inline void msgToEdge(const ndt_feature::NDTEdgeMsg& m, NDTFeatureLink& link){
 		link.ref_idx = m.ref_idx;
 		link.mov_idx = m.mov_idx;
 		tf::poseMsgToEigen (m.T, link.T);
@@ -119,7 +119,7 @@ namespace ndt_feature {
 		link.score = m.score;
 	}
 	
-	void msgTofuserHMT(const ndt_feature::NDTFeatureFuserHMTMsg& m, NDTFeatureFuserHMT& fuser, std::string& frame){
+	inline void msgTofuserHMT(const ndt_feature::NDTFeatureFuserHMTMsg& m, NDTFeatureFuserHMT& fuser, std::string& frame){
 // 		std::cout << "What the heck ? " << std::endl;
 // 		std::cout << "Doing the TNOW" << fuser.Tnow.matrix() <<std::endl;
 		tf::poseMsgToEigen (m.Tnow, fuser.Tnow);
@@ -154,7 +154,7 @@ namespace ndt_feature {
 		fuser.ctr = m.ctr;
 	}
 	
-	void msgToNode(const ndt_feature::NDTNodeMsg& m, NDTFeatureNode& node, std::string& frame){
+	inline void msgToNode(const ndt_feature::NDTNodeMsg& m, NDTFeatureNode& node, std::string& frame){
 		
 // 		std::cout << "HMT convertion" << std::endl;
 		msgTofuserHMT(m.map, node.getFuser(), frame);
@@ -181,7 +181,7 @@ namespace ndt_feature {
 		
 	}
 	
-	void msgToNDTGraph(const ndt_feature::NDTGraphMsg& m, NDTFeatureGraph& graph, std::string& frame){
+	inline void msgToNDTGraph(const ndt_feature::NDTGraphMsg& m, NDTFeatureGraph& graph, std::string& frame){
 // 		std::cout << "Nodes " << std::endl;
 		for(size_t i = 0 ; i < m.nodes.size() ; ++i){
 			ndt_feature::NDTFeatureNode node;

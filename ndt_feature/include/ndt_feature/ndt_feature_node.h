@@ -15,7 +15,7 @@
 
 namespace ndt_feature {
 
-bool saveAffine3d(const Eigen::Affine3d &T, const std::string& fileName) {
+inline bool saveAffine3d(const Eigen::Affine3d &T, const std::string& fileName) {
   std::ofstream ofs(fileName.c_str());
   if (ofs.fail())
     return false;
@@ -24,7 +24,7 @@ bool saveAffine3d(const Eigen::Affine3d &T, const std::string& fileName) {
   return true;
 }
  
-bool loadAffine3d(Eigen::Affine3d &T, const std::string& fileName) {
+inline bool loadAffine3d(Eigen::Affine3d &T, const std::string& fileName) {
   std::ifstream ifs(fileName.c_str());
   if (!ifs.is_open())
     return false;
@@ -207,7 +207,7 @@ if (!map->load(fileName)) {
 
 
 // Matching functions
-double overlapNDTOccupancyScore(NDTFeatureNode &ref, NDTFeatureNode &mov, const Eigen::Affine3d &T) {
+inline double overlapNDTOccupancyScore(NDTFeatureNode &ref, NDTFeatureNode &mov, const Eigen::Affine3d &T) {
   // Use T to move the mov frame center... return a score based on the number of cells that matched/total number of cells.
   
   std::vector<lslgeneric::NDTCell*> mov_vector=mov.map->map->getAllInitializedCells();
@@ -248,7 +248,7 @@ double overlapNDTOccupancyScore(NDTFeatureNode &ref, NDTFeatureNode &mov, const 
   return diff_sum/(1.*nb_sum);
 }
 
-double matchNodesUsingFeatureMap(const NDTFeatureNode &ref, const NDTFeatureNode &mov, Correspondences &matches, Eigen::Affine3d &T) 
+inline double matchNodesUsingFeatureMap(const NDTFeatureNode &ref, const NDTFeatureNode &mov, Correspondences &matches, Eigen::Affine3d &T) 
 {
   return matchFeatureMap(ref.map->featuremap, mov.map->featuremap, matches, T);
 }

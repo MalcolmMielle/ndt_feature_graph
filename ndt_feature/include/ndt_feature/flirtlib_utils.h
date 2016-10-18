@@ -12,12 +12,12 @@ typedef std::vector<Correspondence> Correspondences;
 
 namespace ndt_feature {
 
-SimpleMinMaxPeakFinder* createPeakFinder ()
+inline SimpleMinMaxPeakFinder* createPeakFinder ()
 {
   return new SimpleMinMaxPeakFinder(0.34, 0.001);
 }
 
-Detector* createDetector (SimpleMinMaxPeakFinder* peak_finder)
+inline Detector* createDetector (SimpleMinMaxPeakFinder* peak_finder)
 {
   const double scale = 5.0;
   const double dmst = 2.0;
@@ -29,7 +29,7 @@ Detector* createDetector (SimpleMinMaxPeakFinder* peak_finder)
   return det;
 }
 
-DescriptorGenerator* createDescriptor (HistogramDistance<double>* dist)
+inline DescriptorGenerator* createDescriptor (HistogramDistance<double>* dist)
 {
   const double min_rho = 0.02;
   const double max_rho = 1.;//0.5;
@@ -42,7 +42,7 @@ DescriptorGenerator* createDescriptor (HistogramDistance<double>* dist)
 }
 
 
-  void convertOrientedPoint2DToEigen(const OrientedPoint2D& pt, Eigen::Affine3d &T) {
+inline   void convertOrientedPoint2DToEigen(const OrientedPoint2D& pt, Eigen::Affine3d &T) {
     // Take a tour using tf.
     tf::Quaternion q = tf::createQuaternionFromYaw(pt.theta);
     Eigen::Quaterniond qd;
@@ -50,13 +50,13 @@ DescriptorGenerator* createDescriptor (HistogramDistance<double>* dist)
     T = Eigen::Translation3d(pt.x, pt.y, 0.) * qd;
   }
   
-void convertEigenToOrientedPoint2D(const Eigen::Affine3d &T, OrientedPoint2D &pt) {
+inline void convertEigenToOrientedPoint2D(const Eigen::Affine3d &T, OrientedPoint2D &pt) {
   pt.x = T.translation()[0];
   pt.y = T.translation()[1];
   pt.theta = T.rotation().eulerAngles(0,1,2)[2];
 }
 
-void moveInterestPointVec(const Eigen::Affine3d &T, InterestPointVec &pts) {
+inline void moveInterestPointVec(const Eigen::Affine3d &T, InterestPointVec &pts) {
   // Move the interest points to T.
   BOOST_FOREACH (InterestPoint* p, pts) {
     Eigen::Affine3d pt;
@@ -67,7 +67,7 @@ void moveInterestPointVec(const Eigen::Affine3d &T, InterestPointVec &pts) {
   }
 }
 
-bool validOrientedPoint2D(const OrientedPoint2D &p) {
+inline bool validOrientedPoint2D(const OrientedPoint2D &p) {
   if (std::isnan(p.x))
     return false;
   if (std::isnan(p.y))

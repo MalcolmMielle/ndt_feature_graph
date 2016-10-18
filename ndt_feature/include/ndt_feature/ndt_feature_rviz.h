@@ -21,7 +21,7 @@ namespace ndt_feature {
 /* } */
 
 // Generate markers to visualize correspondences between two scans
-visualization_msgs::Marker correspondenceMarkers (const Correspondences& correspondences,
+inline visualization_msgs::Marker correspondenceMarkers (const Correspondences& correspondences,
 						  const geometry_msgs::Pose& ref, const geometry_msgs::Pose& curr,
 						  const std::string &frame_id)
 {
@@ -50,7 +50,7 @@ visualization_msgs::Marker correspondenceMarkers (const Correspondences& corresp
   return m;
 }
 
-visualization_msgs::Marker correspondenceMarkers (const Correspondences& correspondences,
+inline visualization_msgs::Marker correspondenceMarkers (const Correspondences& correspondences,
 						  const std::string &frame_id)
 {
   geometry_msgs::Pose pose;
@@ -65,7 +65,7 @@ visualization_msgs::Marker correspondenceMarkers (const Correspondences& corresp
 // Generate visualization markers for the interest points
 // id is 0 or 1, and controls color and orientation to distinguish between
 // the two scans
-visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const Eigen::Affine3d &T, const unsigned id, const std::string &frame_id)
+inline visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const Eigen::Affine3d &T, const unsigned id, const std::string &frame_id)
 {
   visualization_msgs::Marker m;
   ndt_visualisation::assignDefault(m);
@@ -117,7 +117,7 @@ visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& 
   return m;
 }
 
-visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const geometry_msgs::Pose& pose, const unsigned id, const std::string &frame_id) {
+inline visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const geometry_msgs::Pose& pose, const unsigned id, const std::string &frame_id) {
   Eigen::Quaterniond qd;
     Eigen::Affine3d T;
     qd.x() = pose.orientation.x;
@@ -133,7 +133,7 @@ visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& 
 }
 
 
- visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const unsigned id, const std::string &frame_id)
+inline visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& pts, const unsigned id, const std::string &frame_id)
 {
   Eigen::Affine3d T;
   T.setIdentity();
@@ -143,7 +143,7 @@ visualization_msgs::Marker interestPointMarkersFrameId (const InterestPointVec& 
 
 
 
-visualization_msgs::Marker interestPointSupportMarkers (const InterestPointVec& pts, const geometry_msgs::Pose& pose, const unsigned id)
+inline visualization_msgs::Marker interestPointSupportMarkers (const InterestPointVec& pts, const geometry_msgs::Pose& pose, const unsigned id)
 {
   tf::Transform trans;
   tf::poseMsgToTF(pose, trans);
@@ -177,7 +177,7 @@ visualization_msgs::Marker interestPointSupportMarkers (const InterestPointVec& 
   return m;
 }
 
-visualization_msgs::Marker poseArrowMarker(const geometry_msgs::Pose& pose, const int id, const int color, const std::string &frame) {
+inline visualization_msgs::Marker poseArrowMarker(const geometry_msgs::Pose& pose, const int id, const int color, const std::string &frame) {
   visualization_msgs::Marker m;
   ndt_visualisation::assignDefault(m);
   ndt_visualisation::assignColor(m,color);
@@ -193,7 +193,7 @@ visualization_msgs::Marker poseArrowMarker(const geometry_msgs::Pose& pose, cons
 }
 
 
-visualization_msgs::Marker poseArrowMarkerEigen(const Eigen::Affine3d &pose, const int id, const int color, const std::string &frame) {
+inline visualization_msgs::Marker poseArrowMarkerEigen(const Eigen::Affine3d &pose, const int id, const int color, const std::string &frame) {
   geometry_msgs::Pose p;
   tf::poseEigenToMsg(pose, p);
   return poseArrowMarker(p, id, color, frame);
@@ -201,7 +201,7 @@ visualization_msgs::Marker poseArrowMarkerEigen(const Eigen::Affine3d &pose, con
 
 
 
- visualization_msgs::Marker posePointsMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFrame> &frames, const int id, const int color, const std::string &frame, bool useOdom)  {
+inline visualization_msgs::Marker posePointsMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFrame> &frames, const int id, const int color, const std::string &frame, bool useOdom)  {
   visualization_msgs::Marker m;
   ndt_visualisation::assignDefault(m);
   ndt_visualisation::assignColor(m,color);
@@ -223,7 +223,7 @@ visualization_msgs::Marker poseArrowMarkerEigen(const Eigen::Affine3d &pose, con
   return m;
 }
 
-void publishMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFrame> &frames, ros::Publisher &marker_pub) {
+inline void publishMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFrame> &frames, ros::Publisher &marker_pub) {
   
   int id = 0;
   BOOST_FOREACH (const ndt_feature::NDTFeatureFrame& f, frames) 
@@ -236,7 +236,7 @@ void publishMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFram
 }
 
 
- visualization_msgs::Marker featureMatchesMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFrame> &frames,
+inline visualization_msgs::Marker featureMatchesMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFrame> &frames,
 								 const std::vector<std::pair<size_t, size_t> > &matches, 
 								 const int id, const int color, const std::string &frame, bool useOdom) {
    // Draw a line between all the estimated poses
@@ -269,7 +269,7 @@ void publishMarkerNDTFeatureFrames(const std::vector<ndt_feature::NDTFeatureFram
      
  }
  
-void publishMarkerNDTFeatureNodes(const NDTFeatureGraphInterface &graph, ros::Publisher &marker_pub) {
+inline void publishMarkerNDTFeatureNodes(const NDTFeatureGraphInterface &graph, ros::Publisher &marker_pub) {
   
   int id = 0;
   for (size_t i = 0; i < graph.getNbNodes(); i++)
@@ -279,7 +279,7 @@ void publishMarkerNDTFeatureNodes(const NDTFeatureGraphInterface &graph, ros::Pu
   }
 }
 
-visualization_msgs::Marker markerNDTFeatureLinks(const NDTFeatureGraphInterface &graph, const int id, const int color, const std::string &frame, bool skipOdom) {
+inline visualization_msgs::Marker markerNDTFeatureLinks(const NDTFeatureGraphInterface &graph, const int id, const int color, const std::string &frame, bool skipOdom) {
    visualization_msgs::Marker m;
    ndt_visualisation::assignDefault(m);
    ndt_visualisation::assignColor(m,color);
@@ -312,7 +312,7 @@ visualization_msgs::Marker markerNDTFeatureLinks(const NDTFeatureGraphInterface 
      
 }
 
-void publishMarkerNDTFeatureLinks(const NDTFeatureGraphInterface &graph, ros::Publisher &marker_pub) {
+inline void publishMarkerNDTFeatureLinks(const NDTFeatureGraphInterface &graph, ros::Publisher &marker_pub) {
   marker_pub.publish(markerNDTFeatureLinks(graph, 0, 1, std::string("links"), true));
 }
 

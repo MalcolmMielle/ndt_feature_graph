@@ -4,7 +4,7 @@
 
 namespace ndt_feature_frame {
 
-  bool match(NDTFeatureFrame &target,
+  inline bool match(NDTFeatureFrame &target,
 	     NDTFeatureFrame &source,
 	     Eigen::Affine3d &T,
 	     bool useInitialGuess) {
@@ -12,7 +12,7 @@ namespace ndt_feature_frame {
 
   }
 
-  bool fuse(NDTFeatureFrame &target,
+  inline bool fuse(NDTFeatureFrame &target,
 	    NDTFeatureFrame &source,
 	    Eigen::Affine3d &T);
 
