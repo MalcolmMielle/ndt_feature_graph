@@ -5,7 +5,8 @@
    
     <node pkg="ndt_feature" type="test_auto_complete" name="ndt_feature2d_fuser2" output="screen">
 
-	<param name="laser_topic" value="/laserscan" />
+	<param name="laser_topic" value="/lidar/scan" />
+	<param name="tf_odom_frame" value="/odom_frame" />
 	<param name="matchLaser" value="true" />
 	
 	<param name="size_x_meters" value="100" />
@@ -16,7 +17,6 @@
 	
 	<param name="sensor_range" value="30." />
 	<param name="min_laser_range" value="0.5" />
-	<param name="gt_frame" value="state_base_link" />
 
 	<!-- Specific sensor offset parameters for the example file -->
 	<param name="sensor_pose_x" value="0.695" />
@@ -73,11 +73,7 @@
 
     </node>
 
-    <include file="$(find ndt_feature)/launch/replay.launch">
-     <arg name="file" value="$(find ndt_feature)/data/mapping.bag" />
-     <arg name="rate" value="1" />
-     <arg name="start_time" value="0" />
-   </include>
+   
 
    
 

@@ -541,38 +541,40 @@ public:
   void publish_visualization_slow(const ros::TimerEvent &event) {
 // 	  std::cout << "DRAW" << std::endl;
 //             // Add some drawing
-//             if (use_graph_) 
-//             {
-//               if (graph->wasInit()) {
-// 
-//                 if (do_pub_debug_markers_) {
-//                   // Draw the debug stuff...
+            if (use_graph_) 
+            {
+              if (graph->wasInit()) {
+
+                if (do_pub_debug_markers_) {
+                  // Draw the debug stuff...
 //                   ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
 //                   for (size_t i = 0; i < f->debug_markers_.size(); i++) {
 //                     f->debug_markers_[i].header.stamp = frameTime_;
 //                     marker_pub_.publish(f->debug_markers_[i]);
 //                   }
-//                 }
-//                 if (do_pub_ndtmap_marker_)
-//                 {
-//                   // visualization_msgs::Marker markers_ndt;
-//                   // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
-//                   //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
-//                   // marker_pub_.publish(markers_ndt);
-// 				  lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
-//                   
+                }
+                if (do_pub_ndtmap_marker_)
+                {
+                  // visualization_msgs::Marker markers_ndt;
+                  // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
+                  //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
+                  // marker_pub_.publish(markers_ndt);
+				 // lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
+                  
 // 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
-// // 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
-// 
-//                 }
-//                 if (do_pub_occ_map_) {
-//                   nav_msgs::OccupancyGrid omap; 
-//                   lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
-//                   moveOccupancyMap(omap, graph->getT());
-//                   map_pub_.publish(omap);
-//                 }
-//               }
-//             }
+// 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
+
+                }
+                if (do_pub_occ_map_) {
+                  nav_msgs::OccupancyGrid omap; 
+				  std::cout << "RES " << occ_map_resolution_ << " frame " << world_frame << std::endl;
+// 				  exit(0);
+                  lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
+                  moveOccupancyMap(omap, graph->getT());
+                  map_pub_.publish(omap);
+                }
+              }
+            }
 //             else {
 //               if (fuser->wasInit()) {
 //                 
@@ -632,7 +634,7 @@ public:
     void processFeatureFrame(pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts, Eigen::Affine3d Tmotion, const ros::Time &frameTime) {
         m.lock();
         
-		std::cout << "Process feature frame" << std::endl;
+		ROS_INFO("Process feature frame");
         if (clear_odometry_estimate_) {
           Tmotion.setIdentity();
         }
@@ -667,6 +669,7 @@ public:
 			}
 			nb_added_clouds_++;
 	    } else {
+			ROS_INFO("UPDATE");
 			nb_added_clouds_++;
 			if (use_graph_) {
 // 				std::cout << "Update with added cloud " << nb_added_clouds_ << std::endl;
@@ -948,6 +951,7 @@ public:
 	void points2Callback(const sensor_msgs::PointCloud2::ConstPtr& msg_in)
 	{
 		std::cout << "POINT2CALLBACK" << std::endl;
+		exit(0);
           ROS_INFO(":.");
           scan_counter_++;
           if (drop_scan_nb_ > 1) {
@@ -1049,7 +1053,8 @@ public:
 	// Callback
 	void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg_in)
 	{
-          //          ROS_ERROR("laserCallback()");
+        ROS_ERROR("laserCallback()");
+// 		exit(0);
 
 // 		CALLGRIND_START_INSTRUMENTATION;
 // 		CALLGRIND_TOGGLE_COLLECT;
@@ -1074,13 +1079,19 @@ public:
 		{
 			tf::StampedTransform transform;
 			try {   
+				
+				std::cout << "Getting stransfo " << world_frame << tf_odom_frame_ << " at " << frame_time << std::endl;
+				
 				listener.waitForTransform(world_frame, tf_odom_frame_,
 											frame_time, ros::Duration(3.0));
+				std::cout << "out " << world_frame << tf_odom_frame_ << std::endl;
 				listener.lookupTransform(world_frame, tf_odom_frame_,
 											frame_time, transform);
+				std::cout << "Getting stransfo " << world_frame << gt_frame << std::endl;
 				
 			}
 			catch (tf::TransformException ex){
+				std::cout << "FUCK" << std::endl;
 				ROS_ERROR("%s",ex.what());
 				return;
 			}
@@ -1088,14 +1099,19 @@ public:
 		}
 
 		// Ground truth
+		std::cout << "gt ? " << gt_frame << std::endl;
 		if (gt_frame != std::string(""))
 		{
 			tf::StampedTransform transform;
 			try {   
+				
+				std::cout << "Getting stransfo " << world_frame << gt_frame << std::endl;
 				listener.waitForTransform(world_frame, gt_frame, /*"/world", "/state_base_link",*/
 											frame_time, ros::Duration(3.0));
+				std::cout << "Getting stransfo " << world_frame << gt_frame << std::endl;
 				listener.lookupTransform(world_frame, gt_frame, /*"/world", "/state_base_link",*/
 											frame_time, transform);
+				std::cout << "Getting stransfo " << world_frame << gt_frame << std::endl;
 				
 			}
 			catch (tf::TransformException ex){
@@ -1109,6 +1125,7 @@ public:
 		// Need to get the incremental update.
 		if (nb_added_clouds_  == 0)
 		{
+			std::cout << "TM" << std::endl;
 			//Better init ?
 			Tm = this_odom;
 // 			Tm.setIdentity();
@@ -1142,7 +1159,8 @@ public:
 			std::cout << "Weird cloud sizes. I don't know what's going on" << std::endl;
 		}
 		else{
-			std::cout << "GOOD UNFILTERED SCAN" << std::endl;
+			ROS_ERROR("GOOD UNFILTERED SCAN");
+			std::cout<< "GOOD UNFILTERED SCAN" << std::endl;
 		}
 
 	    pcl::PointXYZ pt;
@@ -1219,7 +1237,8 @@ public:
 //             }
 //             else
 		{
-			std::cout << "Before process" << std::endl;
+			ROS_INFO_STREAM("Before process");
+			std::cout << Tm.matrix() << std::endl;
 			this->processFeatureFrame(pcl_cloud,pts, Tm, frame_time);
 		}
 		if (do_pub_visualization_clouds_)

@@ -22,12 +22,13 @@ public:
   class Params {
   public:
     Params() {
-    
+		newNodeNumberOfFrames = 20;
       newNodeTranslDist = 1.;
       storePtsInNodes = false;
       storePtsInNodesIncr = 8;
       popNodes = false;
     }
+    int newNodeNumberOfFrames;
     double newNodeTranslDist;
     bool storePtsInNodes;
     int storePtsInNodesIncr;
@@ -55,7 +56,7 @@ public:
   virtual const NDTFeatureLinkInterface& getLinkInterface(size_t idx) const { return links_[idx]; }
 
 
-  NDTFeatureGraph() : distance_moved_in_last_node_(0.) {
+  NDTFeatureGraph() : distance_moved_in_last_node_(0.), count_frames_(0) {
     
   }
   
@@ -122,6 +123,115 @@ public:
 	}
     std::cout << "initialize -> done" << std::endl;
   }
+  
+  
+  
+  //Function when no odom is available
+  // Update the map with new readings, return the current pose in global coordinates.
+//   Eigen::Affine3d updateNoOdom(pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts){
+// 
+// 	  std::cout << "Graph update. Nb nof nodes : " << getNbNodes() << std::endl;
+//     NDTFeatureNode &node = nodes_.back();
+//     std::cout << "---update--- # " << node.nbUpdates << " node # " << nodes_.size() << std::endl;
+//     std::cout << " odom : " << std::flush; lslgeneric::printTransf2d(node.Tlocal_odom);
+// 
+// 	assert(node.map->wasInit() == true);
+// 
+// 	count_frames_ = count_frames_ + 1;
+// 	
+//     // Check if we should start on a new map?
+//     if (count_frames_ > params_.newNodeNumberOfFrames) {
+//       count_frames_ = 0.;
+//       // The returned pose is the local map coord
+//       // Do not update the feature map in this step.
+//       
+// // 	  std::cout << "Updating node " << std::endl;
+//       Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts, false, false);
+//       Tnow = node.T*Tnow_local;
+//       node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+//       node.Tlocal_fuse = Tnow_local;
+//       
+//       // New map (one option is to add the last reading to the previous map and then create a new map with the first reading only). This to make sure that the initial pose estimate of the map is using as much information as possible and that not only odometry readings are used. Possible this could be done without adding the readings to the current active map.
+//       
+// 
+//       // Create a new map.
+//       NDTFeatureNode new_node;
+//       new_node.map = new NDTFeatureFuserHMT(fuser_params_);
+//       new_node.map->setMotionParams(motion_params_);
+//       new_node.map->setSensorPose(sensor_pose_);
+//       new_node.T = Tnow;
+// 	  
+// 	  
+// // 	  new_node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+// //       new_node.Tlocal_fuse = Tnow_local;
+//       
+// 	  // Add the first data...
+//       Eigen::Affine3d init_pose;
+//       init_pose.setIdentity();
+// // 	  std::cout << "Creating new_node init " << std::endl;
+//       new_node.map->initialize(init_pose, cloud, pts, false);
+// // 	  std::cout << "Done new_node init " << std::endl;
+// 
+//       // Add the cloud...
+// //       if (params_.storePtsInNodes) {
+// //         Eigen::Affine3d Tnow_local_sensor = init_pose*sensor_pose_;
+// //         new_node.addCloud(Tnow_local_sensor, cloud);
+// //       }
+//       
+//       if (params_.popNodes) {
+//         std::cerr << "POP NODES!!!-------------------" << std::endl;
+//         nodes_.pop_back();
+//       }
+//       nodes_.push_back(new_node);
+//       std::cout << "update -> done" << std::endl;
+//       return Tnow;
+//     }
+//     
+//     
+// // 	std::cout << "Update the node without creating any new node ?" << std::endl;
+// 
+//     // The returned pose is the local map coord.
+// 	assert(node.map->wasInit() == true);
+//     Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts);
+// // 	std::cout << "Updated the node without creating any new node" << std::endl;
+// 
+//     Tnow = node.T*Tnow_local;
+//     node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+//     node.Tlocal_fuse = Tnow_local;
+//     
+//     node.nbUpdates++;
+// 
+//     // Add the cloud...
+//     if (params_.storePtsInNodes) {
+//       if (node.nbUpdates % params_.storePtsInNodesIncr == 0) {
+//         Eigen::Affine3d Tnow_local_sensor = Tnow_local*sensor_pose_;
+//         node.addCloud(Tnow_local_sensor, cloud);
+//       }
+//     }
+// 
+//     std::cout << "nodes_.size() : " << nodes_.size() << std::endl;
+//     std::cout << "update -> done" << std::endl;
+//     return Tnow;
+//   }
+//   
+//   
+//   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
   // Update the map with new readings, return the current pose in global coordinates.
   Eigen::Affine3d update(Eigen::Affine3d Tmotion, pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts){
@@ -733,6 +843,7 @@ private:
 
 
   double distance_moved_in_last_node_;
+  int count_frames_;
 
   // set of visualization markers (the possiblity to draw a NDT set of cells for each map).
 
