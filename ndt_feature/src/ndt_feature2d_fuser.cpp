@@ -296,7 +296,7 @@ public:
             
             if (!gt_file_.is_open() || !est_file_.is_open())
             {
-              ROS_ERROR_STREAM("Failed to open : " << gt_file_ << " || " << est_file_); 
+//               ROS_ERROR_STREAM("Failed to open : " << gt_file_ << " || " << est_file_); 
             }
 
             
