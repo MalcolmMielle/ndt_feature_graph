@@ -228,6 +228,7 @@ ${OpenCV_LIBS}
 ${vodigrex_LIBRARIES} 
 # Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
 )
+add_dependencies(test_auto_complete ndt_feature_generate_messages_cpp)
 
 # add_executable(ndt_g2olandmark malcolm_addons/Test/ndt_g2olandmark.cpp)
 # target_link_libraries(ndt_g2olandmark ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS} 
