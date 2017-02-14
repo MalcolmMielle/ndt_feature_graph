@@ -54,7 +54,7 @@
 
 	<param name="use_graph" value="true" />
 
-	<param name="graph_newNodeTranslDist" value="8." />
+	<param name="graph_newNodeTranslDist" value="2." />
 	<param name="graph_storePtsInNodes" value="false" />
 
 	<param name="occ_map_resolution" value="0.4" />
