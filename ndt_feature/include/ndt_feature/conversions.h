@@ -49,7 +49,7 @@ namespace ndt_feature {
     
   }
   
-    void addInterestPointToCellVectorFixedCov(const InterestPoint &pt,
+    inline void addInterestPointToCellVectorFixedCov(const InterestPoint &pt,
 						      const Eigen::Matrix3d &cov,
 						      lslgeneric::CellVector* cv) {
     lslgeneric::NDTCell* ndt_cell = new lslgeneric::NDTCell();
@@ -58,7 +58,7 @@ namespace ndt_feature {
     cv->addNDTCell(ndt_cell);
   }
   
-    void addInterestPointsToCellVectorFixedCov(const InterestPointVec &pts,
+    inline void addInterestPointsToCellVectorFixedCov(const InterestPointVec &pts,
 						       const Eigen::Matrix3d &cov,
 						       lslgeneric::CellVector* cv) {
     for (size_t i = 0; i < pts.size(); i++) {
@@ -66,7 +66,7 @@ namespace ndt_feature {
     }
   }
   
-  void convertCorrespondencesToCellvectorsFixedCovWithCorr(const Correspondences &matches,
+  inline void convertCorrespondencesToCellvectorsFixedCovWithCorr(const Correspondences &matches,
 							     const Eigen::Matrix3d &cov, 
 							     lslgeneric::CellVector *source,
 							     lslgeneric::CellVector *target,

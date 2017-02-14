@@ -30,7 +30,7 @@ namespace ndt_visualisation {
     return pt;
   }
 
-  void assignDefault(visualization_msgs::Marker &m)
+  inline void assignDefault(visualization_msgs::Marker &m)
   {
     m.header.frame_id = "/world";
     m.scale.x = 1;
@@ -39,7 +39,7 @@ namespace ndt_visualisation {
     m.lifetime = ros::Duration(60.);
   }
   
-  void assignColor(visualization_msgs::Marker &m, int color)
+  inline void assignColor(visualization_msgs::Marker &m, int color)
   {
     double r,g,b = 0.;
     int color_mod = color % 3;
@@ -196,7 +196,7 @@ inline visualization_msgs::Marker markerNDTCells( lslgeneric::NDTMap &map, const
 
                                                   
  // Visualize the ndt cells as a set of 3 lines drawn along the eigen vectors.
-void markerNDTCells2 (std::vector<lslgeneric::NDTCell*> cells, const Eigen::Affine3d &pose, visualization_msgs::Marker &m)
+inline void markerNDTCells2 (std::vector<lslgeneric::NDTCell*> cells, const Eigen::Affine3d &pose, visualization_msgs::Marker &m)
     {
       m.type = visualization_msgs::Marker::LINE_LIST;
       m.scale.x = 0.02;
@@ -221,7 +221,7 @@ void markerNDTCells2 (std::vector<lslgeneric::NDTCell*> cells, const Eigen::Affi
       }
     }
 
-void markerNDTCells2( lslgeneric::NDTMap &map, const Eigen::Affine3d &pose, int id, const std::string &name, visualization_msgs::Marker &m) {
+inline void markerNDTCells2( lslgeneric::NDTMap &map, const Eigen::Affine3d &pose, int id, const std::string &name, visualization_msgs::Marker &m) {
     assignDefault(m);
     assignColor(m, id);
     m.id = id;
@@ -275,7 +275,7 @@ inline visualization_msgs::Marker markerMeanCovariance2d(const Eigen::Vector3d &
   return m;
 }
 
-visualization_msgs::Marker markerParticlesNDTMCL3D(const NDTMCL3D &mcl, int color, const std::string& ns) {
+inline visualization_msgs::Marker markerParticlesNDTMCL3D(const NDTMCL3D &mcl, int color, const std::string& ns) {
   visualization_msgs::Marker m;
   assignDefault(m);
   m.ns = ns;

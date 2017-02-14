@@ -5,7 +5,7 @@
 
 namespace ndt_feature {
 
-  isam::Pose2d convertEigenAffine3dToIsamPose2d(const Eigen::Affine3d &a) {
+inline isam::Pose2d convertEigenAffine3dToIsamPose2d(const Eigen::Affine3d &a) {
     isam::Pose2d p(a.translation()(0),
 		   a.translation()(1),
 		   //a.rotation().eulerAngles(0,1,2)(2)
@@ -14,7 +14,7 @@ namespace ndt_feature {
     return p;
   }
 
-  Eigen::Affine3d convertIsamPose2dToEigenAffine3d(const isam::Pose2d &p) {
+inline Eigen::Affine3d convertIsamPose2dToEigenAffine3d(const isam::Pose2d &p) {
     Eigen::Matrix3d m;
     m = Eigen::AngleAxisd(0, Eigen::Vector3d::UnitX())
       * Eigen::AngleAxisd(0, Eigen::Vector3d::UnitY())
@@ -25,7 +25,7 @@ namespace ndt_feature {
     return T;
   }
   
-  std::vector<size_t> getNDTFeatureFrameIndicesDistance(const Eigen::Affine3d &p, const std::vector<ndt_feature::NDTFeatureFrame> &frames, size_t currIdx, double maxDist, double maxAngularDist) {
+inline std::vector<size_t> getNDTFeatureFrameIndicesDistance(const Eigen::Affine3d &p, const std::vector<ndt_feature::NDTFeatureFrame> &frames, size_t currIdx, double maxDist, double maxAngularDist) {
     std::vector<size_t> indices;
     for (size_t i = 0; i < currIdx; i++) {
       double dist, angular_dist;
@@ -37,7 +37,7 @@ namespace ndt_feature {
     return indices;
   }
 
-void optimizeGraphUsingISAM(NDTFeatureGraphInterface &graph) {
+inline void optimizeGraphUsingISAM(NDTFeatureGraphInterface &graph) {
   isam::Slam slam; 
 
   std::vector<isam::Pose2d_Node*> pose_nodes;
@@ -108,7 +108,7 @@ void optimizeGraphUsingISAM(NDTFeatureGraphInterface &graph) {
 
 
 //! Quick check how the map looks using GT information to do DA.
-  void mapBuilderISAMOffline(std::vector<ndt_feature::NDTFeatureFrame> &frames, const Eigen::Affine3d &sensorPose, std::vector<std::pair<size_t, size_t> > &matches) {
+inline void mapBuilderISAMOffline(std::vector<ndt_feature::NDTFeatureFrame> &frames, const Eigen::Affine3d &sensorPose, std::vector<std::pair<size_t, size_t> > &matches) {
     ROS_INFO_STREAM("Offline Map buliding - start, # frames:" << frames.size());
     
     isam::Slam slam; 
@@ -187,7 +187,7 @@ void optimizeGraphUsingISAM(NDTFeatureGraphInterface &graph) {
     
   }
 
-  void mapBuilderISAMTest(std::vector<ndt_feature::NDTFeatureFrame> &frames) {
+inline void mapBuilderISAMTest(std::vector<ndt_feature::NDTFeatureFrame> &frames) {
     //1 Add the odometry as contraints for each link
     //2a - First test using the current scan and match it with the N previous ones.
     //2b Use the gt information to find suitable matches

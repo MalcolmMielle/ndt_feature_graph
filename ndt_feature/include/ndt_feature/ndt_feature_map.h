@@ -16,7 +16,7 @@
 
 namespace ndt_feature {
 
-bool saveInterestPointVec(const InterestPointVec &pts, const std::string &fileName) {
+inline bool saveInterestPointVec(const InterestPointVec &pts, const std::string &fileName) {
   std::ofstream ofs(fileName.c_str());
   boost::archive::binary_oarchive ar(ofs);
   ar & pts;
@@ -29,7 +29,7 @@ bool saveInterestPointVec(const InterestPointVec &pts, const std::string &fileNa
   return true; // Check for throws.
 }
 
-bool loadInterestPointVec(InterestPointVec &pts, const std::string &fileName) {
+inline bool loadInterestPointVec(InterestPointVec &pts, const std::string &fileName) {
   std::ifstream ifs(fileName.c_str());
   boost::archive::binary_iarchive ar(ifs);
   ar & pts;
@@ -101,7 +101,7 @@ private:
 };
 
 
-double matchFeatureMap(const NDTFeatureMap &ref, const NDTFeatureMap &mov, Correspondences &matches, Eigen::Affine3d &T) 
+inline double matchFeatureMap(const NDTFeatureMap &ref, const NDTFeatureMap &mov, Correspondences &matches, Eigen::Affine3d &T) 
 {
   boost::shared_ptr<RansacFeatureSetMatcher> ransac_(new RansacFeatureSetMatcher(0.0599, 0.9, 0.1, 0.6, 0.0499, false));
 

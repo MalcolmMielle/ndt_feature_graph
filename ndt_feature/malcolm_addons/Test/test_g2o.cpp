@@ -155,20 +155,20 @@ int main()
   
   optimizer.save("tutorial_before_fixed_real.g2o");
 
-//   cerr << "Optimizing" << endl;
-//   optimizer.initializeOptimization();
-//   optimizer.optimize(10);
-//   cerr << "done." << endl;
-// 
-//   optimizer.save("tutorial_after_real.g2o");
-// 
-//   // freeing the graph memory
-//   optimizer.clear();
-// 
-//   // destroy all the singletons
-//   Factory::destroy();
-//   OptimizationAlgorithmFactory::destroy();
-//   HyperGraphActionLibrary::destroy();
+  cerr << "Optimizing" << endl;
+  optimizer.initializeOptimization();
+  optimizer.optimize(10);
+  cerr << "done." << endl;
+
+  optimizer.save("tutorial_after_real.g2o");
+
+  // freeing the graph memory
+  optimizer.clear();
+
+  // destroy all the singletons
+  Factory::destroy();
+  OptimizationAlgorithmFactory::destroy();
+  HyperGraphActionLibrary::destroy();
 
   return 0;
 }
