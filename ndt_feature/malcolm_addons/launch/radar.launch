@@ -4,6 +4,7 @@
    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ndt_feature)/launch/fuser_laser2d.rviz" />
 
     <node pkg="tf" type="static_transform_publisher" name="world_map_frame" args="0 0 0 0 0 0 /world /map 10"/>
+    <node pkg="tf" type="static_transform_publisher" name="world_odom_frame" args="0 0 0 0 0 0 /world /odom 10"/>
     <node pkg="tf" type="static_transform_publisher" name="laser_scan_frame" args="0 0 0 0 0 0 /base_laser_link /laserscan 10"/>  
     <node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="1.66 0.18 0 0 0 0.016 /fuser /base_laser_link 10"/>  
    
@@ -11,13 +12,13 @@
 
 	<param name="laser_topic" value="/mpr_scan" />
 	<param name="matchLaser" value="true" />
-	<param name="world_frame" value="/odom" />
-	<param name="tf_odom_frame" value="/odom" />
+	<param name="world_frame" value="/world" />
+	<param name="tf_odom_frame" value="/base_link" />
 	
 	<param name="size_x_meters" value="100" />
 	<param name="size_y_meters" value="100" />
 	<param name="size_z_meters" value="1.0" />
-	<param name="resolution" value="0.5" />
+	<param name="resolution" value="0.2" />
 	<param name="laser_variance_z" value="0.02" />
 	
 	<param name="sensor_range" value="30." />
@@ -64,7 +65,7 @@
 	<param name="graph_newNodeTranslDist" value="2." />
 	<param name="graph_storePtsInNodes" value="false" />
 
-	<param name="occ_map_resolution" value="0.4" />
+	<param name="occ_map_resolution" value="0.2" />
 	<param name="do_pub_occ_map" value="true" />
 	<param name="do_pub_ndtmap_marker" value="true" />
 	<param name="skip_features" value="true" />
@@ -82,7 +83,7 @@
 
     <include file="$(find ndt_feature)/launch/replay.launch">
      <arg name="file" value="$(find auto_complete_graph)/datasets/corridor_full.bag" />
-     <arg name="rate" value="1" />
+     <arg name="rate" value="0.5" />
      <arg name="start_time" value="0" />
    </include>
 
