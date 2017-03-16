@@ -98,6 +98,9 @@ bool do_pub_ndt_markers_;
   std::ofstream est_file_;
   std::ofstream est2d_file_;
   std::string gt_topic;
+
+  bool use_initial_pose_from_gt;
+
     public:
 	NDTMCL3DNode(ros::NodeHandle param_nh) {
 	    
@@ -113,7 +116,8 @@ bool do_pub_ndt_markers_;
 
 	    param_nh.param<bool>("set_sensor_pose", use_sensor_pose, true);
 	    param_nh.param<bool>("set_initial_pose", use_initial_pose, false);
-	    
+            param_nh.param<bool>("set_initial_pose_from_gt", use_initial_pose_from_gt, false);
+
 	    if(use_initial_pose) {
 		///initial pose of the vehicle with respect to the map
 		param_nh.param("pose_init_x",pose_init_x,0.);
@@ -222,6 +226,7 @@ bool do_pub_ndt_markers_;
             //////////////////////////////////////////////////////////
             std::string gt_filename, est_filename, est2d_filename;
             param_nh.param<std::string>("gt_topic",gt_topic,"");
+            ROS_ERROR_STREAM("gt_topic : " << gt_topic);
             param_nh.param<std::string>("output_gt_file",  gt_filename, "loc_gt_pose.txt");
             param_nh.param<std::string>("output_est_file", est_filename, "loc_est_pose.txt"); 
             param_nh.param<std::string>("output_est2d_file", est2d_filename, "loc_est2d_pose.txt");
@@ -242,6 +247,7 @@ bool do_pub_ndt_markers_;
                         
             if (gt_topic != std::string("")) 
             {
+              ROS_ERROR_STREAM("Subscribing to : " << gt_topic);
               gt_sub = nh_.subscribe<nav_msgs::Odometry>(gt_topic,10,&NDTMCL3DNode::gt_callback, this);	
             }
         
@@ -312,9 +318,10 @@ bool do_pub_ndt_markers_;
 	    }
 	    //check if we have done iterations 
 	    if(isFirstLoad) {
-		//if not, check if initial robot pose has been set
+              //if not, check if initial robot pose has been set
 		if(!hasInitialPose) {
 		    //can't do anything, wait for pose message...
+                  ROS_INFO("waiting for initial pose");
 		    mcl_m.unlock();
 		    return;
 		}
@@ -326,6 +333,7 @@ bool do_pub_ndt_markers_;
 		Tcum = initPoseT;
 
 		ndtmcl->initializeFilter(tr[0], tr[1],tr[2],rot[0],rot[1],rot[2],0.5, 0.5, 0.1, 2.0*M_PI/180.0, 2.0*M_PI/180.0 ,2.0*M_PI/180.0, this->numParticles);
+                //		ndtmcl->initializeFilter(tr[0], tr[1],tr[2],rot[0],rot[1],rot[2],2, 2, 0.3, 20.0*M_PI/180.0, 2.0*M_PI/180.0 ,2.0*M_PI/180.0, this->numParticles);
 		//ndt_viz.plotNDTMap(&ndtmcl->map,0,1.0,1.0,true, false); 
                 ndt_viz.plotNDTSAccordingToOccupancy(-1,&ndtmcl->map);
 		isFirstLoad = false;
@@ -446,19 +454,17 @@ bool do_pub_ndt_markers_;
 	    gt_pose = Eigen::Translation3d (msg_in->pose.pose.position.x,
 		    msg_in->pose.pose.position.y,msg_in->pose.pose.position.z) * qd;
 	     
-	    //ROS_INFO("got GT pose from GT track");
+            //	    ROS_INFO("got GT pose from GT track");
             if (gt_file_.is_open()) {
               gt_file_ << msg_in->header.stamp << " " << lslgeneric::transformToEvalString(gt_pose);
             }
 
 	    // m.lock();
-	    // if(initPoseFromGT && !initPoseSet) {
-	    //     initPoseSet = true;
-	    //     pose_ = gt_pose;
-            //     Todom = pose_;
-	    //     ROS_INFO("Set initial pose from GT track");
-            //     lslgeneric::printTransf2d(pose_);
-            // }
+            if(use_initial_pose_from_gt && !hasInitialPose) {
+              hasInitialPose = true;
+              ROS_INFO("Set initial pose from GT track");
+              initPoseT = gt_pose;
+            }
 	    // m.unlock();
 	}
 

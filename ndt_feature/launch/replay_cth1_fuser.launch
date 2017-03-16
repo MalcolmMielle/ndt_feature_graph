@@ -48,8 +48,10 @@
 	<param name="fuser_useOdom" value="false" />
 	<param name="fuser_neighbours" value="0" />
 	<param name="fuser_stepcontrol" value="true" />
-	<param name="fuser_ITR_MAX" value="100" />
-	<param name="fuser_DELTA_SCORE" value="0.0000001" />
+	<param name="fuser_ITR_MAX" value="10" />
+	<param name="fuser_DELTA_SCORE" value="0.0001" />
+	<!--param name="fuser_ITR_MAX" value="100" /-->
+	<!--param name="fuser_DELTA_SCORE" value="0.0000001" /-->
 	<param name="fuser_globalTransf" value="false" />
 	<param name="fuser_loadCentroid" value="false" />
 	<param name="fuser_forceOdomAsEst" value="false" />
@@ -57,18 +59,25 @@
 	<param name="fuser_allMatchesValid" value="true" />
 	<param name="fuser_discardCells" value="false" />
 	<param name="fuser_optimizeOnlyYaw" value="false" />
+	<param name="fuser_useTikhonovRegularization" value="false"/>
 
 	<param name="use_graph" value="true" />
 
-	<param name="graph_newNodeTranslDist" value="8." />
-	<param name="occ_map_resolution" value="0.5" />
+	<param name="graph_newNodeTranslDist" value="10." />
+	<param name="graph_storePtsInNodes" value="true" />
+
+	<param name="occ_map_resolution" value="0.4" />
 	<param name="do_pub_occ_map" value="true" />
+	<param name="skip_features" value="false" />
+	<param name="clear_odometry_estimate" value="false"/>
 	<!-- fusion2d bool -->
 
-	<param name="motion_params_Cd" value="0.005" />
-	<param name="motion_params_Ct" value="0.01" />
-	<param name="motion_params_Dd" value="0.0001" />
-	<param name="motion_params_Cd" value="0.001" />
+	<param name="motion_params_Dd" value="0.00001"/>
+	<param name="motion_params_Dt" value="0.0001"/>
+	<param name="motion_params_Cd" value="0.0001"/>
+	<param name="motion_params_Ct" value="0.001"/>
+	<param name="motion_params_Td" value="0.01"/>
+	<param name="motion_params_Tt" value="0.01"/>
 
     </node>
 

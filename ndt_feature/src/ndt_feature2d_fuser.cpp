@@ -239,8 +239,10 @@ public:
             param_nh.param<bool>("fuser_fusion2d", fuser_params.fusion2d, false);
             param_nh.param<bool>("fuser_allMatchesValid", fuser_params.allMatchesValid, false);
             param_nh.param<bool>("fuser_discardCells", fuser_params.discardCells, false);
-            param_nh.param<bool>("fuser_optimizeOnlyYaw", fuser_params.optimizeOnlyYaw, false);
+            param_nh.param<bool>("fuser_useSoftConstraints", fuser_params.useSoftConstraints, true);
             param_nh.param<bool>("fuser_computeCov", fuser_params.computeCov, true);
+            param_nh.param<bool>("fuser_stepControlFusion", fuser_params.stepControlFusion, true);
+            param_nh.param<bool>("fuser_useTikhonovRegularization", fuser_params.useTikhonovRegularization, true);
 
             param_nh.param<bool>("use_graph", use_graph_, false);
             
@@ -278,10 +280,10 @@ public:
             param_nh.param<std::string>("output_est_file", est_filename, std::string(""));
             
             if (gt_filename == std::string("")) {
-              gt_filename = std::string("gt_pose") + fuser_params.getDescString() + std::string(".txt");
+              gt_filename = std::string("gt_pose") + fuser_params.getDescString() + motion_params.getDescString() + std::string(".txt");
             }
             if (est_filename == std::string("")) {
-              est_filename = std::string("est_pose") + fuser_params.getDescString() + std::string(".txt");
+              est_filename = std::string("est_pose") + fuser_params.getDescString() + motion_params.getDescString() + std::string(".txt");
             }
                    
             if (gt_filename != std::string("") && gt_frame != std::string("")) {
@@ -643,7 +645,7 @@ public:
 	// Callback
 	void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg_in)
 	{
-          //          ROS_ERROR("laserCallback()");
+          ROS_ERROR("laserCallback()");
 	    sensor_msgs::PointCloud2 cloud;
 	    pcl::PointCloud<pcl::PointXYZ> pcl_cloud, pcl_cloud_unfiltered;
 	    Eigen::Affine3d Tm;
@@ -726,10 +728,11 @@ public:
             }
 
 	    pcl::PointXYZ pt;
-	    //add some variance on z
+	    //add some variance on z, remove min/max range
 	    for(int i=0; i<pcl_cloud_unfiltered.points.size(); i++) {
 		pt = pcl_cloud_unfiltered.points[i];
-		if(sqrt(pt.x*pt.x+pt.y*pt.y) > min_laser_range_) {
+                double dist = sqrt(pt.x*pt.x+pt.y*pt.y);
+		if(dist > min_laser_range_ && dist < sensor_range) {
 		    pt.z += varz*((double)rand())/(double)INT_MAX;
 		    pcl_cloud.points.push_back(pt);
 		}
@@ -811,7 +814,7 @@ public:
 		  const nav_msgs::Odometry::ConstPtr& odo_in)
 	{
 
-          //          ROS_ERROR("laserOdomCallback()");
+          ROS_ERROR("laserOdomCallback()");
   
 
 	    Eigen::Quaterniond qd;

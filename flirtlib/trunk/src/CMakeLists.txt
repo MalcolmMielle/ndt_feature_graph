@@ -128,7 +128,7 @@ ELSE(CAIRO_FOUND)
         MESSAGE(STATUS "        Cairo not found, it is OPTIONAL: to draw to PDF files.")
 ENDIF(CAIRO_FOUND)
 
-INCLUDE_DIRECTORIES(${FLIRT_SOURCE_DIR}/src)
+INCLUDE_DIRECTORIES(${FLIRT_SOURCE_DIR}/src .)
 
 # ---------------------------- Setting compilation flags ------------------------------
 # Optimization

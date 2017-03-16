@@ -87,8 +87,10 @@ class NDTFeatureFuserHMT{
       fusion2d = false;
       allMatchesValid = false;
       discardCells = false;
-      optimizeOnlyYaw = false;
+      useSoftConstraints = true;
       computeCov = true;
+      stepControlFusion = true;
+      useTikhonovRegularization = true;
     }
     
     bool checkConsistency;
@@ -118,12 +120,15 @@ class NDTFeatureFuserHMT{
     bool fusion2d;
     bool allMatchesValid;
     bool discardCells;
-    bool optimizeOnlyYaw;
+    bool useSoftConstraints;
     bool computeCov;
+    bool stepControlFusion;
+    bool useTikhonovRegularization;
   
     std::string getDescString() const {
       std::ostringstream os;
-      os << "useNDT" << useNDT << "useFeat" << useFeat << "useOdom" << useOdom << "loadCentroid" << loadCentroid << "discardCells" << discardCells << "neighbours" << neighbours;
+      //      os << "useNDT" << useNDT << "useFeat" << useFeat << "useOdom" << useOdom << "loadCentroid" << loadCentroid << "discardCells" << discardCells << "neighbours" << neighbours;
+      os << "resolution" << resolution << "loadCentroid" << loadCentroid << "discardCells" << discardCells << "neighbours" << neighbours << "forceOdomAsEst" << forceOdomAsEst << "useSoftConstraints" << useSoftConstraints;
       return os.str();
     }
     
@@ -157,8 +162,10 @@ class NDTFeatureFuserHMT{
       os << "\nfusion2d    : " << obj.fusion2d;
       os << "\nallMatchesValid : " << obj.allMatchesValid;
       os << "\ndiscardCells: " << obj.discardCells;
-      os << "\noptimizeOnlyYaw: " << obj.optimizeOnlyYaw;
+      os << "\nuseSoftConstraints : " << obj.useSoftConstraints;
       os << "\ncomputeCov  : " << obj.computeCov;
+      os << "\nstepControlFusion : " << obj.stepControlFusion;
+      os << "\nuseTikhonovRegularization : " << obj.useTikhonovRegularization;
       return os;
     }
   };
@@ -348,10 +355,11 @@ class NDTFeatureFuserHMT{
       Eigen::Matrix3d odom_cov = relposecov.cov;
       odom_cov(2,0) = 0.; odom_cov(2,1) = 0.; odom_cov(0,2) = 0.; odom_cov(1,2) = 0.;
       odom_cov(2,2) = 0.01; // This is the height in the ndt feature vec and not rotational variance.
+
       Eigen::MatrixXd TmotionCov = motion.getCovMatrix6(relpose);
-      TmotionCov(2,2) = 0.01; // z
-      TmotionCov(3,3) = 0.01; // roll
-      TmotionCov(4,4) = 0.01; // pitch
+      TmotionCov(2,2) = 1; // 10 // z
+      TmotionCov(3,3) = 1; // roll
+      TmotionCov(4,4) = 1; // pitch
 
       std::cerr << "TmotionCov : " << TmotionCov << std::endl;
 
@@ -565,7 +573,7 @@ class NDTFeatureFuserHMT{
       }
       else {
         match_ok = lslgeneric::matchFusion(*map, ndglobal, *ndt_feat_prev, *ndt_feat_curr, corr, Tmotion_est, TmotionCov,
-                                           true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE, params_.optimizeOnlyYaw) || params_.fuseIncomplete;
+                                           true, params_.useNDT, use_odom_or_features, params_.stepcontrol, params_.ITR_MAX, params_.neighbours, params_.DELTA_SCORE, params_.useSoftConstraints, params_.stepControlFusion, params_.useTikhonovRegularization) || params_.fuseIncomplete;
       }
 
       //      std::cout << "match_ok : " << match_ok << std::endl;
@@ -774,7 +782,7 @@ namespace boost {
         & o.fusion2d
         & o.allMatchesValid
         & o.discardCells
-        & o.optimizeOnlyYaw;
+        & o.useSoftConstraints;
     }
   }
 }
