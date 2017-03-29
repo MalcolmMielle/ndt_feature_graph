@@ -48,7 +48,7 @@
 #include "ndt_feature/graph_visualizer.hpp"
 // #include "G2OGraphMaker.hpp"
 #include "conversion.hpp"
-#include "PriorAutoComplete.hpp"
+// #include "PriorAutoComplete.hpp"
 #include "ndt_feature/NDTGraphMsg.h"
 #include "ndt_feature/ndtgraph_conversion.h"
 #include <thread>
@@ -71,11 +71,11 @@ class NDTFeatureFuserNode {
 		
 	ndt_feature::NDTGraphMsg graphmsg;
 		
-	ndt_feature::G2OGraphMarker _g2o_graph;
-	ndt_feature::G2OGraphMarker _g2o_graph_linked;
-	ndt_feature::G2OGraphMarker _g2o_graph_linked_oriented;
-	ndt_feature::G2OGraphMarker _g2o_graph_no_prior;
-	ndt_feature::PriorAutoComplete _priorAutoComplete;
+// 	ndt_feature::G2OGraphMarker _g2o_graph;
+// 	ndt_feature::G2OGraphMarker _g2o_graph_linked;
+// 	ndt_feature::G2OGraphMarker _g2o_graph_linked_oriented;
+// 	ndt_feature::G2OGraphMarker _g2o_graph_no_prior;
+// 	ndt_feature::PriorAutoComplete _priorAutoComplete;
 		
 	// Our NodeHandle
 	ros::NodeHandle nh_;
@@ -176,34 +176,34 @@ public:
 	// Constructor
 		NDTFeatureFuserNode(ros::NodeHandle param_nh) : 
 		
-		_g2o_graph(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
-		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
-		DEG2RAD(2.), 				//Rotation noise for robot
-		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
-		Eigen::Vector2d(1, 0.001), //Prior noise
-		Eigen::Vector2d(0.2, 0.2)), //Link noise, 
-// 						_sensorOffsetTransf(0.2, 0.1, -0.1), 
-
-		_g2o_graph_linked(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
-		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
-		DEG2RAD(2.), 				//Rotation noise for robot
-		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
-		Eigen::Vector2d(1, 0.001), //Prior noise
-		Eigen::Vector2d(0.2, 0.2)), //Link noise,
-		
-		_g2o_graph_linked_oriented(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
-		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
-		DEG2RAD(2.), 				//Rotation noise for robot
-		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
-		Eigen::Vector2d(1, 0.001), //Prior noise
-		Eigen::Vector2d(0.2, 0.2)), //Link noise,
-		
-		_g2o_graph_no_prior(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
-		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
-		DEG2RAD(2.), 				//Rotation noise for robot
-		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
-		Eigen::Vector2d(1, 0.001), //Prior noise
-		Eigen::Vector2d(0.2, 0.2)), //Link noise,
+// 		_g2o_graph(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
+// 		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
+// 		DEG2RAD(2.), 				//Rotation noise for robot
+// 		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
+// 		Eigen::Vector2d(1, 0.001), //Prior noise
+// 		Eigen::Vector2d(0.2, 0.2)), //Link noise, 
+// // 						_sensorOffsetTransf(0.2, 0.1, -0.1), 
+// 
+// 		_g2o_graph_linked(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
+// 		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
+// 		DEG2RAD(2.), 				//Rotation noise for robot
+// 		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
+// 		Eigen::Vector2d(1, 0.001), //Prior noise
+// 		Eigen::Vector2d(0.2, 0.2)), //Link noise,
+// 		
+// 		_g2o_graph_linked_oriented(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
+// 		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
+// 		DEG2RAD(2.), 				//Rotation noise for robot
+// 		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
+// 		Eigen::Vector2d(1, 0.001), //Prior noise
+// 		Eigen::Vector2d(0.2, 0.2)), //Link noise,
+// 		
+// 		_g2o_graph_no_prior(g2o::SE2(0.2, 0.1, -0.1), //sensor offset
+// 		Eigen::Vector2d(0.0005, 0.0001), //Robot translation noise
+// 		DEG2RAD(2.), 				//Rotation noise for robot
+// 		Eigen::Vector2d(0.0005, 0.0005), //Landmarks noise
+// 		Eigen::Vector2d(1, 0.001), //Prior noise
+// 		Eigen::Vector2d(0.2, 0.2)), //Link noise,
 		
 		nb_added_clouds_(0),
         peak_finder_(ndt_feature::createPeakFinder()),
@@ -216,7 +216,7 @@ public:
 		
 		
 		std::string file = "/home/malcolm/Documents/map.jpg";
-		_priorAutoComplete.extractCornerPrior(file);
+// 		_priorAutoComplete.extractCornerPrior(file);
 // 		_priorAutoComplete.transformOntoSLAM();
 // // 		_priorAutoComplete.transformOntoSLAM();
 // 		
@@ -491,7 +491,7 @@ public:
 		
 		std::cout << "start added cloud and of init " << nb_added_clouds_ << std::endl;
 		
-		optimize_sub = nh_.subscribe<std_msgs::Bool>("/optimize", 10, &NDTFeatureFuserNode::optimize, this);
+// 		optimize_sub = nh_.subscribe<std_msgs::Bool>("/optimize", 10, &NDTFeatureFuserNode::optimize, this);
 		convert_sub = nh_.subscribe<std_msgs::Bool>("/convert", 10, &NDTFeatureFuserNode::convert, this);
 	}
 
@@ -966,57 +966,57 @@ public:
 		exit(0);
 	}
 	
-	void optimize(const std_msgs::Bool::ConstPtr& bool_msg){
-		
-		
-		std::cout << "OPTIMIZE" << std::endl;
-		/**Get corner from prior**/
-// 		std::string file = "/home/malcolm/Document/map.jpg";
-// 		_priorAutoComplete.extractCornerPrior(file);
-		_priorAutoComplete.extractCornerNDT(*graph);
-// 		_priorAutoComplete.findScale();
-		_priorAutoComplete.transformOntoSLAM();
-		
-		_priorAutoComplete.createGraph(*graph, _g2o_graph);
-		_priorAutoComplete.createGraphLinked(*graph, _g2o_graph_linked);
-		_priorAutoComplete.createGraphLinkedOriented(*graph, _g2o_graph_linked_oriented);
-		_priorAutoComplete.createGraphLinkedOrientedNoPrior(*graph, _g2o_graph_no_prior);
-		
-// 		_g2o_graph_no_prior.addRobotPoseAndOdometry(*graph);
-		//Add landmark and observations
-// 		_g2o_graph_no_prior.addLandmarkAndObservation(*graph);
-// 		_g2o_graph_no_prior.makeGraphAllOriented();
-		
-		
-		
-		std::string file_out = "/home/malcolm/ACG_folder/AWESOME_manual_";
-		std::ostringstream convert;   // stream used for the conversion
-		convert << graph->getNbNodes(); 
-		file_out = file_out + convert.str();
-		file_out = file_out + "nodes.g2o";
-		_g2o_graph.save(file_out);
-		std::cout << "saved to " << file_out << std::endl;
-		
-		std::string file_out_linked = "/home/malcolm/ACG_folder/AWESOME_manual_linked_";
-		file_out_linked = file_out_linked + convert.str();
-		file_out_linked = file_out_linked + "nodes.g2o";
-		_g2o_graph_linked.save(file_out_linked);
-		std::cout << "saved to " << file_out_linked << std::endl;
-		
-		std::string file_out_linked_oritented = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_";
-		file_out_linked_oritented = file_out_linked_oritented + convert.str();
-		file_out_linked_oritented = file_out_linked_oritented + "nodes.g2o";
-		_g2o_graph_linked_oriented.save(file_out_linked_oritented);
-		std::cout << "saved to " << file_out_linked_oritented << std::endl;
-		
-		std::string file_out_linked_oritented_no_prior = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_no_prior";
-		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + convert.str();
-		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + "nodes.g2o";
-		_g2o_graph_no_prior.save(file_out_linked_oritented_no_prior);
-		std::cout << "saved to " << file_out_linked_oritented_no_prior << std::endl;
-		
-		exit(0);
-	}
+// 	void optimize(const std_msgs::Bool::ConstPtr& bool_msg){
+// 		
+// 		
+// 		std::cout << "OPTIMIZE" << std::endl;
+// 		/**Get corner from prior**/
+// // 		std::string file = "/home/malcolm/Document/map.jpg";
+// // 		_priorAutoComplete.extractCornerPrior(file);
+// 		_priorAutoComplete.extractCornerNDT(*graph);
+// // 		_priorAutoComplete.findScale();
+// 		_priorAutoComplete.transformOntoSLAM();
+// 		
+// 		_priorAutoComplete.createGraph(*graph, _g2o_graph);
+// 		_priorAutoComplete.createGraphLinked(*graph, _g2o_graph_linked);
+// 		_priorAutoComplete.createGraphLinkedOriented(*graph, _g2o_graph_linked_oriented);
+// 		_priorAutoComplete.createGraphLinkedOrientedNoPrior(*graph, _g2o_graph_no_prior);
+// 		
+// // 		_g2o_graph_no_prior.addRobotPoseAndOdometry(*graph);
+// 		//Add landmark and observations
+// // 		_g2o_graph_no_prior.addLandmarkAndObservation(*graph);
+// // 		_g2o_graph_no_prior.makeGraphAllOriented();
+// 		
+// 		
+// 		
+// 		std::string file_out = "/home/malcolm/ACG_folder/AWESOME_manual_";
+// 		std::ostringstream convert;   // stream used for the conversion
+// 		convert << graph->getNbNodes(); 
+// 		file_out = file_out + convert.str();
+// 		file_out = file_out + "nodes.g2o";
+// 		_g2o_graph.save(file_out);
+// 		std::cout << "saved to " << file_out << std::endl;
+// 		
+// 		std::string file_out_linked = "/home/malcolm/ACG_folder/AWESOME_manual_linked_";
+// 		file_out_linked = file_out_linked + convert.str();
+// 		file_out_linked = file_out_linked + "nodes.g2o";
+// 		_g2o_graph_linked.save(file_out_linked);
+// 		std::cout << "saved to " << file_out_linked << std::endl;
+// 		
+// 		std::string file_out_linked_oritented = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_";
+// 		file_out_linked_oritented = file_out_linked_oritented + convert.str();
+// 		file_out_linked_oritented = file_out_linked_oritented + "nodes.g2o";
+// 		_g2o_graph_linked_oriented.save(file_out_linked_oritented);
+// 		std::cout << "saved to " << file_out_linked_oritented << std::endl;
+// 		
+// 		std::string file_out_linked_oritented_no_prior = "/home/malcolm/ACG_folder/AWESOME_manual_linked_oriented_no_prior";
+// 		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + convert.str();
+// 		file_out_linked_oritented_no_prior = file_out_linked_oritented_no_prior + "nodes.g2o";
+// 		_g2o_graph_no_prior.save(file_out_linked_oritented_no_prior);
+// 		std::cout << "saved to " << file_out_linked_oritented_no_prior << std::endl;
+// 		
+// 		exit(0);
+// 	}
 
 
 	// Callback
