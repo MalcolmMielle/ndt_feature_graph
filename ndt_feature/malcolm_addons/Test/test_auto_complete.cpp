@@ -678,8 +678,8 @@ public:
 					
 					//Better init maybe ?
 					_gvisu.setStart(pose_);
-					graph->setSensorPose(robot_frame, sensor_frame);;
-					graph->initialize(cloud, world_frame, robot_frame, pts);
+					ndt_feature::initSensorPose(*graph, robot_frame, sensor_frame);
+					ndt_feature::initRobotPose(*graph, cloud, world_frame, robot_frame, pts);
 	// 				std::cout << "Graph init. Nb nof nodes : " << graph->getNbNodes() << std::endl;
 	// 				exit(0);
 				}
