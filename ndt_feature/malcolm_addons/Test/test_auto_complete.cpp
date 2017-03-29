@@ -106,7 +106,7 @@ class NDTFeatureFuserNode {
 	ndt_feature::NDTFeatureFuserHMT *fuser;
 	ndt_feature::NDTFeatureGraphCorner *graph;
 	std::string points_topic, laser_topic, map_dir, map_name, odometry_topic, 
-          world_frame, fuser_frame, init_pose_frame, gt_topic, gt_frame;
+          world_frame, robot_frame, sensor_frame, fuser_frame, init_pose_frame, gt_topic, gt_frame;
 	double size_x, size_y, size_z, resolution, sensor_range, min_laser_range_;
 	bool visualize, match2D, matchLaser, beHMT, useOdometry, plotGTTrack, 
 	     initPoseFromGT, initPoseFromTF, initPoseSet;
@@ -296,11 +296,16 @@ public:
 	    //get it from TF?
 	    param_nh.param("initPoseFromTF",initPoseFromTF,false);
 	    //the frame to initialize to
-            param_nh.param<std::string>("gt_frame",gt_frame,std::string(""));
-	    //the world frame
-	    param_nh.param<std::string>("world_frame",world_frame,"/world");
+		param_nh.param<std::string>("gt_frame",gt_frame,std::string(""));
+		param_nh.param<std::string>("robot_frame",robot_frame,"/base_link");
+			//The sensor frame to initialize the fuser to
+		param_nh.param<std::string>("laser_frame",sensor_frame,"/laser_frame");
+			//the world frame
+		param_nh.param<std::string>("world_frame",world_frame,"/world");
 	    //our frame
 	    param_nh.param<std::string>("fuser_frame",fuser_frame,"/fuser");
+		
+		param_nh.param<std::string>("tf_odom_frame", tf_odom_frame_,  "/odom_base_link");
  
 	    ///enable for LaserScan message input
 	    param_nh.param("matchLaser",matchLaser, true);
@@ -348,7 +353,7 @@ public:
 		param_nh.param<int>("drop_scan_nb", drop_scan_nb_, 0);
 
 
-		param_nh.param<std::string>("tf_odom_frame", tf_odom_frame_,  "/odom_base_link");
+		
 
 		param_nh.param<bool>("clear_odometry_estimate", clear_odometry_estimate_, false);
 
@@ -539,19 +544,32 @@ public:
 	}
 
   void publish_visualization_slow(const ros::TimerEvent &event) {
+<<<<<<< HEAD
 // 	  std::cout << "DRAW" << std::endl;
 //             // Add some drawing
+=======
+	  std::cout << "DRAW" << std::endl;
+            // Add some drawing
+>>>>>>> develop_wp6
             if (use_graph_) 
             {
               if (graph->wasInit()) {
 
                 if (do_pub_debug_markers_) {
                   // Draw the debug stuff...
+<<<<<<< HEAD
 //                   ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
 //                   for (size_t i = 0; i < f->debug_markers_.size(); i++) {
 //                     f->debug_markers_[i].header.stamp = frameTime_;
 //                     marker_pub_.publish(f->debug_markers_[i]);
 //                   }
+=======
+                  ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
+                  for (size_t i = 0; i < f->debug_markers_.size(); i++) {
+                    f->debug_markers_[i].header.stamp = frameTime_;
+                    marker_pub_.publish(f->debug_markers_[i]);
+                  }
+>>>>>>> develop_wp6
                 }
                 if (do_pub_ndtmap_marker_)
                 {
@@ -559,22 +577,32 @@ public:
                   // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
                   //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
                   // marker_pub_.publish(markers_ndt);
+<<<<<<< HEAD
 				 // lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
                   
 // 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
+=======
+				  lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
+                  
+				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
+>>>>>>> develop_wp6
 // 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
 
                 }
                 if (do_pub_occ_map_) {
                   nav_msgs::OccupancyGrid omap; 
+<<<<<<< HEAD
 				  std::cout << "RES " << occ_map_resolution_ << " frame " << world_frame << std::endl;
 // 				  exit(0);
+=======
+>>>>>>> develop_wp6
                   lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
                   moveOccupancyMap(omap, graph->getT());
                   map_pub_.publish(omap);
                 }
               }
             }
+<<<<<<< HEAD
 //             else {
 //               if (fuser->wasInit()) {
 //                 
@@ -596,8 +624,31 @@ public:
 //               }
 //             }
 //             
+=======
+            else {
+              if (fuser->wasInit()) {
+                
+                if (do_pub_debug_markers_) {
+                  for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
+                    fuser->debug_markers_[i].header.stamp = frameTime_;
+                    marker_pub_.publish(fuser->debug_markers_[i]);
+                  }
+                }
+                if (do_pub_ndtmap_marker_) {
+                  Eigen::Affine3d p; p.setIdentity();
+                  marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1, "nd_global_map"));
+                }
+                if (do_pub_occ_map_) {
+                  nav_msgs::OccupancyGrid omap;
+                  lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, world_frame);
+                  map_pub_.publish(omap);
+                }
+              }
+            }
+>>>>>>> develop_wp6
             
-            //Trying to draw the graph here
+            
+//             Trying to draw the graph here
             
 //             if(use_graph_){
 // 				if (graph->wasInit() == true && graph->getNbNodes() >= 6) {
@@ -644,29 +695,50 @@ public:
 	    if (nb_added_clouds_  == 0)
 	    {
 			ROS_INFO("initializing fuser map. Init pose from GT? %d, TF? %d", initPoseFromGT, initPoseFromTF);
-			if(initPoseFromGT || initPoseFromTF) {
+			if(initPoseFromGT) {
 				//check if initial pose was set already 
 				if(!initPoseSet) {
 				ROS_WARN("skipping frame, init pose not acquired yet!");
 				m.unlock();
 				return;
 				}
-			}
-			pose_ = Tmotion;
-			ROS_INFO("Init pose is (%lf,%lf,%lf)", pose_.translation()(0), pose_.translation()(1), 
+				pose_ = Tmotion;
+				ROS_INFO("Init pose is (%lf,%lf,%lf)", pose_.translation()(0), pose_.translation()(1), 
 				pose_.rotation().eulerAngles(0,1,2)(0));
-			if (use_graph_) {
-				std::cout << "INIT " << nb_added_clouds_ << std::endl;
-				
-				//Better init maybe ?
-				_gvisu.setStart(pose_);
-				graph->initialize(pose_,cloud,pts);
-// 				std::cout << "Graph init. Nb nof nodes : " << graph->getNbNodes() << std::endl;
-// 				exit(0);
+				if (use_graph_) {
+					std::cout << "INIT " << nb_added_clouds_ << std::endl;
+					
+					//Better init maybe ?
+					_gvisu.setStart(pose_);
+					graph->initialize(pose_,cloud,pts);
+	// 				std::cout << "Graph init. Nb nof nodes : " << graph->getNbNodes() << std::endl;
+	// 				exit(0);
+				}
+				else {
+					fuser->initialize(pose_,cloud,pts);
+				}
 			}
-			else {
-				fuser->initialize(pose_,cloud,pts);
+			else if(initPoseFromTF){
+				ROS_INFO("Init pose is (%lf,%lf,%lf) form tf", pose_.translation()(0), pose_.translation()(1), 
+					pose_.rotation().eulerAngles(0,1,2)(0));
+				if (use_graph_) {
+					std::cout << "INIT " << nb_added_clouds_ << std::endl;
+					
+					//Better init maybe ?
+					_gvisu.setStart(pose_);
+					ndt_feature::initSensorPose(*graph, robot_frame, sensor_frame);
+					ndt_feature::initRobotPose(*graph, cloud, world_frame, robot_frame, pts);
+	// 				std::cout << "Graph init. Nb nof nodes : " << graph->getNbNodes() << std::endl;
+	// 				exit(0);
+				}
+				else {
+					assert(true == false);
+					//NEVER GET THERE
+					fuser->initialize(pose_,cloud,pts);
+				}
 			}
+			
+			
 			nb_added_clouds_++;
 	    } else {
 			ROS_INFO("UPDATE");

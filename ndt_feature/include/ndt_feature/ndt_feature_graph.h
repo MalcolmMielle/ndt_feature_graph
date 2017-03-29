@@ -8,6 +8,8 @@
 #include <ndt_map/ndt_conversions.h>
 #include <ndt_map/ndt_map.h>
 
+
+
 namespace ndt_feature {
 
 // This class has the same interface as the fuser class but also has an optimization function.
@@ -89,6 +91,8 @@ public:
 		}
 		return true;
 	}
+	
+	
   
   // Initialize the first entry of the map.
   void initialize(Eigen::Affine3d initPose, pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts, bool preLoad=false) {
@@ -602,6 +606,13 @@ public:
   void setSensorPose(Eigen::Affine3d spose){
     sensor_pose_ = spose;
   }
+  
+  
+  
+  
+  
+  
+  
 
   bool wasInit() const {
     // Fuser function...
