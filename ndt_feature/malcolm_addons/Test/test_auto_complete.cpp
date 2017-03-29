@@ -544,32 +544,21 @@ public:
 	}
 
   void publish_visualization_slow(const ros::TimerEvent &event) {
-<<<<<<< HEAD
-// 	  std::cout << "DRAW" << std::endl;
-//             // Add some drawing
-=======
+
 	  std::cout << "DRAW" << std::endl;
             // Add some drawing
->>>>>>> develop_wp6
             if (use_graph_) 
             {
               if (graph->wasInit()) {
 
                 if (do_pub_debug_markers_) {
                   // Draw the debug stuff...
-<<<<<<< HEAD
-//                   ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
-//                   for (size_t i = 0; i < f->debug_markers_.size(); i++) {
-//                     f->debug_markers_[i].header.stamp = frameTime_;
-//                     marker_pub_.publish(f->debug_markers_[i]);
-//                   }
-=======
+
                   ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
                   for (size_t i = 0; i < f->debug_markers_.size(); i++) {
                     f->debug_markers_[i].header.stamp = frameTime_;
                     marker_pub_.publish(f->debug_markers_[i]);
                   }
->>>>>>> develop_wp6
                 }
                 if (do_pub_ndtmap_marker_)
                 {
@@ -577,54 +566,22 @@ public:
                   // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
                   //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
                   // marker_pub_.publish(markers_ndt);
-<<<<<<< HEAD
-				 // lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
-                  
-// 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
-=======
+
 				  lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
                   
 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
->>>>>>> develop_wp6
 // 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
 
                 }
                 if (do_pub_occ_map_) {
                   nav_msgs::OccupancyGrid omap; 
-<<<<<<< HEAD
-				  std::cout << "RES " << occ_map_resolution_ << " frame " << world_frame << std::endl;
-// 				  exit(0);
-=======
->>>>>>> develop_wp6
                   lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
                   moveOccupancyMap(omap, graph->getT());
                   map_pub_.publish(omap);
                 }
               }
             }
-<<<<<<< HEAD
-//             else {
-//               if (fuser->wasInit()) {
-//                 
-//                 if (do_pub_debug_markers_) {
-//                   for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
-//                     fuser->debug_markers_[i].header.stamp = frameTime_;
-//                     marker_pub_.publish(fuser->debug_markers_[i]);
-//                   }
-//                 }
-//                 if (do_pub_ndtmap_marker_) {
-//                   Eigen::Affine3d p; p.setIdentity();
-//                   marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1, "nd_global_map"));
-//                 }
-//                 if (do_pub_occ_map_) {
-//                   nav_msgs::OccupancyGrid omap;
-//                   lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, world_frame);
-//                   map_pub_.publish(omap);
-//                 }
-//               }
-//             }
-//             
-=======
+
             else {
               if (fuser->wasInit()) {
                 
@@ -645,7 +602,6 @@ public:
                 }
               }
             }
->>>>>>> develop_wp6
             
             
 //             Trying to draw the graph here
@@ -1125,7 +1081,7 @@ public:
 	// Callback
 	void laserCallback(const sensor_msgs::LaserScan::ConstPtr& msg_in)
 	{
-        ROS_ERROR("laserCallback()");
+        ROS_INFO("laserCallback()");
 // 		exit(0);
 
 // 		CALLGRIND_START_INSTRUMENTATION;

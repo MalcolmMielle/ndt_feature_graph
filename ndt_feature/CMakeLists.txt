@@ -317,7 +317,8 @@ add_dependencies(test_auto_complete ndt_feature_generate_messages_cpp)
 
 add_executable(tf_odom malcolm_addons/src/tf_odom.cpp)
 target_link_libraries(tf_odom 
-${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS}
+${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod 
+# tutorial_slam2d_library_real ${G2O_LIBS}
 ${OpenCV_LIBS} 
 # ${PCL_LIBRARIES} 
 ${vodigrex_LIBRARIES} 
