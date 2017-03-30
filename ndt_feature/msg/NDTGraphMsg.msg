@@ -1,4 +1,4 @@
-
+Header header          #standard header information
 geometry_msgs/Pose sensor_pose_
 geometry_msgs/Pose Tnow # Current pose estimate.
 float64 distance_moved_in_last_node_

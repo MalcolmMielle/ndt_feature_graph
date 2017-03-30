@@ -41,6 +41,7 @@
 
 #include <ndt_feature/ndt_feature_graph.h>
 #include <ndt_map/ndt_conversions.h>
+#include "ndt_feature/ndtgraph_conversion.h"
 
 #include <ndt_feature/ros_utils.h>
 
@@ -132,6 +133,7 @@ class NDTFeatureFuserNode {
 	ros::ServiceServer save_map_;
 	ros::Publisher marker_pub_;
 	ros::Publisher map_pub_;
+	ros::Publisher map_publisher_;
 
 
 	Eigen::Affine3d last_odom, this_odom, Todom;
@@ -478,6 +480,8 @@ public:
 		fuser_pub_ = nh_.advertise<nav_msgs::Odometry>("fuser_est", 10);
 		fuser_odom_pub_ = nh_.advertise<nav_msgs::Odometry>("fuser_odom", 10);
 		
+		map_publisher_=nh_.advertise<ndt_feature::NDTGraphMsg>("ndt_graph",10);
+		
 		
 		_marker_pub_graph = nh_.advertise<visualization_msgs::Marker>("visualization_marker_graph", 10);
 		_marker_pub_graph_odom= nh_.advertise<visualization_msgs::Marker>("visualization_marker_graph_odom", 10);
@@ -485,7 +489,7 @@ public:
 		
 		_ndt_graph_pub = nh_.advertise<ndt_feature::NDTGraphMsg>("ndt_graph", 10);
 
-		heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(1.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
+		heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(5.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
 		
 		Todom.setIdentity();
 		
@@ -543,6 +547,10 @@ public:
 // 		  }
 	}
 
+	
+	
+  ndt_feature::NDTFeatureGraphCorner* getGraph(){ return graph;}
+  
   void publish_visualization_slow(const ros::TimerEvent &event) {
 
 	  std::cout << "DRAW" << std::endl;
@@ -571,13 +579,41 @@ public:
                   
 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
 // 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
+				  
+				 
 
                 }
                 if (do_pub_occ_map_) {
-                  nav_msgs::OccupancyGrid omap; 
-                  lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
-                  moveOccupancyMap(omap, graph->getT());
-                  map_pub_.publish(omap);
+// 					tf::TransformBroadcaster br;
+// 					tf::Transform transform;
+// 					if(graph->getNbNodes() >= 1){
+// 						for(int i = 0 ; i < graph->getNbNodes() ; ++i){
+// 							std::stringstream sstm;
+// 							sstm << "ndt_map_graph_frame_" << i;
+// 							tf::transformEigenToTF(graph->getNode(i).T, transform);
+// 							br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), world_frame, sstm.str() ));
+// 							
+// 							ndt_map::NDTMapMsg map_msg;
+// 							lslgeneric::toMessage(graph->getMap(), map_msg, sstm.str() );
+// 							map_publisher_.publish(map_msg);
+// 							
+// 						}
+// 					}
+
+
+
+					ndt_feature::NDTGraphMsg graphmsg;
+					ndt_feature::NDTGraphToMsg(*graph, graphmsg, world_frame);
+					map_publisher_.publish(graphmsg);
+// 					exit(0);
+					
+					nav_msgs::OccupancyGrid omap; 
+					lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
+					moveOccupancyMap(omap, graph->getT());
+					map_pub_.publish(omap);
+// 					ndt_map::NDTMapMsg map_msg;
+// 					toMessage(graph->getMap(), map_msg, "/ndt_map_frame");
+// 					map_publisher_.publish(map_msg);
                 }
               }
             }
@@ -916,7 +952,7 @@ public:
 		
 		ndt_feature::NDTGraphMsg graphmsg;
 		
-		ndt_feature::NDTGraphToMsg(*graph, graphmsg);
+		ndt_feature::NDTGraphToMsg(*graph, graphmsg, world_frame);
 		_ndt_graph_pub.publish(graphmsg);
 		
 		exit(0);
@@ -1408,10 +1444,28 @@ public:
 int main(int argc, char **argv)
 {
     ros::init(argc, argv, "ndt_feature2d_fuser");
+	
+// 	tf::TransformBroadcaster br;
+// 	tf::Transform transform;
 
     ros::NodeHandle param("~");
     NDTFeatureFuserNode t(param);
+	
+// 	std::string world_frame;
+// 	param.param<std::string>("world_frame",world_frame,"/world");
+	
     while(ros::ok()){
+		
+// 		if(t.getGraph()->getNbNodes() >= 1){
+// 
+// 			for(int i = 0 ; i < t.getGraph()->getNbNodes() ; ++i){
+// 				std::stringstream sstm;
+// 				sstm << "ndt_map_graph_frame_" << i;
+// 				tf::transformEigenToTF(t.getGraph()->getNode(i).T, transform);
+// 				br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), world_frame, sstm.str()));
+// 			}
+// 		}
+		
 // 		std::cout <<"SPIN" << std::endl;
 		ros::spinOnce();
 	}

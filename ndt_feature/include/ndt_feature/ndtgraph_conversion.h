@@ -54,7 +54,11 @@ namespace ndt_feature {
 	}
 	
 	
-	inline void NDTGraphToMsg(const NDTFeatureGraph& graph, ndt_feature::NDTGraphMsg& m){
+	inline void NDTGraphToMsg(const NDTFeatureGraph& graph, ndt_feature::NDTGraphMsg& m, const std::string& frame){
+		
+		m.header.stamp=ros::Time::now();
+		m.header.frame_id = frame;//is it in *map? 
+		
 		std::cout << "Nodes \n";
 		for(size_t i = 0 ; i < graph.getNbNodes() ; ++i){
 			ndt_feature::NDTNodeMsg nodemsg;

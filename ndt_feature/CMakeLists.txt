@@ -171,9 +171,10 @@ set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry
 
 # ADD_LIBRARY(tutorial_slam2d_library_real malcolm_addons/Test/simulator.h malcolm_addons/Test/simulator.cpp ${G2O_LIBS})
 
+
 catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
-    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs flirtlib_ros das message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs
+    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs das message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs
     INCLUDE_DIRS include /usr/local/include/flirtlib ${vodigrex_INCLUDE_DIRS}
     LIBRARIES ${vodigrex_LIBRARIES} # TODO
 )
