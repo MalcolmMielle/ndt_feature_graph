@@ -301,7 +301,7 @@ public:
 		param_nh.param<std::string>("gt_frame",gt_frame,std::string(""));
 		param_nh.param<std::string>("robot_frame",robot_frame,"/base_link");
 			//The sensor frame to initialize the fuser to
-		param_nh.param<std::string>("laser_frame",sensor_frame,"/laser_frame");
+		param_nh.param<std::string>("sensor_frame",sensor_frame,"/laser_frame");
 			//the world frame
 		param_nh.param<std::string>("world_frame",world_frame,"/world");
 	    //our frame
@@ -919,7 +919,7 @@ public:
 		ndt_feature::NDTNodeMsg nodemsg;
 		ndt_feature::NDTFeatureNode node = graph->getNode(0);
 		
-		std::cout << "GETTING THE NODE FUCKER TO WORK" << node.map->Tnow.matrix() << std::endl;
+		std::cout << "GETTING THE NODE TO WORK" << node.map->Tnow.matrix() << std::endl;
 		
 // 		node.Tlocal_odom.matrix() << 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16;
 		
@@ -932,7 +932,7 @@ public:
 		ndt_feature::NDTFeatureNode node2;
 		node2.map = new ndt_feature::NDTFeatureFuserHMT( ndt_feature::NDTFeatureFuserHMT::Params() );
 		
-		std::cout << "GETTING THE NODE FUCKER TO WORK" << node.map->Tnow.matrix() << std::endl;
+		std::cout << "GETTING THE NODE TO WORK" << node.map->Tnow.matrix() << std::endl;
 		
 		ndt_feature::msgToNode(nodemsg, node2, frame);
 		
