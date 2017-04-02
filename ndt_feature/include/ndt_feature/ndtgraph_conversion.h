@@ -153,7 +153,7 @@ namespace ndt_feature {
 		
 		//THis allocate the pointers already
 		lslgeneric::LazyGrid* lz;
-		bool good = lslgeneric::fromMessage(lz, fuser.map, m.map, frame);
+		bool good = lslgeneric::fromMessage(lz, fuser.map, m.map, frame, true);
 		
 		
 // 		std::cout << "Nb of init (Should be more) " << fuser.map->getAllInitializedCells().size() << std::endl;
@@ -194,7 +194,7 @@ namespace ndt_feature {
 		for(size_t i = 0 ; i < m.nodes.size() ; ++i){
 			ndt_feature::NDTFeatureNode node;
 			
-			//ATTENTION MEMORY LEAK FOR NOW
+			//ATTENTION NOT TRUE: MEMORY LEAK FOR NOW
 			node.map = new ndt_feature::NDTFeatureFuserHMT( ndt_feature::NDTFeatureFuserHMT::Params() );
 			
 			msgToNode(m.nodes[i], node, frame);
