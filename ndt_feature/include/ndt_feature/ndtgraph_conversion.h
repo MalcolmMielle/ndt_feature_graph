@@ -134,7 +134,8 @@ namespace ndt_feature {
 		ndt_map::NDTMapMsg mapmsg;
 		
 // 		std::cout << "Doing the NDT map" << std::endl;
-		lslgeneric::NDTMap* map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(fuser.params_.resolution));
+		//COMMENTED THIS LINES
+// 		lslgeneric::NDTMap* map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(fuser.params_.resolution));
 		
 		if(fuser.map != NULL){
 // 			std::cout << "DELETING THE FUSER MAP" << std::endl;
@@ -143,12 +144,15 @@ namespace ndt_feature {
 		else{
 // 			std::cout << "No deleting the fuser's map" << std::endl;
 		}
-		fuser.map = map;
 		
-		lslgeneric::LazyGrid *lz = dynamic_cast<lslgeneric::LazyGrid*>(fuser.map->getMyIndex() );
+		//COMMENTED THIS TWO LINES
+// 		fuser.map = map;
+// 		lslgeneric::LazyGrid *lz = dynamic_cast<lslgeneric::LazyGrid*>(fuser.map->getMyIndex() );
 		
 // 		std::cout << "Nb of init (Should be 0) " << fuser.map->getAllInitializedCells().size() << std::endl;
 		
+		//THis allocate the pointers already
+		lslgeneric::LazyGrid* lz;
 		bool good = lslgeneric::fromMessage(lz, fuser.map, m.map, frame);
 		
 		
