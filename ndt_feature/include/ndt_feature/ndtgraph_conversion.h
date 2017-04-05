@@ -145,13 +145,6 @@ namespace ndt_feature {
 // 			std::cout << "No deleting the fuser's map" << std::endl;
 		}
 		
-		//COMMENTED THIS TWO LINES
-// 		fuser.map = map;
-// 		lslgeneric::LazyGrid *lz = dynamic_cast<lslgeneric::LazyGrid*>(fuser.map->getMyIndex() );
-		
-// 		std::cout << "Nb of init (Should be 0) " << fuser.map->getAllInitializedCells().size() << std::endl;
-		
-		//THis allocate the pointers already
 		lslgeneric::LazyGrid* lz;
 		bool good = lslgeneric::fromMessage(lz, fuser.map, m.map, frame, true);
 		

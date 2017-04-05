@@ -175,7 +175,7 @@ set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry
 ## ATTENTION flirtlib_ros was removed from CATKIN_DEPEND for the visualisation tool.
 catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
-    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry flirtlib_ros  sensor_msgs ndt_visualisation std_srvs das message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs
+    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs das message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs
     INCLUDE_DIRS include /usr/local/include/flirtlib ${vodigrex_INCLUDE_DIRS}
     LIBRARIES ${vodigrex_LIBRARIES} # TODO
 )
