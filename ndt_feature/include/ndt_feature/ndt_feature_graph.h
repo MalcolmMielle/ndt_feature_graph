@@ -453,7 +453,11 @@ public:
 	
     bool converged = matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, true);
 	
-	assert(converged == true);
+	if(converged == false){
+// 		throw std::runtime_error("ndt_map registration didn't converge");
+		
+		std::cout << "USing odometry" << std::endl;
+	}
 	
 	std::cout << "Transform between the two new " << link.T.matrix().format(cleanFmt) << std::endl; 
 	
