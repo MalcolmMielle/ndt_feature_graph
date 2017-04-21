@@ -82,11 +82,11 @@
 
     </node>
 
-    <include file="$(find ndt_feature)/launch/replay.launch">
+    <!--<include file="$(find ndt_feature)/launch/replay.launch">
      <arg name="file" value="/home/malcolm/AASS/Datasets/Gustav/basement.bag" />
      <arg name="rate" value="0.3" />
-     <arg name="start_time" value="75" />
-   </include>
+     <arg name="start_time" value="0" />
+   </include>-->
 
    
 

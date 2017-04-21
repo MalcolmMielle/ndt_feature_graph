@@ -453,11 +453,7 @@ public:
 	
     bool converged = matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, true);
 	
-	if(converged == false){
-// 		throw std::runtime_error("ndt_map registration didn't converge");
-		
-		std::cout << "USing odometry" << std::endl;
-	}
+	
 	
 	std::cout << "Transform between the two new " << link.T.matrix().format(cleanFmt) << std::endl; 
 	
@@ -494,11 +490,24 @@ public:
 	
 	assert(cov.rows() == 6);
 	assert(cov.cols() == 6);
+	std::cout << "PAUSE got cov : " << cov << "\n";
 	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << "\n"; 
+	
+	if(converged == false){
+// 		throw std::runtime_error("ndt_map registration didn't converge");
+		std::cout << "USing odometry input a number to continue" << std::endl;
+		int a;
+		std::cin >> a;
+	}
+	if(same != false){
+		std::cout << "Manually created the covariance because the matching returned the same transof as before." << std::endl;
+		int a;
+		std::cin >> a;	
+	}
+// 	exit(0);
 	link.cov_3d = cov;
 	std::cout << "How my god" << "\n";
 	
-	std::cout << "PAUSE got cov : " << cov << "\n";
 // 	std::cin >> a;
 	
     if (!keepScore) {
@@ -724,6 +733,10 @@ public:
   }
   
   lslgeneric::NDTMap* getMap(int i) {
+    return nodes_[i].map->map;
+  }
+  
+  const lslgeneric::NDTMap* getMap(int i) const {
     return nodes_[i].map->map;
   }
   

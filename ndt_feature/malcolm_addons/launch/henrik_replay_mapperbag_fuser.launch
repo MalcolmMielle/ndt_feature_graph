@@ -75,7 +75,7 @@
 
     <include file="$(find ndt_feature)/launch/replay.launch">
      <arg name="file" value="$(find ndt_feature)/data/mapping.bag" />
-     <arg name="rate" value="1" />
+     <arg name="rate" value="0.5" />
      <arg name="start_time" value="0" />
    </include>
 
