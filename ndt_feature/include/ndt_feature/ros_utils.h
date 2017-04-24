@@ -19,7 +19,7 @@ inline void moveOccupancyMap(nav_msgs::OccupancyGrid &occ_grid, const Eigen::Aff
 
 namespace ndt_feature{
 
-	inline void initSensorPose(NDTFeatureGraph& graph, const std::string& robot_frame, const std::string& sensor_frame){
+	inline void initSensorPose2D(NDTFeatureGraph& graph, const std::string& robot_frame, const std::string& sensor_frame){
 		tf::TransformListener listener;
 		tf::StampedTransform transform;
 		try {
@@ -30,7 +30,7 @@ namespace ndt_feature{
 		}
 		double x = transform.getOrigin().x();
 		double y = transform.getOrigin().y();
-		double z = transform.getOrigin().z();
+		double z = 0;
 		double roll, pitch, yaw;
 		transform.getBasis().getRPY(roll, pitch, yaw);
 		
@@ -44,7 +44,7 @@ namespace ndt_feature{
 	}
 		
 		
-	inline void initRobotPose(NDTFeatureGraph& graph, pcl::PointCloud< pcl::PointXYZ >& cloud, std::string& world_frame, std::string& robot_frame, const InterestPointVec& pts, bool preLoad=false)
+	inline void initRobotPose2D(NDTFeatureGraph& graph, pcl::PointCloud< pcl::PointXYZ >& cloud, std::string& world_frame, std::string& robot_frame, const InterestPointVec& pts, bool preLoad=false)
 	{
 		std::cout << "Listening between " << world_frame << " and " << robot_frame << std::endl;
 		tf::TransformListener listener;
@@ -60,7 +60,7 @@ namespace ndt_feature{
 		std::cout << "DONE " << robot_frame << std::endl;
 		double x = transform.getOrigin().x();
 		double y = transform.getOrigin().y();
-		double z = transform.getOrigin().z();
+		double z = 0;
 		double roll, pitch, yaw;
 		transform.getBasis().getRPY(roll, pitch, yaw);
 		

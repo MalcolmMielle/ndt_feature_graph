@@ -608,9 +608,60 @@ public:
 // 					exit(0);
 					
 					nav_msgs::OccupancyGrid omap; 
+					
+					auto cells = graph->getMap()->getAllCellsShared();
+					auto mean1 = cells[0]->getCenter();
+
+					for(auto it = cells.begin() ; it != cells.end() ; ++it){
+						auto mean = (*it)->getCenter();
+						std::cout << "Mean : " << mean.x << " " << mean.y << " " << mean.z << std::endl;
+						std::cout << "HAs a gaussian ? " << (*it)->hasGaussian_ << std::endl;
+						bool test1 = (*it) == NULL;
+						std::cout << "Is cell in list NULL ? " << test1 << std::endl;
+						lslgeneric::NDTCell* celltest = NULL;
+						pcl::PointXYZ pt;
+						pt.x = mean.x;
+						pt.y = mean.y;
+						pt.z = mean.z;
+						graph->getMap()->getCellAtPoint(pt, celltest);
+						bool testest = celltest == (*it).get();
+						std::cout << "SAME POINTER " << testest << " " << celltest << " " << (*it).get() << std::endl;
+						int indX,indY,indZ;
+						lslgeneric::NDTCell* cell = NULL;
+						auto lazy = dynamic_cast<lslgeneric::LazyGrid*>(graph->getMap()->getMyIndex());
+						lazy->getIndexForPoint(pt,indX,indY,indZ);
+
+						// std::cout << "                 index : " << indX << " " << indY << " " << indZ << std::endl;
+						// std::cout << "                 ondex : " << (*it)->index_test_x << " " << (*it)->index_test_y << " " << (*it)->index_test_z << std::endl;
+
+
+						lazy->getNDTCellAt(indX,indY,indZ, cell);
+						bool test = cell == NULL;
+						std::cout << "Is cell NULL ? " << test << std::endl;
+					}
+
+					std::cout << std::endl << std::endl;
+
+					// exit(0);
 					lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
 					moveOccupancyMap(omap, graph->getT());
 					map_pub_.publish(omap);
+
+					std::cout << "LAST MEAN " << mean1 << std::endl;
+					;
+					std::cout << "HAs a gaussian ? " << cells[0]->hasGaussian_ << std::endl;
+					bool testcell = cells[0] == NULL;
+					std::cout << "Is cell in list NULL ? " << testcell << std::endl;
+					lslgeneric::NDTCell* celltest = NULL;
+					pcl::PointXYZ pt;
+					pt.x = mean1.x;
+					pt.y = mean1.y;
+					pt.z = mean1.z;
+					auto lazyt = dynamic_cast<lslgeneric::LazyGrid*>(graph->getMap()->getMyIndex());
+					int indX,indY,indZ;
+					lazyt->getIndexForPoint(pt,indX,indY,indZ);
+					std::cout << "                 index : " << indX << " " << indY << " " << indZ << std::endl;
+					// exit(0);
 // 					ndt_map::NDTMapMsg map_msg;
 // 					toMessage(graph->getMap(), map_msg, "/ndt_map_frame");
 // 					map_publisher_.publish(map_msg);
@@ -696,8 +747,8 @@ public:
 					
 					//Better init maybe ?
 					_gvisu.setStart(pose_);
-					ndt_feature::initSensorPose(*graph, robot_frame, sensor_frame);
-					ndt_feature::initRobotPose(*graph, cloud, world_frame, robot_frame, pts);
+					ndt_feature::initSensorPose2D(*graph, robot_frame, sensor_frame);
+					ndt_feature::initRobotPose2D(*graph, cloud, world_frame, robot_frame, pts);
 	// 				std::cout << "Graph init. Nb nof nodes : " << graph->getNbNodes() << std::endl;
 	// 				exit(0);
 				}

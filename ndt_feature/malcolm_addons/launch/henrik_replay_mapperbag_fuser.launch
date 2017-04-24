@@ -16,6 +16,10 @@
 	
 	<param name="sensor_range" value="30." />
 	<param name="min_laser_range" value="0.5" />
+
+
+
+
 	<param name="gt_frame" value="state_base_link" />
 
 	<!-- Specific sensor offset parameters for the example file -->

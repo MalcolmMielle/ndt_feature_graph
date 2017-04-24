@@ -11,7 +11,7 @@
 	<param name="size_x_meters" value="100" />
 	<param name="size_y_meters" value="100" />
 	<param name="size_z_meters" value="1.0" />
-	<param name="resolution" value="0.4" />
+	<param name="resolution" value="0.5" />
 	<param name="laser_variance_z" value="0.02" />
 	
 	<param name="sensor_range" value="30." />
@@ -66,7 +66,7 @@
 	<param name="graph_newNodeTranslDist" value="2." />
 	<param name="graph_storePtsInNodes" value="false" />
 
-	<param name="occ_map_resolution" value="0.3" />
+	<param name="occ_map_resolution" value="0.4" />
 	<param name="do_pub_occ_map" value="true" />
 	<param name="do_pub_ndtmap_marker" value="true" />
 	<param name="skip_features" value="true" />
@@ -82,11 +82,11 @@
 
     </node>
 
-    <!--<include file="$(find ndt_feature)/launch/replay.launch">
+    <include file="$(find ndt_feature)/launch/replay.launch">
      <arg name="file" value="/home/malcolm/AASS/Datasets/Gustav/basement.bag" />
      <arg name="rate" value="0.3" />
      <arg name="start_time" value="0" />
-   </include>-->
+   </include>
 
    
 

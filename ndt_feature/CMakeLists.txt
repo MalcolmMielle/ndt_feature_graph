@@ -76,6 +76,19 @@ include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(include)
 include_directories(malcolm_addons/include)
 
+
+#This is only for QtCreator to see the .hpp files in prject
+FILE(GLOB files "${CMAKE_CURRENT_SOURCE_DIR}/include/ndt_feature/*.hpp")
+add_custom_target(headers SOURCES ${files})
+FILE(GLOB filesh "${CMAKE_CURRENT_SOURCE_DIR}/include/ndt_feature/*.h")
+add_custom_target(headersh SOURCES ${filesh})
+FILE(GLOB filesm "${CMAKE_CURRENT_SOURCE_DIR}/malcolm_addons/include/*.hpp")
+add_custom_target(headersm SOURCES ${filesm})
+FILE(GLOB filesmm "${CMAKE_CURRENT_SOURCE_DIR}/malcolm_addons/launch/*.launch")
+add_custom_target(headersmm SOURCES ${filesmm})
+
+
+
 find_package(OpenMP)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
