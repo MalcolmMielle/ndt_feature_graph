@@ -553,174 +553,174 @@ public:
   
   void publish_visualization_slow(const ros::TimerEvent &event) {
 
-	  std::cout << "DRAW" << std::endl;
-            // Add some drawing
-            if (use_graph_) 
-            {
-              if (graph->wasInit()) {
-
-                if (do_pub_debug_markers_) {
-                  // Draw the debug stuff...
-
-                  ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
-                  for (size_t i = 0; i < f->debug_markers_.size(); i++) {
-                    f->debug_markers_[i].header.stamp = frameTime_;
-                    marker_pub_.publish(f->debug_markers_[i]);
-                  }
-                }
-                if (do_pub_ndtmap_marker_)
-                {
-                  // visualization_msgs::Marker markers_ndt;
-                  // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
-                  //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
-                  // marker_pub_.publish(markers_ndt);
-
-				  lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
-                  
-				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
-// 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
-				  
-				 
-
-                }
-                if (do_pub_occ_map_) {
-// 					tf::TransformBroadcaster br;
-// 					tf::Transform transform;
-// 					if(graph->getNbNodes() >= 1){
-// 						for(int i = 0 ; i < graph->getNbNodes() ; ++i){
-// 							std::stringstream sstm;
-// 							sstm << "ndt_map_graph_frame_" << i;
-// 							tf::transformEigenToTF(graph->getNode(i).T, transform);
-// 							br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), world_frame, sstm.str() ));
-// 							
-// 							ndt_map::NDTMapMsg map_msg;
-// 							lslgeneric::toMessage(graph->getMap(), map_msg, sstm.str() );
-// 							map_publisher_.publish(map_msg);
-// 							
-// 						}
+// 	  std::cout << "DRAW" << std::endl;
+//             // Add some drawing
+//             if (use_graph_) 
+//             {
+//               if (graph->wasInit()) {
+// 
+//                 if (do_pub_debug_markers_) {
+//                   // Draw the debug stuff...
+// 
+//                   ndt_feature::NDTFeatureFuserHMT* f = graph->getLastFeatureFuser();
+//                   for (size_t i = 0; i < f->debug_markers_.size(); i++) {
+//                     f->debug_markers_[i].header.stamp = frameTime_;
+//                     marker_pub_.publish(f->debug_markers_[i]);
+//                   }
+//                 }
+//                 if (do_pub_ndtmap_marker_)
+//                 {
+//                   // visualization_msgs::Marker markers_ndt;
+//                   // ndt_visualisation::markerNDTCells2(*(graph->getLastFeatureFuser()->map),
+//                   //                                    graph->getT(), 1, "nd_global_map_last", markers_ndt);
+//                   // marker_pub_.publish(markers_ndt);
+// 
+// 				  lslgeneric::NDTMap* map_moved = graph->getLastFeatureFuser()->map->pseudoTransformNDTMap(graph->getT());
+//                   
+// 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), 1, "nd_global_map_last"));
+// // 				  marker_pub_.publish(ndt_visualisation::markerNDTCells(*(graph->getLastFeatureFuser()->map), graph->getT(), 1, "nd_global_map_last"));
+// 				  
+// 				 
+// 
+//                 }
+//                 if (do_pub_occ_map_) {
+// // 					tf::TransformBroadcaster br;
+// // 					tf::Transform transform;
+// // 					if(graph->getNbNodes() >= 1){
+// // 						for(int i = 0 ; i < graph->getNbNodes() ; ++i){
+// // 							std::stringstream sstm;
+// // 							sstm << "ndt_map_graph_frame_" << i;
+// // 							tf::transformEigenToTF(graph->getNode(i).T, transform);
+// // 							br.sendTransform(tf::StampedTransform(transform, ros::Time::now(), world_frame, sstm.str() ));
+// // 							
+// // 							ndt_map::NDTMapMsg map_msg;
+// // 							lslgeneric::toMessage(graph->getMap(), map_msg, sstm.str() );
+// // 							map_publisher_.publish(map_msg);
+// // 							
+// // 						}
+// // 					}
+// 
+// 
+// 
+// 					ndt_feature::NDTGraphMsg graphmsg;
+// 					ndt_feature::NDTGraphToMsg(*graph, graphmsg, world_frame);
+// 					map_publisher_.publish(graphmsg);
+// // 					exit(0);
+// 					
+// 					nav_msgs::OccupancyGrid omap; 
+// 					
+// 					auto cells = graph->getMap()->getAllCellsShared();
+// 					auto mean1 = cells[0]->getCenter();
+// 
+// 					for(auto it = cells.begin() ; it != cells.end() ; ++it){
+// 						auto mean = (*it)->getCenter();
+// 						std::cout << "Mean : " << mean.x << " " << mean.y << " " << mean.z << std::endl;
+// 						std::cout << "HAs a gaussian ? " << (*it)->hasGaussian_ << std::endl;
+// 						bool test1 = (*it) == NULL;
+// 						std::cout << "Is cell in list NULL ? " << test1 << std::endl;
+// 						lslgeneric::NDTCell* celltest = NULL;
+// 						pcl::PointXYZ pt;
+// 						pt.x = mean.x;
+// 						pt.y = mean.y;
+// 						pt.z = mean.z;
+// 						graph->getMap()->getCellAtPoint(pt, celltest);
+// 						bool testest = celltest == (*it).get();
+// 						std::cout << "SAME POINTER " << testest << " " << celltest << " " << (*it).get() << std::endl;
+// 						int indX,indY,indZ;
+// 						lslgeneric::NDTCell* cell = NULL;
+// 						auto lazy = dynamic_cast<lslgeneric::LazyGrid*>(graph->getMap()->getMyIndex());
+// 						lazy->getIndexForPoint(pt,indX,indY,indZ);
+// 
+// 						// std::cout << "                 index : " << indX << " " << indY << " " << indZ << std::endl;
+// 						// std::cout << "                 ondex : " << (*it)->index_test_x << " " << (*it)->index_test_y << " " << (*it)->index_test_z << std::endl;
+// 
+// 
+// 						lazy->getNDTCellAt(indX,indY,indZ, cell);
+// 						bool test = cell == NULL;
+// 						std::cout << "Is cell NULL ? " << test << std::endl;
 // 					}
-
-
-
-					ndt_feature::NDTGraphMsg graphmsg;
-					ndt_feature::NDTGraphToMsg(*graph, graphmsg, world_frame);
-					map_publisher_.publish(graphmsg);
-// 					exit(0);
-					
-					nav_msgs::OccupancyGrid omap; 
-					
-					auto cells = graph->getMap()->getAllCellsShared();
-					auto mean1 = cells[0]->getCenter();
-
-					for(auto it = cells.begin() ; it != cells.end() ; ++it){
-						auto mean = (*it)->getCenter();
-						std::cout << "Mean : " << mean.x << " " << mean.y << " " << mean.z << std::endl;
-						std::cout << "HAs a gaussian ? " << (*it)->hasGaussian_ << std::endl;
-						bool test1 = (*it) == NULL;
-						std::cout << "Is cell in list NULL ? " << test1 << std::endl;
-						lslgeneric::NDTCell* celltest = NULL;
-						pcl::PointXYZ pt;
-						pt.x = mean.x;
-						pt.y = mean.y;
-						pt.z = mean.z;
-						graph->getMap()->getCellAtPoint(pt, celltest);
-						bool testest = celltest == (*it).get();
-						std::cout << "SAME POINTER " << testest << " " << celltest << " " << (*it).get() << std::endl;
-						int indX,indY,indZ;
-						lslgeneric::NDTCell* cell = NULL;
-						auto lazy = dynamic_cast<lslgeneric::LazyGrid*>(graph->getMap()->getMyIndex());
-						lazy->getIndexForPoint(pt,indX,indY,indZ);
-
-						// std::cout << "                 index : " << indX << " " << indY << " " << indZ << std::endl;
-						// std::cout << "                 ondex : " << (*it)->index_test_x << " " << (*it)->index_test_y << " " << (*it)->index_test_z << std::endl;
-
-
-						lazy->getNDTCellAt(indX,indY,indZ, cell);
-						bool test = cell == NULL;
-						std::cout << "Is cell NULL ? " << test << std::endl;
-					}
-
-					std::cout << std::endl << std::endl;
-
-					// exit(0);
-					lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
-					moveOccupancyMap(omap, graph->getT());
-					map_pub_.publish(omap);
-
-					std::cout << "LAST MEAN " << mean1 << std::endl;
-					;
-					std::cout << "HAs a gaussian ? " << cells[0]->hasGaussian_ << std::endl;
-					bool testcell = cells[0] == NULL;
-					std::cout << "Is cell in list NULL ? " << testcell << std::endl;
-					lslgeneric::NDTCell* celltest = NULL;
-					pcl::PointXYZ pt;
-					pt.x = mean1.x;
-					pt.y = mean1.y;
-					pt.z = mean1.z;
-					auto lazyt = dynamic_cast<lslgeneric::LazyGrid*>(graph->getMap()->getMyIndex());
-					int indX,indY,indZ;
-					lazyt->getIndexForPoint(pt,indX,indY,indZ);
-					std::cout << "                 index : " << indX << " " << indY << " " << indZ << std::endl;
-					// exit(0);
-// 					ndt_map::NDTMapMsg map_msg;
-// 					toMessage(graph->getMap(), map_msg, "/ndt_map_frame");
-// 					map_publisher_.publish(map_msg);
-                }
-              }
-            }
-
-            else {
-              if (fuser->wasInit()) {
-                
-                if (do_pub_debug_markers_) {
-                  for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
-                    fuser->debug_markers_[i].header.stamp = frameTime_;
-                    marker_pub_.publish(fuser->debug_markers_[i]);
-                  }
-                }
-                if (do_pub_ndtmap_marker_) {
-                  Eigen::Affine3d p; p.setIdentity();
-                  marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1, "nd_global_map"));
-                }
-                if (do_pub_occ_map_) {
-                  nav_msgs::OccupancyGrid omap;
-                  lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, world_frame);
-                  map_pub_.publish(omap);
-                }
-              }
-            }
-            
-            
-//             Trying to draw the graph here
-            
-//             if(use_graph_){
-// 				if (graph->wasInit() == true && graph->getNbNodes() >= 6) {
-// 					visualization_msgs::Marker origins;
-// 					visualization_msgs::Marker origins_odom;
-// 					ndt_map::NDTMapMsg mapmsg;
-// 					std::cout << "print all " << std::endl;
-// 					
-// 					
-// 					
-// // 					CALLGRIND_START_INSTRUMENTATION;
-// // 					CALLGRIND_TOGGLE_COLLECT;
-// 					
-// 					
-// 					
-// 					_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
-// 					
-// // 					CALLGRIND_TOGGLE_COLLECT;
-// // 					CALLGRIND_STOP_INSTRUMENTATION;
-// 					
-// 					
-// 					std::cout << "publishing " << std::endl;
-// 					_marker_pub_graph.publish(origins);
-// 					_marker_pub_graph_odom.publish(origins_odom);
-// 					_last_ndtmap.publish(mapmsg);
-// 					
-// 					std::cout << "published " << std::endl;
-// 				}
-// 			}
+// 
+// 					std::cout << std::endl << std::endl;
+// 
+// 					// exit(0);
+// 					lslgeneric::toOccupancyGrid(graph->getMap(), omap, occ_map_resolution_, world_frame);
+// 					moveOccupancyMap(omap, graph->getT());
+// 					map_pub_.publish(omap);
+// 
+// 					std::cout << "LAST MEAN " << mean1 << std::endl;
+// 					;
+// 					std::cout << "HAs a gaussian ? " << cells[0]->hasGaussian_ << std::endl;
+// 					bool testcell = cells[0] == NULL;
+// 					std::cout << "Is cell in list NULL ? " << testcell << std::endl;
+// 					lslgeneric::NDTCell* celltest = NULL;
+// 					pcl::PointXYZ pt;
+// 					pt.x = mean1.x;
+// 					pt.y = mean1.y;
+// 					pt.z = mean1.z;
+// 					auto lazyt = dynamic_cast<lslgeneric::LazyGrid*>(graph->getMap()->getMyIndex());
+// 					int indX,indY,indZ;
+// 					lazyt->getIndexForPoint(pt,indX,indY,indZ);
+// 					std::cout << "                 index : " << indX << " " << indY << " " << indZ << std::endl;
+// 					// exit(0);
+// // 					ndt_map::NDTMapMsg map_msg;
+// // 					toMessage(graph->getMap(), map_msg, "/ndt_map_frame");
+// // 					map_publisher_.publish(map_msg);
+//                 }
+//               }
+//             }
+// 
+//             else {
+//               if (fuser->wasInit()) {
+//                 
+//                 if (do_pub_debug_markers_) {
+//                   for (size_t i = 0; i < fuser->debug_markers_.size(); i++) {
+//                     fuser->debug_markers_[i].header.stamp = frameTime_;
+//                     marker_pub_.publish(fuser->debug_markers_[i]);
+//                   }
+//                 }
+//                 if (do_pub_ndtmap_marker_) {
+//                   Eigen::Affine3d p; p.setIdentity();
+//                   marker_pub_.publish(ndt_visualisation::markerNDTCells(*fuser->map, 1, "nd_global_map"));
+//                 }
+//                 if (do_pub_occ_map_) {
+//                   nav_msgs::OccupancyGrid omap;
+//                   lslgeneric::toOccupancyGrid(fuser->map, omap, occ_map_resolution_, world_frame);
+//                   map_pub_.publish(omap);
+//                 }
+//               }
+//             }
+//             
+//             
+// //             Trying to draw the graph here
+//             
+// //             if(use_graph_){
+// // 				if (graph->wasInit() == true && graph->getNbNodes() >= 6) {
+// // 					visualization_msgs::Marker origins;
+// // 					visualization_msgs::Marker origins_odom;
+// // 					ndt_map::NDTMapMsg mapmsg;
+// // 					std::cout << "print all " << std::endl;
+// // 					
+// // 					
+// // 					
+// // // 					CALLGRIND_START_INSTRUMENTATION;
+// // // 					CALLGRIND_TOGGLE_COLLECT;
+// // 					
+// // 					
+// // 					
+// // 					_gvisu.printAll(*graph, origins, origins_odom, mapmsg, "/world");
+// // 					
+// // // 					CALLGRIND_TOGGLE_COLLECT;
+// // // 					CALLGRIND_STOP_INSTRUMENTATION;
+// // 					
+// // 					
+// // 					std::cout << "publishing " << std::endl;
+// // 					_marker_pub_graph.publish(origins);
+// // 					_marker_pub_graph_odom.publish(origins_odom);
+// // 					_last_ndtmap.publish(mapmsg);
+// // 					
+// // 					std::cout << "published " << std::endl;
+// // 				}
+// // 			}
 
   }
 
