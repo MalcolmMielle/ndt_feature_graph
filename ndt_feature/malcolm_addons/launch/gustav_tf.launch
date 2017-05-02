@@ -22,7 +22,7 @@
 <!-- 	Those two are the same and don't exist in node fuse 	 -->
 	<param name="robot_frame" value="base_link" />
 	<param name="tf_odom_frame" value="base_link" />
-	<param name="world_frame" value="odom" />
+	<param name="world_frame" value="world" />
 	<param name="sensor_frame" value="velodyne" />
 	
 	<param name="gt_frame" value="" />

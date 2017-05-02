@@ -39,6 +39,7 @@ namespace ndt_feature {
 // 		std::cout << "Nb of init when creating message (more than 0) " << fuser.map->getAllInitializedCells().size() << std::endl;
 		bool good = lslgeneric::toMessage(fuser.map, m.map, "/world");
 		m.ctr = fuser.ctr;
+		assert(m.map.header.frame_id != "");
 	}
 	
 	inline void nodeToMsg(const NDTFeatureNode& node, ndt_feature::NDTNodeMsg& m){
@@ -77,7 +78,8 @@ namespace ndt_feature {
 		tf::poseEigenToMsg (graph.Tnow, m.Tnow);
 		m.distance_moved_in_last_node_ = graph.getDistanceTravelled();
 		
-		std::cout << std::endl;
+		std::cout << "ewnd frame " << m.header.frame_id << std::endl;
+		assert(m.header.frame_id != "");
 	}
 	
 	

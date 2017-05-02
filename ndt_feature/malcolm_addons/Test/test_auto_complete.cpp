@@ -723,6 +723,69 @@ public:
 // // 			}
 
   }
+  
+  
+  void updateTF(){
+	  std::cout<< "Updating the tf " << std::endl;
+	  if (nb_added_clouds_  == 0)
+	    {
+			
+	    } else {
+			ROS_INFO("UPDATE");
+			nb_added_clouds_++;
+			if (use_graph_) {
+// 				std::cout << "Update with added cloud " << nb_added_clouds_ << std::endl;
+// 				assert(graph->getNbNodes() == nb_added_clouds_ - 1);
+				pose_ = graph->getT();
+// 				std::cout << "Graph update. Nb nof nodes : " << graph->getNbNodes() << std::endl;
+			}
+			else {
+// 				pose_ = fuser->getT();
+			}
+// 			Todom = Todom*Tmotion;
+	    }
+	    m.unlock();
+		
+		if(graph->fullInit() == false){
+// 			std::cout << "GRAPH NOT FULLY INIT " << std::endl;
+			assert(graph->fullInit());
+		}
+
+// 		if (est_file_.is_open()) {
+// 			est_file_ << frameTime << " " << lslgeneric::transformToEvalString(pose_);
+// 		}
+
+	    tf::Transform transform;
+#if ROS_VERSION_MINIMUM(1,9,0)
+//groovy
+	    tf::transformEigenToTF(pose_, transform);
+#else
+//fuerte
+	    tf::TransformEigenToTF(pose_, transform);
+#endif
+// 		std::cout << "Send transform " << std::endl;
+	    tf_.sendTransform(tf::StampedTransform(transform, ros::Time::now(), world_frame, fuser_frame));
+		{
+			std::cout << "PUblished fuser" << std::endl;
+			nav_msgs::Odometry odom;
+			tf::poseEigenToMsg(pose_, odom.pose.pose);
+			odom.header.stamp = ros::Time::now();
+			odom.header.frame_id = world_frame;
+			odom.header.seq = seq_odom_fuser_++;
+			odom.child_frame_id = "fuser";
+			fuser_pub_.publish(odom);
+		}
+		{
+			nav_msgs::Odometry odom;
+			tf::poseEigenToMsg(Todom, odom.pose.pose);
+			odom.header.stamp = ros::Time::now();
+			odom.header.frame_id = world_frame;
+			odom.header.seq = seq_odom_fuser_++;
+			odom.child_frame_id = "fuser_odom";
+			fuser_odom_pub_.publish(odom);
+		}
+		
+  }
 
     
     void processFeatureFrame(pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts, Eigen::Affine3d Tmotion, const ros::Time &frameTime) {
@@ -820,6 +883,7 @@ public:
 // 		std::cout << "Send transform " << std::endl;
 	    tf_.sendTransform(tf::StampedTransform(transform, frameTime, world_frame, fuser_frame));
 		{
+			std::cout << "PUblished fuser" << std::endl;
 			nav_msgs::Odometry odom;
 			tf::poseEigenToMsg(pose_, odom.pose.pose);
 			odom.header.stamp = frameTime;
@@ -865,9 +929,21 @@ public:
 		//Crash I don't know why
 // 		std::thread first(&NDTFeatureFuserNode::createGraphThread, this);
 // 		first.detach();
-		createGraphThread();
-		
-		std::cout << "Transform sent" << std::endl;
+// 		createGraphThread();
+		if(_count_of_node != graph->getNbNodes()){
+			_count_of_node = graph->getNbNodes();
+			ndt_feature::NDTGraphMsg graphmsg;
+			
+			assert(world_frame != "");
+			std::cout << "World frame : " << world_frame << std::endl;
+			assert(world_frame == "world");
+			ndt_feature::NDTGraphToMsg(*graph, graphmsg, world_frame);
+			
+			assert(graphmsg.header.frame_id != "");
+			_ndt_graph_pub.publish(graphmsg);
+			
+			std::cout << "Transform sent" << std::endl;
+		}
 
     }
 
@@ -1004,10 +1080,13 @@ public:
 		
 		ndt_feature::NDTGraphMsg graphmsg;
 		
+		assert(world_frame != "");
+		assert(world_frame == "/world");
 		ndt_feature::NDTGraphToMsg(*graph, graphmsg, world_frame);
+		
+		assert(graphmsg.header.frame_id != "");
 		_ndt_graph_pub.publish(graphmsg);
 		
-		exit(0);
 	}
 	
 // 	void optimize(const std_msgs::Bool::ConstPtr& bool_msg){
@@ -1249,6 +1328,7 @@ public:
 			Tm = last_odom.inverse()*this_odom;
 
 			if (Tm.translation().norm() < min_incr_dist /*0.02*/ && Tm.rotation().eulerAngles(0,1,2).norm() < min_incr_rot/*0.02*/) {
+				updateTF();
 				message_m.unlock();
 				return;
 			}
@@ -1416,6 +1496,7 @@ public:
 			Tm = last_odom.inverse()*this_odom;
 		//std::cout<<"delta from last update: "<<Tm.translation().transpose()<<" "<<Tm.rotation().eulerAngles(0,1,2)[2] << std::endl;
 			if (Tm.translation().norm() < min_incr_dist /*0.02*/ && Tm.rotation().eulerAngles(0,1,2).norm() < min_incr_rot/*0.02*/) {
+				updateTF();
 				message_m.unlock();
 				return;
 			}
