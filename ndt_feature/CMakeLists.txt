@@ -74,7 +74,7 @@ find_package(GLUT REQUIRED)
 include_directories(${GLUT_INCLUDE_DIR})
 include_directories(${OPENGL_INCLUDE_DIR})
 include_directories(include)
-include_directories(malcolm_addons/include)
+# include_directories(malcolm_addons/include)
 
 
 #This is only for QtCreator to see the .hpp files in prject
@@ -187,7 +187,7 @@ set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry
 ## ATTENTION flirtlib_ros was removed from CATKIN_DEPEND for the visualisation tool.
 catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
-    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs das message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs message_generation
+    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs das message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs
     INCLUDE_DIRS include /usr/local/include/flirtlib ${vodigrex_INCLUDE_DIRS}
     LIBRARIES ${vodigrex_LIBRARIES} # TODO
 )
@@ -257,8 +257,8 @@ message("Adding executable")
 # target_link_libraries(ndt_g2omaker ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS} 
 # )
 
-add_executable(test_auto_complete malcolm_addons/Test/test_auto_complete.cpp)
-target_link_libraries(test_auto_complete 
+add_executable(publish_graph_message src/publish_graph_message.cpp)
+target_link_libraries(publish_graph_message 
 ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod 
 # tutorial_slam2d_library_real 
 # ${G2O_LIBS}
@@ -267,7 +267,7 @@ ${OpenCV_LIBS}
 ${vodigrex_LIBRARIES} 
 # Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
 )
-add_dependencies(test_auto_complete ndt_feature_generate_messages_cpp)
+add_dependencies(publish_graph_message ndt_feature_generate_messages_cpp)
 
 # add_executable(ndt_g2olandmark malcolm_addons/Test/ndt_g2olandmark.cpp)
 # target_link_libraries(ndt_g2olandmark ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod tutorial_slam2d_library_real ${G2O_LIBS} 
@@ -329,7 +329,7 @@ add_dependencies(test_auto_complete ndt_feature_generate_messages_cpp)
 # )
 
 
-add_executable(tf_odom malcolm_addons/src/tf_odom.cpp)
+add_executable(tf_odom src/tf_odom.cpp)
 target_link_libraries(tf_odom 
 ${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod 
 # tutorial_slam2d_library_real ${G2O_LIBS}
