@@ -1,0 +1,94 @@
+<?xml version="1.0"?>
+<launch>    
+	
+   <node pkg="rviz" type="rviz" name="rviz" args="-d $(find ndt_feature)/launch/fuser_laser2d.rviz" />
+
+
+    <node pkg="tf" type="static_transform_publisher" name="world_map_frame" args="0 0 0 0 0 0 /world /map 10"/>
+    <node pkg="tf" type="static_transform_publisher" name="world_odom_frame" args="0 0 0 0 0 0 /world /odom 10"/>
+    <node pkg="tf" type="static_transform_publisher" name="laser_scan_frame" args="0 0 0 0 0 0 /base_laser_link /laserscan 10"/>  
+    <node pkg="tf" type="static_transform_publisher" name="world_laser_frame" args="1.66 0.18 0 0 0 0.016 /fuser /base_laser_link 10"/>  
+   
+    <node pkg="ndt_feature" type="test_auto_complete" name="ndt_feature2d_fuser2" output="screen">
+
+	<param name="laser_topic" value="/mpr_scan" />
+	<param name="matchLaser" value="true" />
+	<param name="world_frame" value="/world" />
+	<param name="tf_odom_frame" value="/base_link" />
+	
+	<param name="size_x_meters" value="100" />
+	<param name="size_y_meters" value="100" />
+	<param name="size_z_meters" value="1.0" />
+
+	<param name="resolution" value="0.4" />
+	<param name="laser_variance_z" value="0.02" />
+	
+	<param name="sensor_range" value="30." />
+	<param name="min_laser_range" value="0.5" />
+	<param name="gt_frame" value="" />
+
+	<!-- Specific sensor offset parameters for the example file -->
+	<param name="sensor_pose_x" value="0" />
+	<param name="sensor_pose_y" value="0" />
+	<param name="sensor_pose_t" value="-1.5707" />
+	<param name="sensor_pose_r" value="3.14159" />
+	<param name="pose_init_x" value="0" />
+	<param name="pose_init_y" value="0" />
+	<param name="pose_init_t" value="0" />
+
+	<param name="map_directory" value="$(find ndt_fuser)/maps/" />	
+	<param name="map_name_prefix" value="mapping" />
+
+	<param name="beHMT" value="false" />
+	<param name="useOdometry" value="false" />
+	<param name="odometry_topic" value="/odom" />
+	<param name="visualize" value="true" />
+	<param name="plotGTTrack" value="true" />
+	<param name="initPoseFromGT" value="false" />
+	<param name="gt_topic" value="/vmc_navserver/state" />
+	<param name="fuser_useNDT" value="true" />
+	<param name="fuser_useFeat" value="false" />
+	<param name="fuser_useOdom" value="false" />
+	<param name="fuser_neighbours" value="2" />
+	<param name="fuser_stepcontrol" value="true" />
+	<param name="fuser_ITR_MAX" value="30" />
+	<param name="fuser_DELTA_SCORE" value="0.000001" />
+	<param name="fuser_globalTransf" value="false" />
+	<param name="fuser_loadCentroid" value="false" />
+	<param name="fuser_forceOdomAsEst" value="false" />
+	<param name="fuser_visualizeLocalCloud" value="false" />
+	<param name="fuser_allMatchesValid" value="true" />
+	<param name="fuser_discardCells" value="false" />
+	<param name="fuser_useSoftConstraints" value="false" />
+	<param name="fuser_useTikhonovRegularization" value="false"/>
+
+	<param name="use_graph" value="true" />
+
+	<param name="graph_newNodeTranslDist" value="2." />
+	<param name="graph_storePtsInNodes" value="false" />
+
+	<param name="occ_map_resolution" value="0.2" />
+	<param name="do_pub_occ_map" value="true" />
+	<param name="do_pub_ndtmap_marker" value="true" />
+	<param name="skip_features" value="true" />
+	<param name="clear_odometry_estimate" value="false"/>
+	<!-- fusion2d bool -->
+	
+	<param name="motion_params_Dd" value="1"/>
+	<param name="motion_params_Dt" value="1"/>
+	<param name="motion_params_Cd" value="1"/>
+	<param name="motion_params_Ct" value="1"/>
+	<param name="motion_params_Td" value="10"/>
+	<param name="motion_params_Tt" value="10"/>
+
+    </node>
+
+    <include file="$(find ndt_feature)/launch/replay.launch">
+     <arg name="file" value="$(find auto_complete_graph)/datasets/corridor_full.bag" />
+     <arg name="rate" value="0.5" />
+     <arg name="start_time" value="0" />
+   </include>
+
+   
+
+</launch>
