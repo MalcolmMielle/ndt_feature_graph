@@ -242,7 +242,7 @@ bool do_pub_ndt_markers_;
             
             if (!gt_file_.is_open() || !est_file_.is_open() || !est2d_file_.is_open())
             {
-              ROS_ERROR_STREAM("Failed to open : " << est_file_ << " | " << est2d_file_ << " | " << gt_file_); 
+//               ROS_ERROR_STREAM("Failed to open : " << est_file_ << " | " << est2d_file_ << " | " << gt_file_); 
             }
                         
             if (gt_topic != std::string("")) 

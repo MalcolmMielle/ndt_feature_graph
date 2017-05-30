@@ -1,4 +1,5 @@
-#pragma once
+#ifndef NDT_FEATURE_UTIL_H
+#define NDT_FEATURE_UTIL_H
 
 #include <ndt_registration/ndt_matcher_d2d.h>
 #include <ndt_registration/ndt_matcher_d2d_feature.h>
@@ -57,7 +58,7 @@ inline Eigen::Affine2d getAffine2d(double x, double y, double th) {
     Eigen::Rotation2D<double>(th);
 }
 
-Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> ICPwithCorrMatch(lslgeneric::NDTMap &targetNDT, lslgeneric::NDTMap &sourceNDT, const std::vector<std::pair<int,int> > &corresp) {
+inline Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> ICPwithCorrMatch(lslgeneric::NDTMap &targetNDT, lslgeneric::NDTMap &sourceNDT, const std::vector<std::pair<int,int> > &corresp) {
     Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> T;
     T.setIdentity();
 
@@ -127,14 +128,14 @@ Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> ICPwithCorrMatch(lslgen
     return T;
 }
 
-void printTransf(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
+inline void printTransf(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
   std::cout << "translation "<<T.translation().transpose()
              <<" (norm) "<<T.translation().norm()<<std::endl;
   std::cout << "rotation " <<T.rotation().eulerAngles(0,1,2).transpose()
              <<" (norm) "<<T.rotation().eulerAngles(0,1,2).norm()<<std::endl;
 }
 
-void printTransf2d(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
+inline void printTransf2d(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
   std::cout << "["<<T.translation()[0] << "," 
             << T.translation()[1] << "]("
     //<< T.rotation().eulerAngles(0,1,2)[2] << ")" << std::endl;
@@ -142,7 +143,7 @@ void printTransf2d(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor
     }
 
 
-void convertAffineToVector(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T,
+inline void convertAffineToVector(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T,
                                 Eigen::Matrix<double,6,1> &vec) {
   vec[0] = T.translation().transpose()[0];
   vec[1] = T.translation().transpose()[1];
@@ -152,7 +153,7 @@ void convertAffineToVector(const Eigen::Transform<double,3,Eigen::Affine,Eigen::
   vec[5] = T.rotation().eulerAngles(0,1,2)[2];
 }
 
-void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
+inline void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
   CellVector* idx = dynamic_cast<CellVector*> (map->getMyIndex());
   if (idx != NULL) {
     NDTCell* nd = (NDTCell*)cell->copy();
@@ -165,7 +166,7 @@ void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
 }
 
 //! Note: this will overwrite any existing cells
-void setNDTCellToMap(NDTMap *map, NDTCell* cell) {
+inline void setNDTCellToMap(NDTMap *map, NDTCell* cell) {
   LazyGrid* lz = dynamic_cast<LazyGrid*> (map->getMyIndex());
   if (lz != NULL) {
     NDTCell* nd = (NDTCell*)cell->clone();
@@ -190,7 +191,7 @@ void setNDTCellToMap(NDTMap *map, NDTCell* cell) {
   }
 }
 
-Eigen::Vector3d computeLocalCentroid(const Eigen::Vector3d &map_centroid, const Eigen::Vector3d &local_pos, double resolution) {
+inline Eigen::Vector3d computeLocalCentroid(const Eigen::Vector3d &map_centroid, const Eigen::Vector3d &local_pos, double resolution) {
   Eigen::Vector3d diff = map_centroid - local_pos;
   std::cout << "local_pos : " << local_pos << std::endl;
   std::cout << "map_centroid : " << map_centroid << std::endl;
@@ -205,7 +206,7 @@ Eigen::Vector3d computeLocalCentroid(const Eigen::Vector3d &map_centroid, const 
   return local_centroid;
 }
 
-bool discardCell(NDTMap &map, const pcl::PointXYZ &pt) {
+inline bool discardCell(NDTMap &map, const pcl::PointXYZ &pt) {
   NDTCell *cell;
   if (map.getCellAtPoint(pt, cell)) {
     cell->hasGaussian_ = false;
@@ -224,7 +225,7 @@ bool discardCell(NDTMap &map, const pcl::PointXYZ &pt) {
 //   }
 // }
 
-std::string transformToEvalString(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
+inline std::string transformToEvalString(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
   std::ostringstream stream;
   stream << std::setprecision(std::numeric_limits<double>::digits10);
   Eigen::Quaternion<double> tmp(T.rotation());
@@ -232,7 +233,7 @@ std::string transformToEvalString(const Eigen::Transform<double,3,Eigen::Affine,
   return stream.str();
 }
 
-std::string transformToEval2dString(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
+inline std::string transformToEval2dString(const Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> &T) {
   std::ostringstream stream;
   stream << std::setprecision(std::numeric_limits<double>::digits10);
   double yaw = getRobustYawFromAffine3d(T);
@@ -244,3 +245,6 @@ std::string transformToEval2dString(const Eigen::Transform<double,3,Eigen::Affin
 
 
 } // namespace
+
+
+#endif

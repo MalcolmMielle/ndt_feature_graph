@@ -93,6 +93,41 @@ class NDTFeatureFuserHMT{
       useTikhonovRegularization = true;
     }
     
+    void print(){
+		// old params
+       std::cout<< " checkConsistency = " << checkConsistency << "\n" <<		  ///perform a check for consistency against initial estimate
+      " resolution = " << resolution << "\n" <<
+      " map_size_x = " << map_size_x << "\n" <<
+      " map_size_y = " << map_size_y << "\n" <<
+      " map_size_z = " << map_size_z << "\n" <<
+      " sensor_range = " << sensor_range << "\n" <<
+      " max_translation_norm = " << max_translation_norm << "\n" <<
+      " max_rotation_norm = " << max_rotation_norm << "\n" <<
+      " fuseIncomplete = " << fuseIncomplete << "\n" <<
+      " beHMT = " << beHMT << "\n" <<
+      " prefix = " << prefix << "\n" <<
+      " hmt_map_dir = " << hmt_map_dir << "\n" <<
+      
+      
+      // new params
+      " useNDT = " << useNDT << "\n" <<
+      " useFeat = " << useFeat << "\n" <<
+      " useOdom = " << useOdom << "\n" <<
+      " neighbours = " << neighbours << "\n" <<
+      " stepcontrol = " << stepcontrol << "\n" <<
+      " ITR_MAX = " << ITR_MAX << "\n" <<
+      " DELTA_SCORE = " << DELTA_SCORE << "\n" <<
+      " globalTransf = " << globalTransf << "\n" <<
+      " loadCentroid = " << loadCentroid << "\n" <<
+      " forceOdomAsEst = " << forceOdomAsEst << "\n" <<
+      " visualizeLocalCloud = " << visualizeLocalCloud << "\n" <<
+      " fusion2d = " << fusion2d << "\n" <<
+      " allMatchesValid = " << allMatchesValid << "\n" <<
+      " discardCells = " << discardCells << "\n" <<
+      " optimizeOnlyYaw = " << optimizeOnlyYaw << "\n" <<
+      " computeCov = " << computeCov << "\n" << std::endl;
+	}
+    
     bool checkConsistency;
     double resolution;
     double map_size_x;
@@ -180,6 +215,13 @@ class NDTFeatureFuserHMT{
     isInit = false;
 
     visualize = false; // 
+    
+    //Init of those by Malcolm
+    Tnow.setIdentity();
+// 	std::cout << "Doing the TNOW" << Tnow.matrix() <<std::endl;
+// 	exit(0);
+	Tlast_fuse.setIdentity(); 
+	Todom.setIdentity();
 
     sensor_pose.setIdentity();
     translation_fuse_delta = 0.05;
@@ -215,6 +257,7 @@ class NDTFeatureFuserHMT{
     motion_params_ = params;
   }
 
+  
     double getDoubleTime()
     {
       struct timeval time;
@@ -295,29 +338,38 @@ class NDTFeatureFuserHMT{
       ///Set the cloud to sensor frame with respect to base
     
       // Copy the points... need to transform them around
-    pcl::PointCloud<pcl::PointXYZ> cloud(cloudOrig);
+		pcl::PointCloud<pcl::PointXYZ> cloud(cloudOrig);
+		
+		assert(cloud.points.size () == cloud.width * cloud.height);
 
-      lslgeneric::transformPointCloudInPlace(sensor_pose, cloud);
-      lslgeneric::transformPointCloudInPlace(initPos, cloud);
-      Tnow = initPos;
+		lslgeneric::transformPointCloudInPlace(sensor_pose, cloud);
+		lslgeneric::transformPointCloudInPlace(initPos, cloud);
+		Tnow = initPos;
 
-      ptsPrev = pts; // pts are always given in the sensor frame...
+		ptsPrev = pts; // pts are always given in the sensor frame...
 
-      // Move the features to the current pose (Tnow)
-      ndt_feature::moveInterestPointVec(Tnow*sensor_pose, ptsPrev);
-      
-      featuremap.update(ptsPrev);
+		// Move the features to the current pose (Tnow)
+// 		std::cout << "Move interest point" << std::endl;
+		ndt_feature::moveInterestPointVec(Tnow*sensor_pose, ptsPrev);
+		
+// 		std::cout << "Update futur map " <<__LINE__ << " " << __FILE__ << std::endl;
+		featuremap.update(ptsPrev);
 
-      map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(params_.resolution));
-      map->initialize(Tnow.translation()(0),Tnow.translation()(1),0./*Tnow.translation()(2)*/,params_.map_size_x,params_.map_size_y,params_.map_size_z);
-      
-      Eigen::Affine3d Tnow_sensor = Tnow*sensor_pose; // The origin from where the sensor readings occured...
-      map->addPointCloud(Tnow_sensor.translation(),cloud, 0.1, 100.0, 0.1);
-      map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, Tnow_sensor.translation(), 0.1);
+		map = new lslgeneric::NDTMap(new lslgeneric::LazyGrid(params_.resolution));
+// 		std::cout << "init " <<__LINE__ << " " << __FILE__ << std::endl;
+		map->initialize(Tnow.translation()(0),Tnow.translation()(1),0./*Tnow.translation()(2)*/,params_.map_size_x,params_.map_size_y,params_.map_size_z);
+		
+		Eigen::Affine3d Tnow_sensor = Tnow*sensor_pose; // The origin from where the sensor readings occured...
+		map->addPointCloud(Tnow_sensor.translation(),cloud, 0.1, 100.0, 0.1);
+// 		std::cout << "compute ndt cells " <<__LINE__ << " " << __FILE__ << std::endl;
+		map->computeNDTCells(CELL_UPDATE_MODE_SAMPLE_VARIANCE, 1e5, 255, Tnow_sensor.translation(), 0.1);
 
-      isInit = true;
-      Tlast_fuse = Tnow;
-      Todom = Tnow;
+		isInit = true;
+		Tlast_fuse = Tnow;
+		Todom = Tnow;
+		
+		//Add visualization point cloud
+// 		pointcloud_vis = cloudOrig;
     }
 
     /**
@@ -617,6 +669,8 @@ class NDTFeatureFuserHMT{
         // Recompute the covariance (based on the matching...)
         if (params_.computeCov)
         {
+			//COVARIANCE
+			
           lslgeneric::NDTMatcherD2D matcher_d2d;
             Eigen::MatrixXd matching_cov(6,6);
             matcher_d2d.covariance(*map, ndglobal, Tmotion_est, matching_cov);
@@ -630,6 +684,10 @@ class NDTFeatureFuserHMT{
             Eigen::Matrix3d prev_cov = current_posecov.cov;
             current_posecov.cov = prev_cov+posecov.cov; // Only works if the registration is done from local frame to global that is that Tmotion holds the complete motion and the covariance estimate is only the local one.
             //            debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(current_posecov.mean, current_posecov.cov, 1., 2, 0));
+            
+//             std::cout << "COVARIANCE :O" << std::endl;
+// 			exit(0);
+			
         }
 
 
@@ -686,7 +744,7 @@ class NDTFeatureFuserHMT{
         Tnow = Tnow * Tmotion;
       }
       
-      std::cout << "Tmotion_est : ";
+//       std::cout << "Tmotion_est : ";
       lslgeneric::printTransf2d(Tmotion_est);
       Eigen::Affine3d spose = Tnow*sensor_pose;
       lslgeneric::transformPointCloudInPlace(spose, cloud_orig);
@@ -731,7 +789,16 @@ class NDTFeatureFuserHMT{
   const NDTFeatureMap& getFeatureMap() const {
     return featuremap;
   }
+  
+  const NDTFeatureFuserHMT::Params& getParam() const {
+	  return params_;
+  }
 
+  
+  Eigen::Matrix3d& getCov(){
+	  return current_posecov.cov;
+  }
+  
   private:
     bool isInit;
     double translation_fuse_delta, rotation_fuse_delta;

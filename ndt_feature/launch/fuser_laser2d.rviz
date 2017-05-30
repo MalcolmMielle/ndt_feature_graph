@@ -169,7 +169,7 @@ Visualization Manager:
       Value: false
     - Class: rviz/Marker
       Enabled: true
-      Marker Topic: visualization_marker
+      Marker Topic: /visualization_marker
       Name: Marker
       Namespaces:
         {}
@@ -199,7 +199,7 @@ Visualization Manager:
       Selectable: true
       Size (Pixels): 3
       Size (m): 0.02
-      Style: Flat Squares
+      Style: Points
       Topic: /laserscan
       Unreliable: false
       Use Fixed Frame: true
@@ -264,6 +264,15 @@ Visualization Manager:
       Position Tolerance: 0.5
       Topic: /fuser_odom
       Value: true
+    - Alpha: 1
+      Class: ndt_rviz_visualisation/NDT
+      Color: 204; 51; 204
+      Enabled: false
+      History Length: 1
+      Name: NDT
+      Topic: /lastgraphmap
+      Unreliable: false
+      Value: false
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48

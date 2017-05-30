@@ -4,6 +4,11 @@
 #include <ndt_feature/ndt_feature_link.h>
 #include <ndt_feature/ndt_feature_node.h>
 //#include <ndt_feature/serialization.h>
+#include <ndt_map/NDTMapMsg.h>
+#include <ndt_map/ndt_conversions.h>
+#include <ndt_map/ndt_map.h>
+
+
 
 namespace ndt_feature {
 
@@ -19,12 +24,21 @@ public:
   class Params {
   public:
     Params() {
-    
+		newNodeNumberOfFrames = 20;
       newNodeTranslDist = 1.;
       storePtsInNodes = false;
       storePtsInNodesIncr = 8;
       popNodes = false;
     }
+    
+    void print(){
+		std::cout << "newNodeNumberOfFrames = " << newNodeNumberOfFrames <<
+		" newNodeTranslDist = " << newNodeTranslDist << "\n" <<
+		" storePtsInNodes = " << storePtsInNodes << "\n" <<
+		" storePtsInNodesIncr = " << storePtsInNodesIncr << "\n" <<
+		" popNodes = " << popNodes << "\n" << std::endl;
+	}
+    int newNodeNumberOfFrames;
     double newNodeTranslDist;
     bool storePtsInNodes;
     int storePtsInNodesIncr;
@@ -52,7 +66,7 @@ public:
   virtual const NDTFeatureLinkInterface& getLinkInterface(size_t idx) const { return links_[idx]; }
 
 
-  NDTFeatureGraph() : distance_moved_in_last_node_(0.) {
+  NDTFeatureGraph() : distance_moved_in_last_node_(0.), count_frames_(0) {
     
   }
   
@@ -73,8 +87,20 @@ public:
     std::cerr << "NDTFeatureGraph Destructor - done" << std::endl;
   }
   
-  
   lslgeneric::NDTMap *map;  /// The complete NDT map (will be updated when optimize is called)
+  
+  
+	bool fullInit(){
+		for(size_t i = 0 ; i < getNbNodes() ; ++i){
+			if(nodes_[i].map->wasInit() == false){
+				std::cout << "False on the " << i + 1 << " element out of " << getNbNodes() << " elements." << std::endl;
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	
   
   // Initialize the first entry of the map.
   void initialize(Eigen::Affine3d initPose, pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts, bool preLoad=false) {
@@ -88,25 +114,146 @@ public:
     node.map->setSensorPose(sensor_pose_);
     // Keep each map in it's own ref frame (that is node.T)
     initPose.setIdentity();
+// 	std::cout << "Initializing node " << std::endl;
     node.map->initialize(initPose, cloud, pts, preLoad);
 
     // Add the cloud...
     if (params_.storePtsInNodes) {
-      Eigen::Affine3d Tnow_local_sensor = initPose*sensor_pose_;
-      node.addCloud(Tnow_local_sensor, cloud);
+// 		std::cout << "STORING THE POINT CLOUD" << std::endl;
+		Eigen::Affine3d Tnow_local_sensor = initPose*sensor_pose_;
+		node.addCloud(Tnow_local_sensor, cloud);
     }
 
     nodes_.push_back(node);
+	
+	assert(node.map->wasInit() == true);
+	assert(nodes_[0].map->wasInit() == true);
+	
+	if(fullInit() == false){
+// 		std::cout << "GRAPH NOT FULLY INIT " << std::endl;
+		assert(fullInit());
+	}
     std::cout << "initialize -> done" << std::endl;
   }
+  
+  
+  
+  //Function when no odom is available
+  // Update the map with new readings, return the current pose in global coordinates.
+//   Eigen::Affine3d updateNoOdom(pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts){
+// 
+// 	  std::cout << "Graph update. Nb nof nodes : " << getNbNodes() << std::endl;
+//     NDTFeatureNode &node = nodes_.back();
+//     std::cout << "---update--- # " << node.nbUpdates << " node # " << nodes_.size() << std::endl;
+//     std::cout << " odom : " << std::flush; lslgeneric::printTransf2d(node.Tlocal_odom);
+// 
+// 	assert(node.map->wasInit() == true);
+// 
+// 	count_frames_ = count_frames_ + 1;
+// 	
+//     // Check if we should start on a new map?
+//     if (count_frames_ > params_.newNodeNumberOfFrames) {
+//       count_frames_ = 0.;
+//       // The returned pose is the local map coord
+//       // Do not update the feature map in this step.
+//       
+// // 	  std::cout << "Updating node " << std::endl;
+//       Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts, false, false);
+//       Tnow = node.T*Tnow_local;
+//       node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+//       node.Tlocal_fuse = Tnow_local;
+//       
+//       // New map (one option is to add the last reading to the previous map and then create a new map with the first reading only). This to make sure that the initial pose estimate of the map is using as much information as possible and that not only odometry readings are used. Possible this could be done without adding the readings to the current active map.
+//       
+// 
+//       // Create a new map.
+//       NDTFeatureNode new_node;
+//       new_node.map = new NDTFeatureFuserHMT(fuser_params_);
+//       new_node.map->setMotionParams(motion_params_);
+//       new_node.map->setSensorPose(sensor_pose_);
+//       new_node.T = Tnow;
+// 	  
+// 	  
+// // 	  new_node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+// //       new_node.Tlocal_fuse = Tnow_local;
+//       
+// 	  // Add the first data...
+//       Eigen::Affine3d init_pose;
+//       init_pose.setIdentity();
+// // 	  std::cout << "Creating new_node init " << std::endl;
+//       new_node.map->initialize(init_pose, cloud, pts, false);
+// // 	  std::cout << "Done new_node init " << std::endl;
+// 
+//       // Add the cloud...
+// //       if (params_.storePtsInNodes) {
+// //         Eigen::Affine3d Tnow_local_sensor = init_pose*sensor_pose_;
+// //         new_node.addCloud(Tnow_local_sensor, cloud);
+// //       }
+//       
+//       if (params_.popNodes) {
+//         std::cerr << "POP NODES!!!-------------------" << std::endl;
+//         nodes_.pop_back();
+//       }
+//       nodes_.push_back(new_node);
+//       std::cout << "update -> done" << std::endl;
+//       return Tnow;
+//     }
+//     
+//     
+// // 	std::cout << "Update the node without creating any new node ?" << std::endl;
+// 
+//     // The returned pose is the local map coord.
+// 	assert(node.map->wasInit() == true);
+//     Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts);
+// // 	std::cout << "Updated the node without creating any new node" << std::endl;
+// 
+//     Tnow = node.T*Tnow_local;
+//     node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+//     node.Tlocal_fuse = Tnow_local;
+//     
+//     node.nbUpdates++;
+// 
+//     // Add the cloud...
+//     if (params_.storePtsInNodes) {
+//       if (node.nbUpdates % params_.storePtsInNodesIncr == 0) {
+//         Eigen::Affine3d Tnow_local_sensor = Tnow_local*sensor_pose_;
+//         node.addCloud(Tnow_local_sensor, cloud);
+//       }
+//     }
+// 
+//     std::cout << "nodes_.size() : " << nodes_.size() << std::endl;
+//     std::cout << "update -> done" << std::endl;
+//     return Tnow;
+//   }
+//   
+//   
+//   
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
 
   // Update the map with new readings, return the current pose in global coordinates.
   Eigen::Affine3d update(Eigen::Affine3d Tmotion, pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts){
 
+	  std::cout << "Graph update. Nb nof nodes : " << getNbNodes() << std::endl;
     NDTFeatureNode &node = nodes_.back();
     std::cout << "---update--- # " << node.nbUpdates << " node # " << nodes_.size() << std::endl;
     std::cout << " odom : " << std::flush; lslgeneric::printTransf2d(node.Tlocal_odom);
 
+	assert(node.map->wasInit() == true);
 
     distance_moved_in_last_node_ += Tmotion.translation().norm();
     
@@ -116,6 +263,7 @@ public:
       // The returned pose is the local map coord
       // Do not update the feature map in this step.
       
+// 	  std::cout << "Updating node " << std::endl;
       Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts, false, false);
       Tnow = node.T*Tnow_local;
       node.Tlocal_odom = node.Tlocal_odom*Tmotion;
@@ -130,16 +278,23 @@ public:
       new_node.map->setMotionParams(motion_params_);
       new_node.map->setSensorPose(sensor_pose_);
       new_node.T = Tnow;
-      // Add the first data...
+	  
+	  
+// 	  new_node.Tlocal_odom = node.Tlocal_odom*Tmotion;
+//       new_node.Tlocal_fuse = Tnow_local;
+      
+	  // Add the first data...
       Eigen::Affine3d init_pose;
       init_pose.setIdentity();
+// 	  std::cout << "Creating new_node init " << std::endl;
       new_node.map->initialize(init_pose, cloud, pts, false);
+// 	  std::cout << "Done new_node init " << std::endl;
 
       // Add the cloud...
-      if (params_.storePtsInNodes) {
-        Eigen::Affine3d Tnow_local_sensor = init_pose*sensor_pose_;
-        new_node.addCloud(Tnow_local_sensor, cloud);
-      }
+//       if (params_.storePtsInNodes) {
+//         Eigen::Affine3d Tnow_local_sensor = init_pose*sensor_pose_;
+//         new_node.addCloud(Tnow_local_sensor, cloud);
+//       }
       
       if (params_.popNodes) {
         std::cerr << "POP NODES!!!-------------------" << std::endl;
@@ -149,9 +304,15 @@ public:
       std::cout << "update -> done" << std::endl;
       return Tnow;
     }
+    
+    
+// 	std::cout << "Update the node without creating any new node ?" << std::endl;
 
     // The returned pose is the local map coord.
+	assert(node.map->wasInit() == true);
     Eigen::Affine3d Tnow_local = node.map->update(Tmotion, cloud, pts);
+// 	std::cout << "Updated the node without creating any new node" << std::endl;
+
     Tnow = node.T*Tnow_local;
     node.Tlocal_odom = node.Tlocal_odom*Tmotion;
     node.Tlocal_fuse = Tnow_local;
@@ -207,7 +368,7 @@ public:
   
   std::vector<NDTFeatureLink> getIncrementalLinks() const {
     std::vector<NDTFeatureLink> ret;
-    for (size_t i = 0; i < nodes_.size()-1; i++) {
+    for (size_t i = 0; i < (int) nodes_.size() - 1 ; i++) {
       NDTFeatureLink m(i, i+1);
       //m.T = nodes_[i].T.rotation()*nodes_[i].T.inverse()*nodes_[i+1].T;;
       //m.T = Eigen::Translation<double,3>(nodes_[i+1].T.translation()-nodes_[i].T.translation())*nodes_[i+1].T.rotation();
@@ -229,24 +390,150 @@ public:
     return ret;
   
   }
+  
+  
+  std::vector<NDTFeatureLink> getOdometryLinks() const {
+    std::vector<NDTFeatureLink> ret;
+    for (size_t i = 0; i < (int) nodes_.size() - 1 ; i++) {
+	  std::cout << "Checking out node " << std::endl;
+      NDTFeatureLink m(i, i+1);
+	  Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+// 	  std::cout <<"Cov on creation " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
+      //m.T = nodes_[i].T.rotation()*nodes_[i].T.inverse()*nodes_[i+1].T;;
+      //m.T = Eigen::Translation<double,3>(nodes_[i+1].T.translation()-nodes_[i].T.translation())*nodes_[i+1].T.rotation();
+      m.T = nodes_[i].Tlocal_odom; //<-Not multiuplied since it's alwasy starts at zero again so we don't need a difference
+      //.inverse()*nodes_[i+1].Tlocal_odom;
 
+      std::cout << "---" << std::endl;
+      std::cout << "incr : " << std::flush; lslgeneric::printTransf(m.T);
+      std::cout << "T  : " << std::flush; lslgeneric::printTransf(nodes_[i].T);
+      std::cout << "T+1  : " << std::flush; lslgeneric::printTransf(nodes_[i+1].T);
+      std::cout << "T*incr : " << std::flush; lslgeneric::printTransf(nodes_[i].T*m.T);
+      
+      std::cout << "m.T.rotation() : " << m.T.rotation() << std::endl;
+      std::cout << "m.T.rotation().eulerAngles(0,1,2) : " <<
+	  m.T.rotation().eulerAngles(0,1,2) << std::endl;
+      m.score = -1.;
+      ret.push_back(m);
+	  std::cout <<"Cov on push_back " <<m.getRelCov().inverse().format(cleanFmt) << std::endl;
+	      
+		
+	}
+	
+	for(int tmp = 0 ; tmp < ret.size() ; ++tmp){
+	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+// 			std::cout <<"Estimate before return " << ret[tmp].getRelCov().inverse().format(cleanFmt) << std::endl;
+		std::cout << "Adding Edge" << std::endl;	
+	}
+    
+    
+    return ret;
+  
+  }
+
+  void updateAllGraphLinksUsingNDTRegistration(int nb_neighbours, bool keepScore){
+	  
+	  for(size_t i = 0 ; i < getNbLinks() ; ++i){
+		  
+		  std::cout << "New link" << __LINE__ << std::endl;
+		  
+		  NDTFeatureLink link = (NDTFeatureLink&) getLinkInterface(i);
+		  updateLinkUsingNDTRegistration(link, nb_neighbours, keepScore);
+		  
+		  std::cout << "OUT" << __LINE__ << std::endl;
+		  
+	  }
+	  
+  }
+  
   void updateLinkUsingNDTRegistration(NDTFeatureLink &link, int nb_neighbours, bool keepScore) {
     lslgeneric::NDTMatcherD2D matcher_d2d;
     matcher_d2d.n_neighbours = nb_neighbours;
-    
-    matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T,true);
+	
+	std::cout << "Matching : " << link.getRefIdx() << " with " << link.getMovIdx() << std::endl;
+	Eigen::IOFormat cleanFmt(4, 0, ", ", "\n", "[", "]");
+	std::cout << "Transform between the two " << link.T.matrix().format(cleanFmt) << std::endl; 
+    int a ;
+// 	std::cout << "PAUSE before match" << std::endl;
+// 	std::cin >> a;
+	
+	Eigen::Affine3d before_T = link.T;
+	
+    bool converged = matcher_d2d.match(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, true);
+	
+	
+	
+	std::cout << "Transform between the two new " << link.T.matrix().format(cleanFmt) << std::endl; 
+	
+// 	int a ;
+// 	std::cout << "PAUSE before cov" << std::endl;
+// 	std::cin >> a;
+	
+	//Adding the covariance into the link
+	Eigen::MatrixXd cov(6,6);
+	
+	bool same = true;
+	for(size_t i = 0; i < 4 ; ++i){
+		
+		for(size_t  j = 0 ; j < 4 ; ++j){
+			if(before_T(i,j) != link.T(i,j)){
+				same = false;
+			}
+		}
+	}
+	
+	if(same == false){
+		cov.setZero();
+		matcher_d2d.covariance(nodes_[link.getRefIdx()].getNDTMap(), nodes_[link.getMovIdx()].getNDTMap(), link.T, cov);
+	}
+	else{
+		std::cout << "NOTHING HAPPENED Creating a identity matrix" << std::endl;
+		cov = Eigen::MatrixXd::Identity(6, 6);
+		cov << 	0.02, 	0, 		0,
+				0, 		0.02, 	0,
+				0, 		0, 		0.02;
+// 		exit(0);
+	}
+	std::cout << "Size of Covariance : " << cov.rows() << " AND COLS " << cov.cols() << std::endl;
+	
+	assert(cov.rows() == 6);
+	assert(cov.cols() == 6);
+	std::cout << "PAUSE got cov : " << cov << "\n";
+	std::cout << "COVARIANCE BY MATCHER " << cov.inverse().format(cleanFmt) << "\n"; 
+	
+	if(converged == false){
+// 		throw std::runtime_error("ndt_map registration didn't converge");
+		std::cout << "USing odometry input a number to continue" << std::endl;
+		int a;
+		std::cin >> a;
+	}
+	if(same != false){
+		std::cout << "Manually created the covariance because the matching returned the same transof as before." << std::endl;
+		int a;
+		std::cin >> a;	
+	}
+// 	exit(0);
+	link.cov_3d = cov;
+	std::cout << "How my god" << "\n";
+	
+// 	std::cin >> a;
+	
     if (!keepScore) {
+      std::cout << "old link.score : " << "\n";
+	  std::cout << link.score << "\n";
       link.score = ndt_feature::overlapNDTOccupancyScore(nodes_[link.getRefIdx()],
                                                          nodes_[link.getMovIdx()], 
                                                          link.T);
-      std::cout << "new link.score : " << link.score << std::endl;
+      std::cout << "new link.score : " << link.score << "\n";
     }
+    
+    std::cout << "End of link" << std::endl;
   }
 
   void updateLinksUsingNDTRegistration(std::vector<NDTFeatureLink> &links, int nb_neighbours, bool keepScore) {
 
     for (size_t i = 0; i < links.size(); i++) {
-      std::cout << "updating link : " << i << " (" << links.size() << ")" << std::endl;
+//       std::cout << "updating link : " << i << " (size of links :" << links.size() << ")" << std::endl;
       updateLinkUsingNDTRegistration(links[i], nb_neighbours, keepScore);
     }
   }
@@ -340,6 +627,13 @@ public:
   void setSensorPose(Eigen::Affine3d spose){
     sensor_pose_ = spose;
   }
+  
+  
+  
+  
+  
+  
+  
 
   bool wasInit() const {
     // Fuser function...
@@ -365,7 +659,9 @@ public:
     
     std::vector<NDTFeatureNode>::iterator it;
     int i = 0; 
+	std::cout << "Saving : " << getNbNodes() << " nodes " << std::endl;
     for (it = nodes_.begin(); it != nodes_.end(); it++) {
+	  std::cout << "Saving : " << i << " nodes, in : " << filename + semrob_generic::toString(i) << std::endl;
       it->save(filename + semrob_generic::toString(i));
       i++;
     }
@@ -444,6 +740,14 @@ public:
     return nodes_.back().map->map;
   }
   
+  lslgeneric::NDTMap* getMap(int i) {
+    return nodes_[i].map->map;
+  }
+  
+  const lslgeneric::NDTMap* getMap(int i) const {
+    return nodes_[i].map->map;
+  }
+  
   Eigen::Affine3d getT() {
     return nodes_.back().T;
   }
@@ -451,8 +755,17 @@ public:
   pcl::PointCloud<pcl::PointXYZ>& getVisualizationCloud() {
     if (wasInit()) {
       // Rotate / translate this with current T value.
-      pcl::PointCloud<pcl::PointXYZ> &pc = nodes_.back().map->pointcloud_vis;
+//       pcl::PointCloud<pcl::PointXYZ> &pc = nodes_.back().map->pointcloud_vis;
+		//Get the point cloud from the node instead of the map
+		pcl::PointCloud<pcl::PointXYZ> &pc = nodes_.back().getPts();
+	  //WARNING : CRASH HERE !
+	  std::cout << pc.points.size () << " != " << pc.width * pc.height << std::endl;
+	  assert(pc.points.size () == pc.width * pc.height);
+// 	  std::cout << "TRANSFORM" <<std::endl;
       lslgeneric::transformPointCloudInPlace(nodes_.back().T, pc);
+// 	  std::cout << "TRANSFORM DONE" <<std::endl;
+	  std::cout << pc.points.size () << " != " << pc.width * pc.height << std::endl;
+	  assert(pc.points.size () == pc.width * pc.height);
       return pc;
     }
     return pointcloud_vis;
@@ -465,6 +778,29 @@ public:
 
   const NDTFeatureNode& getNode(size_t idx) const {
     return nodes_[idx];
+  }
+  
+  void push_back(const NDTFeatureNode& n){
+	  nodes_.push_back(n);
+  }
+  void push_back(const NDTFeatureLink& n){
+	  links_.push_back(n);
+  }
+  
+  NDTFeatureLink& getLink(size_t idx) {
+    return links_[idx];
+  }
+
+  const NDTFeatureLink& getLink(size_t idx) const {
+    return links_[idx];
+  }
+  
+  float getDistanceTravelled() const {
+	  return distance_moved_in_last_node_;
+  }
+  
+  void setDistanceTravelled(float f){
+	  distance_moved_in_last_node_ = f;
   }
 
   void force2D() {
@@ -511,6 +847,18 @@ public:
   const std::vector<NDTFeatureLink>& getCurrentLinks() {
     return links_;
   }
+  
+  
+	ndt_map::NDTMapMsg& getMapMessage(){
+	  //Get the last ndtMap element
+		lslgeneric::NDTMap* map = getMap();
+		ndt_map::NDTMapMsg mapmsg;
+		
+// 			lslgeneric::NDTMap* map = map->pseudoTransformNDTMap();
+		bool good = lslgeneric::toMessage(map, mapmsg, "/world");
+		return mapmsg;
+	}
+  
 
   NDTViz *viewer;
   
@@ -531,6 +879,7 @@ private:
 
 
   double distance_moved_in_last_node_;
+  int count_frames_;
 
   // set of visualization markers (the possiblity to draw a NDT set of cells for each map).
 

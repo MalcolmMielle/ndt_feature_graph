@@ -15,7 +15,7 @@
 
 namespace ndt_feature {
 
-bool saveAffine3d(const Eigen::Affine3d &T, const std::string& fileName) {
+inline bool saveAffine3d(const Eigen::Affine3d &T, const std::string& fileName) {
   std::ofstream ofs(fileName.c_str());
   if (ofs.fail())
     return false;
@@ -24,7 +24,7 @@ bool saveAffine3d(const Eigen::Affine3d &T, const std::string& fileName) {
   return true;
 }
  
-bool loadAffine3d(Eigen::Affine3d &T, const std::string& fileName) {
+inline bool loadAffine3d(Eigen::Affine3d &T, const std::string& fileName) {
   std::ifstream ifs(fileName.c_str());
   if (!ifs.is_open())
     return false;
@@ -38,15 +38,38 @@ bool loadAffine3d(Eigen::Affine3d &T, const std::string& fileName) {
 class NDTFeatureNode : public NDTFeatureNodeInterface {
 
 public:
+	//TODO : would initialize NDTFeatureHMT in here prove more useful ? For now the user is forced to init everything itself otherwise you can't access the Eigen matrix straight away. Maybe a combination of a pointer destructor in the destructor and some setter getter ? I think it will be better for memory allocation also.
   NDTFeatureNode() : nbUpdates(0), map(NULL) {
     T.setIdentity();
     Tlocal_odom.setIdentity();
     Tlocal_fuse.setIdentity();
   }
+  
+  //Bugging Henrik code
+//   NDTFeatureNode(const NDTFeatureNode& ndt_feat){
+// 	  cov = ndt_feat.getCov();
+// 	  T = ndt_feat.getPose();
+// 	  Tlocal_odom = ndt_feat.getTLocalOdom();
+// 	  Tlocal_fuse = ndt_feat.getTLocalFuse();
+// 	  pts = ndt_feat.getPts();
+// 	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
+// 	  *map = *(ndt_feat.map);
+//   }
 
   ~NDTFeatureNode() {
     std::cerr << "FeatureNode Destructor" << std::endl;
     std::cerr << "FeatureNode Destructor - done" << std::endl;
+  }
+  
+  void copyNDTFeatureNode(const NDTFeatureNode& ndt_feat){
+	  cov = ndt_feat.getCov();
+	  T = ndt_feat.getPose();
+	  Tlocal_odom = ndt_feat.getTLocalOdom();
+	  Tlocal_fuse = ndt_feat.getTLocalFuse();
+	  pts = ndt_feat.getPts();
+	  map = new NDTFeatureFuserHMT(ndt_feat.map->getParam());
+	  //TODO :
+	  *map = *(ndt_feat.map);
   }
 
   NDTFeatureFuserHMT* map;
@@ -141,6 +164,10 @@ if (!map->load(fileName)) {
     return *(map->map);
   }
 
+  const NDTFeatureFuserHMT& getFuser() const {return *map;}
+  NDTFeatureFuserHMT& getFuser() {return *map;}
+  
+  
   const lslgeneric::NDTMap& getNDTMap() const { 
     assert(map != NULL);
     assert(map->map != NULL);
@@ -153,6 +180,19 @@ if (!map->load(fileName)) {
   }
   virtual const Eigen::Matrix3d& getCov() const {
     return cov;
+  }
+  virtual const Eigen::Affine3d& getTLocalOdom() const {
+    return Tlocal_odom;
+  }
+  virtual const Eigen::Affine3d& getTLocalFuse() const {
+    return Tlocal_fuse;
+  }
+  virtual const pcl::PointCloud<pcl::PointXYZ>& getPts() const {
+	return pts;
+  }
+  virtual pcl::PointCloud<pcl::PointXYZ>& getPts() {
+	pcl::PointCloud<pcl::PointXYZ>& pt(pts);
+	return pt;
   }
 
   void setPose(const Eigen::Affine3d &pose) { T = pose; }
@@ -167,7 +207,7 @@ if (!map->load(fileName)) {
 
 
 // Matching functions
-double overlapNDTOccupancyScore(NDTFeatureNode &ref, NDTFeatureNode &mov, const Eigen::Affine3d &T) {
+inline double overlapNDTOccupancyScore(NDTFeatureNode &ref, NDTFeatureNode &mov, const Eigen::Affine3d &T) {
   // Use T to move the mov frame center... return a score based on the number of cells that matched/total number of cells.
   
   std::vector<lslgeneric::NDTCell*> mov_vector=mov.map->map->getAllInitializedCells();
@@ -208,7 +248,7 @@ double overlapNDTOccupancyScore(NDTFeatureNode &ref, NDTFeatureNode &mov, const 
   return diff_sum/(1.*nb_sum);
 }
 
-double matchNodesUsingFeatureMap(const NDTFeatureNode &ref, const NDTFeatureNode &mov, Correspondences &matches, Eigen::Affine3d &T) 
+inline double matchNodesUsingFeatureMap(const NDTFeatureNode &ref, const NDTFeatureNode &mov, Correspondences &matches, Eigen::Affine3d &T) 
 {
   return matchFeatureMap(ref.map->featuremap, mov.map->featuremap, matches, T);
 }

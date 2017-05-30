@@ -70,6 +70,9 @@ class NDTFeatureFuserNode {
   ros::Publisher pointcloud2_pub_;
   ros::Publisher fuser_odom_pub_, fuser_pub_;
 	Eigen::Affine3d pose_, T, sensor_pose_;
+	
+	//MALCOLM
+// 	ros::Publisher _last_ndtmap;
 
         tf::TransformListener listener;
 
@@ -244,7 +247,7 @@ public:
             param_nh.param<bool>("fuser_stepControlFusion", fuser_params.stepControlFusion, true);
             param_nh.param<bool>("fuser_useTikhonovRegularization", fuser_params.useTikhonovRegularization, true);
 
-            param_nh.param<bool>("use_graph", use_graph_, false);
+            param_nh.param<bool>("use_graph", use_graph_, true);
             
             ndt_feature::NDTFeatureGraph::Params graph_params;
             param_nh.param<double>("graph_newNodeTranslDist", graph_params.newNodeTranslDist, 10.);
@@ -295,7 +298,7 @@ public:
             
             if (!gt_file_.is_open() || !est_file_.is_open())
             {
-              ROS_ERROR_STREAM("Failed to open : " << gt_file_ << " || " << est_file_); 
+//               ROS_ERROR_STREAM("Failed to open : " << gt_file_ << " || " << est_file_); 
             }
 
             
@@ -314,6 +317,8 @@ public:
 		Eigen::AngleAxis<double>(sensor_pose_r,Eigen::Vector3d::UnitX()) *
 		Eigen::AngleAxis<double>(sensor_pose_p,Eigen::Vector3d::UnitY()) *
 		Eigen::AngleAxis<double>(sensor_pose_t,Eigen::Vector3d::UnitZ()) ;
+		
+// 		_last_ndtmap= nh_.advertise<ndt_map::NDTMapMsg>("lastgraphmap", 10);
 
 	    if(matchLaser) match2D=true;
 
@@ -381,10 +386,15 @@ public:
             heartbeat_slow_visualization_   = nh_.createTimer(ros::Duration(4.0),&NDTFeatureFuserNode::publish_visualization_slow,this);
             
             Todom.setIdentity();
+			
+// 			exit(0);
         }
 
 	~NDTFeatureFuserNode()
 	{
+		
+		graph->saveMap();
+		
           if (gt_file_.is_open())
             gt_file_.close();
           if (est_file_.is_open())
@@ -421,6 +431,7 @@ public:
                   moveOccupancyMap(omap, graph->getT());
                   map_pub_.publish(omap);
                 }
+                
               }
             }
             else {
@@ -448,6 +459,21 @@ public:
 
     
     void processFeatureFrame(pcl::PointCloud<pcl::PointXYZ> &cloud, const InterestPointVec& pts, Eigen::Affine3d Tmotion, const ros::Time &frameTime) {
+		
+		int nb_nodes = graph->getNbNodes();
+		ROS_ERROR_STREAM( "Number of nodes " << nb_nodes << std::endl);
+// 		if(nb_nodes > 0){
+// 			//Publish Last NDT MAP MALCOLM
+// 			ndt_map::NDTMapMsg mapmsg;
+// 			int nb_nodes = graph->getNbNodes();
+// 			lslgeneric::NDTMap* map = graph->getMap(nb_nodes - 1);
+// 		
+// 	// 			lslgeneric::NDTMap* map = map->pseudoTransformNDTMap();
+// 			bool good = lslgeneric::toMessage(map, mapmsg, "/world");
+// 			_last_ndtmap.publish(mapmsg);
+// 		}
+		
+		
         m.lock();
         
         if (clear_odometry_estimate_) {

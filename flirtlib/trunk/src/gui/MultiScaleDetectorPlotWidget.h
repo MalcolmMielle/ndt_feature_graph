@@ -30,6 +30,7 @@
 #include <qwt_symbol.h>
 #include <qwt_plot_zoomer.h>
 #include <qwt_plot_layout.h>
+#include <qwt_point_data.h>
 
 class MultiScaleDetectorPlotWidget: public QWidget {
     Q_OBJECT

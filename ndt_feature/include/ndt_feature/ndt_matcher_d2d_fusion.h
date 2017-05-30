@@ -387,7 +387,7 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
 
 
 //perform line search to find the best descent rate (More&Thuente)
-double lineSearchMTFusion(
+inline double lineSearchMTFusion(
     Eigen::Matrix<double,6,1> &increment,
     std::vector<NDTCell*> &sourceNDT,
     NDTMap &targetNDT,
@@ -793,9 +793,8 @@ double lineSearchMTFusion(
 }
 
 
-
 // TODO - wrap this up and write a new class in ndt_registration
-  bool matchFusion( NDTMap& targetNDT,
+inline  bool matchFusion( NDTMap& targetNDT,
 		    NDTMap& sourceNDT,
 		    NDTMap& targetNDT_feat,
 		    NDTMap& sourceNDT_feat,
@@ -1157,7 +1156,7 @@ double lineSearchMTFusion(
 
 
 
-  bool matchFusion2d( NDTMap& targetNDT,
+inline  bool matchFusion2d( NDTMap& targetNDT,
                       NDTMap& sourceNDT,
                       NDTMap& targetNDT_feat,
                       NDTMap& sourceNDT_feat,

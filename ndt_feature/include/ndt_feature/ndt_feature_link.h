@@ -13,10 +13,18 @@ public:
     T.setIdentity();
     score = 0.;
   }
+  NDTFeatureLink(const NDTFeatureLink& link){
+	  ref_idx = link.getRefIdx();
+	  mov_idx = link.getMovIdx();
+	  T = link.getRelPose();
+	  cov = getRelCov();
+	  score = getScore();
+  }
   size_t ref_idx; // Vector idx...
   size_t mov_idx;
   Eigen::Affine3d T; // From ref->mov.
   Eigen::Matrix3d cov;
+  Eigen::MatrixXd cov_3d; // <-HACK for using the covairance returned by Matcher_D2D
   double score;
 
   // Interfaces
