@@ -30,6 +30,14 @@ public:
       storePtsInNodesIncr = 8;
       popNodes = false;
     }
+    
+    void print(){
+		std::cout << "newNodeNumberOfFrames = " << newNodeNumberOfFrames <<
+		" newNodeTranslDist = " << newNodeTranslDist << "\n" <<
+		" storePtsInNodes = " << storePtsInNodes << "\n" <<
+		" storePtsInNodesIncr = " << storePtsInNodesIncr << "\n" <<
+		" popNodes = " << popNodes << "\n" << std::endl;
+	}
     int newNodeNumberOfFrames;
     double newNodeTranslDist;
     bool storePtsInNodes;

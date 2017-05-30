@@ -91,6 +91,41 @@ class NDTFeatureFuserHMT{
       computeCov = true;
     }
     
+    void print(){
+		// old params
+       std::cout<< " checkConsistency = " << checkConsistency << "\n" <<		  ///perform a check for consistency against initial estimate
+      " resolution = " << resolution << "\n" <<
+      " map_size_x = " << map_size_x << "\n" <<
+      " map_size_y = " << map_size_y << "\n" <<
+      " map_size_z = " << map_size_z << "\n" <<
+      " sensor_range = " << sensor_range << "\n" <<
+      " max_translation_norm = " << max_translation_norm << "\n" <<
+      " max_rotation_norm = " << max_rotation_norm << "\n" <<
+      " fuseIncomplete = " << fuseIncomplete << "\n" <<
+      " beHMT = " << beHMT << "\n" <<
+      " prefix = " << prefix << "\n" <<
+      " hmt_map_dir = " << hmt_map_dir << "\n" <<
+      
+      
+      // new params
+      " useNDT = " << useNDT << "\n" <<
+      " useFeat = " << useFeat << "\n" <<
+      " useOdom = " << useOdom << "\n" <<
+      " neighbours = " << neighbours << "\n" <<
+      " stepcontrol = " << stepcontrol << "\n" <<
+      " ITR_MAX = " << ITR_MAX << "\n" <<
+      " DELTA_SCORE = " << DELTA_SCORE << "\n" <<
+      " globalTransf = " << globalTransf << "\n" <<
+      " loadCentroid = " << loadCentroid << "\n" <<
+      " forceOdomAsEst = " << forceOdomAsEst << "\n" <<
+      " visualizeLocalCloud = " << visualizeLocalCloud << "\n" <<
+      " fusion2d = " << fusion2d << "\n" <<
+      " allMatchesValid = " << allMatchesValid << "\n" <<
+      " discardCells = " << discardCells << "\n" <<
+      " optimizeOnlyYaw = " << optimizeOnlyYaw << "\n" <<
+      " computeCov = " << computeCov << "\n" << std::endl;
+	}
+    
     bool checkConsistency;
     double resolution;
     double map_size_x;

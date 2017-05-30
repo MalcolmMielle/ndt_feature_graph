@@ -27,6 +27,7 @@ namespace ndt_feature{
 			listener.lookupTransform(sensor_frame, robot_frame, ros::Time(0), transform);
 		} catch (tf::TransformException ex) {
 			ROS_ERROR("%s",ex.what());
+// 			exit(0);
 		}
 		double x = transform.getOrigin().x();
 		double y = transform.getOrigin().y();
@@ -38,6 +39,9 @@ namespace ndt_feature{
 		Eigen::AngleAxis<double>(roll,Eigen::Vector3d::UnitX()) *
 		Eigen::AngleAxis<double>(pitch,Eigen::Vector3d::UnitY()) *
 		Eigen::AngleAxis<double>(yaw,Eigen::Vector3d::UnitZ()) ;
+		
+		std::cout << "Sensor pose " << pose_sensor.matrix() << std::endl;
+// 		exit(0);
 		
 		graph.setSensorPose(pose_sensor);
 		
@@ -69,7 +73,7 @@ namespace ndt_feature{
 		Eigen::AngleAxis<double>(pitch,Eigen::Vector3d::UnitY()) *
 		Eigen::AngleAxis<double>(yaw,Eigen::Vector3d::UnitZ()) ;
 		std::cout << "POSE " << pose.matrix() << std::endl;
-	// 		exit(0);
+// 			exit(0);
 		
 		graph.initialize(pose, cloud, pts, preLoad);
 
