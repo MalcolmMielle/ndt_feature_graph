@@ -334,8 +334,10 @@ public:
 		param_nh.param<bool>("fuser_fusion2d", fuser_params.fusion2d, false);
 		param_nh.param<bool>("fuser_allMatchesValid", fuser_params.allMatchesValid, false);
 		param_nh.param<bool>("fuser_discardCells", fuser_params.discardCells, false);
-		param_nh.param<bool>("fuser_optimizeOnlyYaw", fuser_params.optimizeOnlyYaw, false);
+// 		param_nh.param<bool>("fuser_optimizeOnlyYaw", fuser_params.optimizeOnlyYaw, false);
 		param_nh.param<bool>("fuser_computeCov", fuser_params.computeCov, true);
+		param_nh.param<bool>("fuser_stepControlFusion", fuser_params.stepControlFusion, true);
+		param_nh.param<bool>("fuser_useTikhonovRegularization", fuser_params.useTikhonovRegularization, true);
 
 		param_nh.param<bool>("use_graph", use_graph_, true);
 		

@@ -283,10 +283,10 @@ public:
             param_nh.param<std::string>("output_est_file", est_filename, std::string(""));
             
             if (gt_filename == std::string("")) {
-              gt_filename = std::string("gt_pose") + fuser_params.getDescString() + motion_params.getDescString() + std::string(".txt");
+              gt_filename = std::string("gt_pose") + fuser_params.getDescString() + std::string(".txt");
             }
             if (est_filename == std::string("")) {
-              est_filename = std::string("est_pose") + fuser_params.getDescString() + motion_params.getDescString() + std::string(".txt");
+              est_filename = std::string("est_pose") + fuser_params.getDescString() + std::string(".txt");
             }
                    
             if (gt_filename != std::string("") && gt_frame != std::string("")) {

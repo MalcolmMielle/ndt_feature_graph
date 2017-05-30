@@ -124,7 +124,7 @@ class NDTFeatureFuserHMT{
       " fusion2d = " << fusion2d << "\n" <<
       " allMatchesValid = " << allMatchesValid << "\n" <<
       " discardCells = " << discardCells << "\n" <<
-      " optimizeOnlyYaw = " << optimizeOnlyYaw << "\n" <<
+//       " optimizeOnlyYaw = " << optimizeOnlyYaw << "\n" <<
       " computeCov = " << computeCov << "\n" << std::endl;
 	}
     
