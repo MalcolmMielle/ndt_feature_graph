@@ -1356,7 +1356,8 @@ public:
 		}
 		else{
 			ROS_ERROR("GOOD UNFILTERED SCAN");
-			std::cout<< "GOOD UNFILTERED SCAN" << std::endl;
+// 			std::cout<< "GOOD UNFILTERED SCAN" << std::endl;std::cout << "Weird cloud sizes. I don't know what's going on:" << pcl_cloud_unfiltered.points.size () << " != " << pcl_cloud_unfiltered.width << " * " << pcl_cloud_unfiltered.height << std::endl; ;
+// 			exit(0);
 		}
 
 	    pcl::PointXYZ pt;

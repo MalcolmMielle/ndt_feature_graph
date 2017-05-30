@@ -7,10 +7,10 @@
 	
     <node pkg="ndt_feature" type="test_auto_complete" name="ndt_feature2d_fuser2" output="screen">
 
-	<param name="laser_topic" value="/laser_scan_with_ransac" />	
-	<param name="resolution" value="0.5" />
-<!-- 	<param name="laser_topic" value="/mpr_scan" /> -->
-<!-- 	<param name="resolution" value="1" /> -->
+<!-- 	<param name="laser_topic" value="/laser_scan_with_ransac" />	 -->
+<!-- 	<param name="resolution" value="0.5" /> -->
+	<param name="laser_topic" value="/mpr_scan" />
+	<param name="resolution" value="1" />
 	<param name="matchLaser" value="true" />
 	
 	<param name="size_x_meters" value="100" />
@@ -88,7 +88,7 @@
     </node>
 
     <include file="$(find ndt_feature)/launch/replay.launch">
-     <arg name="file" value="/home/malcolm/AASS/Datasets/Gustav/basement.bag" />
+     <arg name="file" value="/home/malcolm/AASS/Datasets/Gustav/OFFLINETEST/bag/basement.bag" />
      <arg name="rate" value="0.3" />
      <arg name="start_time" value="0" />
    </include>
