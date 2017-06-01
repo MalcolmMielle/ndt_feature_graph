@@ -153,7 +153,6 @@ target_link_libraries(ndt_feature_mcl_node ${Boost_LIBRARIES} ${catkin_LIBRARIES
 -lsensors -lsensorstream -lutils_flirt -lutils)
 
 
-## Better graph 
 
 set(CMAKE_CXX_STANDARD 11)
 
@@ -168,19 +167,21 @@ set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry
 catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
     CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs das message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs
-    INCLUDE_DIRS include /usr/local/include/flirtlib ${vodigrex_INCLUDE_DIRS}
-    LIBRARIES ${vodigrex_LIBRARIES} # TODO
+    INCLUDE_DIRS include /usr/local/include/flirtlib
+    LIBRARIES # TODO
 )
 
 
 add_executable(publish_graph_message src/publish_graph_message.cpp)
 target_link_libraries(publish_graph_message 
-${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod 
+${catkin_LIBRARIES} 
+# ${bettergraph_LIBRARIES} 
+${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod 
 # tutorial_slam2d_library_real 
 # ${G2O_LIBS}
 ${OpenCV_LIBS} 
 # ${PCL_LIBRARIES} 
-${vodigrex_LIBRARIES} 
+# ${vodigrex_LIBRARIES} 
 # Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
 )
 add_dependencies(publish_graph_message ndt_feature_generate_messages_cpp)
@@ -190,10 +191,12 @@ add_dependencies(publish_graph_message ndt_feature_generate_messages_cpp)
 
 add_executable(tf_odom src/tf_odom.cpp)
 target_link_libraries(tf_odom 
-${catkin_LIBRARIES} ${bettergraph_LIBRARIES} ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod 
+${catkin_LIBRARIES} 
+# ${bettergraph_LIBRARIES} 
+${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod 
 # tutorial_slam2d_library_real ${G2O_LIBS}
 ${OpenCV_LIBS} 
 # ${PCL_LIBRARIES} 
-${vodigrex_LIBRARIES} 
+# ${vodigrex_LIBRARIES} 
 # Cpd::Library-C++ #<- NOT COMPATIBLE WITH THE REST I DON'T KNOW WHY !
 )

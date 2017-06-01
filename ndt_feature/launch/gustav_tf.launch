@@ -3,14 +3,14 @@
 	
 	<node pkg="tf" type="static_transform_publisher" name="world_odom_frame" args="0 0 0 0 0 0 /world /odom 10"/>
 <!-- 	<node pkg="tf" type="static_transform_publisher" name="world_laser_frame_frame" args="0 0 0 0 0 0 /base_link /laser_frame 10"/> -->
-<!-- 	<node pkg="tf" type="static_transform_publisher" name="world_laser_frame_frame" args="0 0 0 0 3.14159 0 /base_link /laser_frame 10"/> -->
+	<node pkg="tf" type="static_transform_publisher" name="world_laser_frame_frame" args="0 0 0 0 3.14159 0 /base_link /laser_frame 10"/>
 	
     <node pkg="ndt_feature" type="publish_graph_message" name="ndt_feature2d_fuser2" output="screen">
 
-<!-- 	<param name="laser_topic" value="/laser_scan_with_ransac" />	 -->
-<!-- 	<param name="resolution" value="0.5" /> -->
-	<param name="laser_topic" value="/mpr_scan" />
-	<param name="resolution" value="1" />
+	<param name="laser_topic" value="/laser_scan_with_ransac" />	
+	<param name="resolution" value="0.5" />
+<!-- 	<param name="laser_topic" value="/mpr_scan" /> -->
+<!-- 	<param name="resolution" value="1" /> -->
 	<param name="matchLaser" value="true" />
 	
 	<param name="size_x_meters" value="100" />
@@ -28,7 +28,7 @@
 	<param name="robot_frame" value="base_link" />
 	<param name="tf_odom_frame" value="base_link" />
 	<param name="world_frame" value="world" />
-	<param name="sensor_frame" value="laser_frame" />
+	<param name="sensor_frame" value="velodyne" />
 	
 	<param name="gt_frame" value="" />
 
