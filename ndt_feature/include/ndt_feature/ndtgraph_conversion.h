@@ -52,6 +52,7 @@ namespace ndt_feature {
 		tf::poseEigenToMsg (node.Tlocal_odom, m.Tlocal_odom);
 		tf::poseEigenToMsg (node.Tlocal_fuse, m.Tlocal_fuse);
 		m.nbUpdates = node.nbUpdates;
+		m.time_last_update = node.time_last_update;
 	}
 	
 	
@@ -169,6 +170,7 @@ namespace ndt_feature {
 		
 // 		std::cout << "Updates" << std::endl;
 		node.nbUpdates = m.nbUpdates;
+		node.time_last_update = m.time_last_update;
 		
 		std::vector<double>::const_iterator it;
 		it=m.cov.data.begin();

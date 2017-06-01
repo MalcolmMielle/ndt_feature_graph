@@ -80,6 +80,9 @@ public:
   Eigen::Affine3d Tlocal_fuse; // Incremental fuse estimates between sucessive local maps.
   pcl::PointCloud<pcl::PointXYZ> pts; // Only for visualizaion purposes...
   int nbUpdates;
+  
+  double time_last_update;
+  
 
 void addCloud(Eigen::Affine3d &T, const pcl::PointCloud<pcl::PointXYZ> &pc) {
     this->pts += lslgeneric::transformPointCloud(T,pc);

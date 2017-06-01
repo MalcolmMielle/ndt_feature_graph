@@ -872,7 +872,7 @@ public:
   pcl::PointCloud<pcl::PointXYZ> pointcloud_vis;
 
 
-private:
+protected:
   // A set of ndt_feature_fuser maps are utilized, they are encoded into graph nodes.
   std::vector<NDTFeatureNode> nodes_;
   std::vector<NDTFeatureLink> links_;

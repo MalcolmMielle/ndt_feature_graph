@@ -2,8 +2,8 @@
 <launch>    
 	
 	<node pkg="tf" type="static_transform_publisher" name="world_odom_frame" args="0 0 0 0 0 0 /world /odom 10"/>
-<!-- 	<node pkg="tf" type="static_transform_publisher" name="world_laser_frame_frame" args="0 0 0 0 0 0 /base_link /laser_frame 10"/> -->
-	<node pkg="tf" type="static_transform_publisher" name="world_laser_frame_frame" args="0 0 0 0 3.14159 0 /base_link /laser_frame 10"/>
+	<node pkg="tf" type="static_transform_publisher" name="world_laser_frame_frame" args="0 0 0 0 0 0 /base_link /laser_frame 10"/>
+<!-- 	<node pkg="tf" type="static_transform_publisher" name="world_laser_frame_frame" args="0 0 0 0 3.14159 0 /base_link /laser_frame 10"/> -->
 	
     <node pkg="ndt_feature" type="publish_graph_message" name="ndt_feature2d_fuser2" output="screen">
 

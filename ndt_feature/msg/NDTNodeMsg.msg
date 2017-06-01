@@ -7,3 +7,4 @@ geometry_msgs/Pose Tlocal_odom #Incremental odometry between successive local ma
 geometry_msgs/Pose Tlocal_fuse # Incremental fuse estimates between sucessive local maps.
 
 uint32 nbUpdates
+float64 time_last_update

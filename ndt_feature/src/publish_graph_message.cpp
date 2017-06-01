@@ -39,7 +39,7 @@
 #include <ndt_feature/ndt_feature_frame.h>
 #include <ndt_feature/ndt_offline_mapper.h>
 
-#include <ndt_feature/ndt_feature_graph.h>
+#include <ndt_feature/ndt_feature_graph_logger.hpp>
 #include <ndt_map/ndt_conversions.h>
 #include "ndt_feature/ndtgraph_conversion.h"
 
@@ -105,7 +105,7 @@ class NDTFeatureFuserNode {
 	
 	boost::mutex m, message_m;
 	ndt_feature::NDTFeatureFuserHMT *fuser;
-	ndt_feature::NDTFeatureGraph *graph;
+	ndt_feature::NDTFeatureGraphLogger *graph;
 	std::string points_topic, laser_topic, map_dir, map_name, odometry_topic, 
           world_frame, robot_frame, sensor_frame, fuser_frame, init_pose_frame, gt_topic, gt_frame;
 	double size_x, size_y, size_z, resolution, sensor_range, min_laser_range_;
@@ -429,7 +429,7 @@ public:
 		if (use_graph_) {
 			
 			std::cout << "graph_params: " << graph_params << std::endl;
-			graph = new ndt_feature::NDTFeatureGraph(graph_params, fuser_params);
+			graph = new ndt_feature::NDTFeatureGraphLogger("/home/malcolm/Documents/log_fuser/log_fuser_graph_ndt_feature.txt", graph_params, fuser_params);
 			
 			std::cout << "Graph Param" << std::endl;
 			graph_params.print();
@@ -863,7 +863,7 @@ public:
 			if (use_graph_) {
 // 				std::cout << "Update with added cloud " << nb_added_clouds_ << std::endl;
 // 				assert(graph->getNbNodes() == nb_added_clouds_ - 1);
-				pose_ = graph->update(Tmotion,cloud,pts);
+				pose_ = graph->update(Tmotion,cloud,pts, frameTime);
 // 				std::cout << "Graph update. Nb nof nodes : " << graph->getNbNodes() << std::endl;
 			}
 			else {
