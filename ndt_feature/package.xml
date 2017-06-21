@@ -34,6 +34,7 @@
   <build_depend>ndt_registration</build_depend>
   <build_depend>ndt_map</build_depend>
   <build_depend>ndt_mcl</build_depend>
+  <build_depend>ndt_fuser</build_depend>
   <build_depend>laser_geometry</build_depend>
   <build_depend>sensor_msgs</build_depend>
   <build_depend>std_srvs</build_depend>
@@ -45,7 +46,7 @@
   <build_depend>semrob_conversions</build_depend>
   <build_depend>semrob_rviz</build_depend>
   <build_depend>semrob_geometry</build_depend>
-  <build_depend>das</build_depend>
+<!--   <build_depend>das</build_depend> -->
   <build_depend>message_generation</build_depend>
   <build_depend>geometry_msgs     </build_depend>
   
@@ -57,6 +58,7 @@
   <run_depend>ndt_registration</run_depend>
   <run_depend>ndt_map</run_depend>
   <run_depend>ndt_mcl</run_depend>
+  <run_depend>ndt_fuser</run_depend>
   <run_depend>laser_geometry</run_depend>
   <run_depend>sensor_msgs</run_depend>
   <run_depend>std_srvs</run_depend>
@@ -68,7 +70,7 @@
   <run_depend>semrob_conversions</run_depend>
   <run_depend>semrob_rviz</run_depend>
   <run_depend>semrob_geometry</run_depend>
-  <run_depend>das</run_depend>
+<!--   <run_depend>das</run_depend> -->
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
