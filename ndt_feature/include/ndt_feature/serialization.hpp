@@ -114,10 +114,10 @@ namespace boost {
 // 	ar >> objs[i];
 //       }
 //     }
-// 
-//   }
-// }
-// 
+
+  }
+}
+
 // BOOST_SERIALIZATION_SPLIT_FREE(ndt_feature::Pose2dVec)
 // BOOST_SERIALIZATION_SPLIT_FREE(ndt_feature::Point2dVec)
 // BOOST_SERIALIZATION_SPLIT_FREE(ndt_feature::CoordinatedTimes)

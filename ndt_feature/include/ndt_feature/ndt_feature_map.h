@@ -8,7 +8,7 @@
 
 // For serialization...
 #include <iostream>
-#include <ndt_feature/serialization.h>
+#include <ndt_feature/serialization.hpp>
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/archive/binary_oarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
