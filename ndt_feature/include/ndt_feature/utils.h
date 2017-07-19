@@ -8,6 +8,21 @@
 #include <ndt_map/lazy_grid.h>
 #include <ndt_map/pointcloud_utils.h>
 
+
+namespace ndt_feature{
+	
+	template<class T> std::string toString (const T& x)
+	{
+		std::ostringstream o;
+
+		if (!(o << x))
+		throw std::runtime_error ("::toString()");
+
+		return o.str ();
+	}	
+	
+}
+
 namespace lslgeneric {
 
 

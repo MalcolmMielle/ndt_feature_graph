@@ -129,11 +129,11 @@ int main(int argc, char** argv)
   lslgeneric::printTransf2d(Tmotion);
   
   // Odometry 'constraints'
-  semrob_generic::MotionModel2d motion(graph.motion_params_);
-  semrob_generic::Pose2d relpose(Tmotion.translation()[0],
+  ndt_feature::MotionModel2d motion(graph.motion_params_);
+  ndt_feature::Pose2d relpose(Tmotion.translation()[0],
                                  Tmotion.translation()[1],
                                  Tmotion.rotation().eulerAngles(0,1,2)[2]);
-  semrob_generic::Pose2dCov relposecov = motion.getPose2dCov(relpose);
+  ndt_feature::Pose2dCov relposecov = motion.getPose2dCov(relpose);
   Eigen::Matrix3d odom_cov = relposecov.cov;
   odom_cov(2,2) = 0.01; // This is the height in the ndt feature vec and not rotational variance.
   lslgeneric::NDTCell ndt_odom_cell;

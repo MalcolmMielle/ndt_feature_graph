@@ -8,7 +8,7 @@
 #include <ndt_registration/ndt_matcher_d2d.h>
 #include <ndt_feature/ndt_matcher_d2d_fusion.h>
 #include <eigen_conversions/eigen_msg.h>
-#include <semrob_generic/motion_model2d.h>
+// #include <ndt_feature/motion_model2d.h>
 
 #include <Eigen/Eigen>
 #include <pcl/point_cloud.h>
@@ -25,8 +25,9 @@
 #include <ndt_feature/conversions.h>
 #include <ndt_feature/utils.h>
 #include <ndt_feature/ndt_feature_map.h>
+#include <ndt_feature/motion_model.hpp>
 
-namespace ndt_feature {
+namespace ndt_feature {	
   /**
    * \brief This class fuses new point clouds into a common ndt map reference, keeping tack of the 
    * camera postion.
@@ -206,7 +207,7 @@ class NDTFeatureFuserHMT{
   };
   
   Params params_;
-  semrob_generic::MotionModel2d::Params motion_params_;
+  ndt_feature::MotionModel2d::Params motion_params_;
 
   NDTFeatureFuserHMT(const NDTFeatureFuserHMT::Params &params) : 
     ransac_(new RansacFeatureSetMatcher(0.0599, 0.9, 0.1, 0.6, 0.0499, false)), params_(params), viewer(NULL), map(NULL) {
@@ -253,7 +254,7 @@ class NDTFeatureFuserHMT{
         std::cerr << "NDTFeatureFuserHMT Destructor() - done " << std::endl;
       }
 
-  void setMotionParams(const semrob_generic::MotionModel2d::Params &params) {
+  void setMotionParams(const ndt_feature::MotionModel2d::Params &params) {
     motion_params_ = params;
   }
 
@@ -392,15 +393,15 @@ class NDTFeatureFuserHMT{
       map->getCentroid(map_centroid[0], map_centroid[1], map_centroid[2]);
 
       // Odometry 'constraints'
-      semrob_generic::MotionModel2d motion(motion_params_);
-      semrob_generic::Pose2d relpose(Tmotion.translation()[0],
+      ndt_feature::MotionModel2d motion(motion_params_);
+      ndt_feature::Pose2d relpose(Tmotion.translation()[0],
                                  Tmotion.translation()[1],
                                  Tmotion.rotation().eulerAngles(0,1,2)[2]);
 
       //      ROS_ERROR_STREAM("relpose: " << relpose);
       
 
-      semrob_generic::Pose2dCov relposecov = motion.getPose2dCov(relpose);
+      ndt_feature::Pose2dCov relposecov = motion.getPose2dCov(relpose);
 
       //ROS_ERROR_STREAM("relposecov: " << relposecov);
       
@@ -674,13 +675,13 @@ class NDTFeatureFuserHMT{
           lslgeneric::NDTMatcherD2D matcher_d2d;
             Eigen::MatrixXd matching_cov(6,6);
             matcher_d2d.covariance(*map, ndglobal, Tmotion_est, matching_cov);
-            semrob_generic::Pose2dCov posecov;
-            posecov.mean = semrob_generic::pose2dFromAffine3d(Tmotion_est);
-            posecov.cov = semrob_generic::cov6toCov3(matching_cov);
+            ndt_feature::Pose2dCov posecov;
+            posecov.mean = ndt_feature::pose2dFromAffine3d(Tmotion_est);
+            posecov.cov = ndt_feature::cov6toCov3(matching_cov);
             lslgeneric::printTransf2d(Tmotion_est);
-            semrob_generic::pose2dClearDependence(posecov);
+            ndt_feature::pose2dClearDependence(posecov);
             //            debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(posecov.mean, posecov.cov, 100., 1, -1));
-            current_posecov.mean = semrob_generic::pose2dFromAffine3d(Tmotion_est);
+            current_posecov.mean = ndt_feature::pose2dFromAffine3d(Tmotion_est);
             Eigen::Matrix3d prev_cov = current_posecov.cov;
             current_posecov.cov = prev_cov+posecov.cov; // Only works if the registration is done from local frame to global that is that Tmotion holds the complete motion and the covariance estimate is only the local one.
             //            debug_markers_.push_back(ndt_visualisation::markerMeanCovariance2d(current_posecov.mean, current_posecov.cov, 1., 2, 0));
@@ -807,7 +808,7 @@ class NDTFeatureFuserHMT{
     Eigen::Affine3d sensor_pose;
     Eigen::Vector3d localMapSize;
 
-  semrob_generic::Pose2dCov current_posecov;
+  ndt_feature::Pose2dCov current_posecov;
 
   public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW

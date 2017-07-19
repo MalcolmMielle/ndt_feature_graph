@@ -8,9 +8,9 @@
 
 // For serialization...
 #include <iostream>
-#include <semrob_generic/serialization.h>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
+// #include <semrob_generic/serialization.h>
+// #include <boost/archive/text_iarchive.hpp>
+// #include <boost/archive/text_oarchive.hpp>
 #include <pcl/io/pcd_io.h>
 
 namespace ndt_feature {

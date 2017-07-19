@@ -15,10 +15,10 @@ find_package(catkin REQUIRED COMPONENTS
   std_srvs 
   flirtlib_ros 
   eigen_conversions
-  semrob_generic
-  semrob_conversions
-  semrob_rviz
-  semrob_geometry
+#   semrob_generic
+#   semrob_conversions
+#   semrob_rviz
+#   semrob_geometry
 #   das
   message_generation
   geometry_msgs
@@ -44,7 +44,7 @@ generate_messages(
 
 add_executable(ndt_feature2d_view src/ndt_feature2d_view.cpp)
 add_executable(ndt_feature2d_fuser src/ndt_feature2d_fuser.cpp)
-add_executable(ndt_feature_debug src/ndt_feature_debug.cpp)
+# add_executable(ndt_feature_debug src/ndt_feature_debug.cpp)
 add_executable(ndt_odom_debug src/ndt_odom_debug.cpp)
 # add_executable(ndt_feature_pcl_eval src/ndt_feature_pcl_eval.cpp)
 #add_executable(narf_keypoint_extractor src/narf_keypoint_extractor.cpp)
@@ -104,9 +104,9 @@ target_link_libraries(ndt_feature2d_fuser ${Boost_LIBRARIES} ${catkin_LIBRARIES}
 #-lgui 
 -lsensors -lsensorstream -lutils_flirt -lutils /usr/local/lib/libisam.a -lcholmod)
 
-target_link_libraries(ndt_feature_debug ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry 
+# target_link_libraries(ndt_feature_debug ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry 
 #-lgui 
--lsensors -lsensorstream -lutils_flirt -lutils)
+# -lsensors -lsensorstream -lutils_flirt -lutils)
 target_link_libraries(ndt_odom_debug ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry 
 #-lgui 
 -lsensors -lsensorstream -lutils_flirt -lutils)
@@ -166,7 +166,7 @@ set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry
 ## ATTENTION flirtlib_ros was removed from CATKIN_DEPEND for the visualisation tool.
 catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
-    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs message_runtime semrob_generic semrob_conversions semrob_rviz semrob_geometry eigen_conversions geometry_msgs
+    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs message_runtime eigen_conversions geometry_msgs
     INCLUDE_DIRS include /usr/local/include/flirtlib
     LIBRARIES # TODO
 )

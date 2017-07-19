@@ -620,7 +620,7 @@ public:
     fuser_params_ = params;
   }
 
-  void setMotionParams(const semrob_generic::MotionModel2d::Params &params) {
+  void setMotionParams(const ndt_feature::MotionModel2d::Params &params) {
     motion_params_ = params;
   }
   
@@ -661,8 +661,8 @@ public:
     int i = 0; 
 	std::cout << "Saving : " << getNbNodes() << " nodes " << std::endl;
     for (it = nodes_.begin(); it != nodes_.end(); it++) {
-	  std::cout << "Saving : " << i << " nodes, in : " << filename + semrob_generic::toString(i) << std::endl;
-      it->save(filename + semrob_generic::toString(i));
+	  std::cout << "Saving : " << i << " nodes, in : " << filename + ndt_feature::toString(i) << std::endl;
+      it->save(filename + ndt_feature::toString(i));
       i++;
     }
     return true;
@@ -688,7 +688,7 @@ public:
       new_node.map = new NDTFeatureFuserHMT(fuser_params_);
       new_node.map->setMotionParams(motion_params_);
       new_node.map->setSensorPose(sensor_pose_);
-      std::string str = filename + semrob_generic::toString(i);
+      std::string str = filename + ndt_feature::toString(i);
       if (!new_node.load(str)) {
         ret = false;
         std::cerr << "failed to load : " << str << std::endl;
@@ -864,7 +864,7 @@ public:
   
   NDTFeatureGraph::Params params_;
   NDTFeatureFuserHMT::Params fuser_params_;
-  semrob_generic::MotionModel2d::Params motion_params_;
+  ndt_feature::MotionModel2d::Params motion_params_;
   Eigen::Affine3d sensor_pose_;
 
   Eigen::Affine3d Tnow; // Current pose estimate.

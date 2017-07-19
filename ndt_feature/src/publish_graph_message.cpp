@@ -361,7 +361,7 @@ public:
 
 		param_nh.param<bool>("clear_odometry_estimate", clear_odometry_estimate_, false);
 
-		semrob_generic::MotionModel2d::Params motion_params;
+		ndt_feature::MotionModel2d::Params motion_params;
 		param_nh.param<double>("motion_params_Cd", motion_params.Cd, 0.005);
 		param_nh.param<double>("motion_params_Ct", motion_params.Ct, 0.01);
 		param_nh.param<double>("motion_params_Dd", motion_params.Dd, 0.001);
