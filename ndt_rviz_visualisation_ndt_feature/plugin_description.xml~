@@ -1,0 +1,10 @@
+<library path="lib/libndt_rviz_visualisation">
+  <class name="ndt_rviz_visualisation/NDTMap"
+         type="ndt_rviz_visualisation::NDTMapDisplay"
+         base_class_type="rviz::Display">
+    <description>
+      Displays elipsoids representing ndt map.
+    </description>
+    <message_type>ndt_map/NDTMapMsg</message_type>
+  </class>
+</library>
