@@ -13,7 +13,7 @@
 #include <ndt_feature/utils.h>
 #include <ndt_map/pointcloud_utils.h>
 
-namespace ndt_feature {
+namespace ndt_feature { 
 
   //! Class that holds a combination of 'normal' NDT occupancy maps with features.
   class NDTFeatureFrame {

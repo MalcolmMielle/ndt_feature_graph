@@ -9,7 +9,7 @@ inline isam::Pose2d convertEigenAffine3dToIsamPose2d(const Eigen::Affine3d &a) {
     isam::Pose2d p(a.translation()(0),
 		   a.translation()(1),
 		   //a.rotation().eulerAngles(0,1,2)(2)
-                   lslgeneric::getRobustYawFromAffine3d(a)
+                   ndt_feature::getRobustYawFromAffine3d(a)
                    );
     return p;
   }
@@ -29,7 +29,7 @@ inline std::vector<size_t> getNDTFeatureFrameIndicesDistance(const Eigen::Affine
     std::vector<size_t> indices;
     for (size_t i = 0; i < currIdx; i++) {
       double dist, angular_dist;
-      lslgeneric::distanceBetweenAffine3d(p, frames[i].gt, dist, angular_dist);
+      ndt_feature::distanceBetweenAffine3d(p, frames[i].gt, dist, angular_dist);
       if (dist < maxDist && angular_dist < maxAngularDist) {
 	indices.push_back(i);
       }
@@ -161,7 +161,7 @@ inline void mapBuilderISAMOffline(std::vector<ndt_feature::NDTFeatureFrame> &fra
 	Eigen::Affine3d Tfeat = sensorPose * Tfeat_sensor_frame * sensorPose.inverse();
 
 	double dist, angular_dist;
-        lslgeneric::distanceBetweenAffine3d(frames[i].gt*Tfeat, frames[indices[j]].gt, dist, angular_dist);
+        ndt_feature::distanceBetweenAffine3d(frames[i].gt*Tfeat, frames[indices[j]].gt, dist, angular_dist);
 	// This is very much cheating here for now...
 	if (dist < 0.1 && angular_dist < 0.1) {
 	  // Good, add this as a factor.

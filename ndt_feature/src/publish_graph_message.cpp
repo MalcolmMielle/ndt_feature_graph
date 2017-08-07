@@ -879,7 +879,7 @@ public:
 		}
 
 		if (est_file_.is_open()) {
-			est_file_ << frameTime << " " << lslgeneric::transformToEvalString(pose_);
+			est_file_ << frameTime << " " << ndt_feature::transformToEvalString(pose_);
 		}
 
 	    tf::Transform transform;
@@ -1346,7 +1346,7 @@ public:
 		
 		if (gt_file_.is_open()) {
 			//              gt_file_ << frame_time << " " << lslgeneric::transformToEvalString(Tgt);
-			gt_file_ << frame_time << " " << lslgeneric::transformToEval2dString(Tgt);
+			gt_file_ << frame_time << " " << ndt_feature::transformToEval2dString(Tgt);
 			//              ROS_INFO("tf transformed to gt_file_");
 		}
 
@@ -1581,7 +1581,7 @@ public:
 		pose_ = gt_pose;
                 Todom = pose_;
 		ROS_INFO("Set initial pose from GT track");
-                lslgeneric::printTransf2d(pose_);
+                ndt_feature::printTransf2d(pose_);
             }
             if (visualize && !use_graph_) {
               fuser->viewer->addTrajectoryPoint(gt_pose.translation()(0),gt_pose.translation()(1),gt_pose.translation()(2)+0.2,1,1,1);
