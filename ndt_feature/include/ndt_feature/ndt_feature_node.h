@@ -9,29 +9,29 @@
 // For serialization...
 #include <iostream>
 // #include <semrob_generic/serialization.h>
-// #include <boost/archive/text_iarchive.hpp>
 // #include <boost/archive/text_oarchive.hpp>
-#include <pcl/io/pcd_io.h>
+// #include <boost/archive/text_iarchive.hpp>
+// #include <pcl/io/pcd_io.h>
 
 namespace ndt_feature {
 
 inline bool saveAffine3d(const Eigen::Affine3d &T, const std::string& fileName) {
-  std::ofstream ofs(fileName.c_str());
-  if (ofs.fail())
-    return false;
-  boost::archive::text_oarchive ar(ofs);
-  ar & T;
-  return true;
+//   std::ofstream ofs(fileName.c_str());
+//   if (ofs.fail())
+//     return false;
+//   boost::archive::text_oarchive ar(ofs);
+//   ar & T;
+//   return true;
 }
  
 inline bool loadAffine3d(Eigen::Affine3d &T, const std::string& fileName) {
-  std::ifstream ifs(fileName.c_str());
-  if (!ifs.is_open())
-    return false;
-  
-  boost::archive::text_iarchive ar(ifs);
-  ar & T;
-  return true;
+//   std::ifstream ifs(fileName.c_str());
+//   if (!ifs.is_open())
+//     return false;
+//   
+//   boost::archive::text_iarchive ar(ifs);
+//   ar & T;
+//   return true;
 }
 
 //! Class to hold a node - a fused map with features along with a global pose offset estimate. To be used in an optimization framework
@@ -202,9 +202,9 @@ if (!map->load(fileName)) {
   void setCov(const Eigen::Matrix3d &cov_) { cov = cov_; }
 
   void force2D() {
-    lslgeneric::forceEigenAffine3dTo2dInPlace(this->T);
-    lslgeneric::forceEigenAffine3dTo2dInPlace(this->Tlocal_odom);
-    lslgeneric::forceEigenAffine3dTo2dInPlace(this->Tlocal_fuse);
+    ndt_feature::forceEigenAffine3dTo2dInPlace(this->T);
+    ndt_feature::forceEigenAffine3dTo2dInPlace(this->Tlocal_odom);
+    ndt_feature::forceEigenAffine3dTo2dInPlace(this->Tlocal_fuse);
   }
 };
 

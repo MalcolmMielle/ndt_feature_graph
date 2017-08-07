@@ -49,7 +49,7 @@ public:
   }
 
   void force2D() {
-    lslgeneric::forceEigenAffine3dTo2dInPlace(this->T);
+    ndt_feature::forceEigenAffine3dTo2dInPlace(this->T);
   }
 
 
@@ -57,14 +57,14 @@ public:
 
 } // namespace
 
-// Forward declaration of class boost::serialization::access
-namespace boost {
-  namespace serialization {
-    class access;
-
-     template<typename Archive>
-    void serialize(Archive& ar, ndt_feature::NDTFeatureLink& o, const unsigned int version) {
-       ar & o.ref_idx & o.mov_idx & o.T & /* o.cov & */o.score;
-    }
-  }
-}
+// // Forward declaration of class boost::serialization::access
+// namespace boost {
+//   namespace serialization {
+//     class access;
+// 
+//      template<typename Archive>
+//     void serialize(Archive& ar, ndt_feature::NDTFeatureLink& o, const unsigned int version) {
+//        ar & o.ref_idx & o.mov_idx & o.T & /* o.cov & */o.score;
+//     }
+//   }
+// }

@@ -23,7 +23,7 @@ namespace ndt_feature{
 	
 }
 
-namespace lslgeneric {
+namespace ndt_feature {
 
 
 
@@ -154,7 +154,7 @@ inline void printTransf2d(const Eigen::Transform<double,3,Eigen::Affine,Eigen::C
   std::cout << "["<<T.translation()[0] << "," 
             << T.translation()[1] << "]("
     //<< T.rotation().eulerAngles(0,1,2)[2] << ")" << std::endl;
-            << lslgeneric::getRobustYawFromAffine3d(T) << ")" << std::endl;
+            << ndt_feature::getRobustYawFromAffine3d(T) << ")" << std::endl;
     }
 
 
@@ -168,10 +168,10 @@ inline void convertAffineToVector(const Eigen::Transform<double,3,Eigen::Affine,
   vec[5] = T.rotation().eulerAngles(0,1,2)[2];
 }
 
-inline void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
-  CellVector* idx = dynamic_cast<CellVector*> (map->getMyIndex());
+inline void addNDTCellToMap(lslgeneric::NDTMap* map, lslgeneric::NDTCell* cell) {
+  lslgeneric::CellVector* idx = dynamic_cast<lslgeneric::CellVector*> (map->getMyIndex());
   if (idx != NULL) {
-    NDTCell* nd = (NDTCell*)cell->copy();
+    lslgeneric::NDTCell* nd = (lslgeneric::NDTCell*)cell->copy();
 
     idx->addNDTCell(nd);
   }
@@ -181,12 +181,12 @@ inline void addNDTCellToMap(NDTMap* map, NDTCell* cell) {
 }
 
 //! Note: this will overwrite any existing cells
-inline void setNDTCellToMap(NDTMap *map, NDTCell* cell) {
-  LazyGrid* lz = dynamic_cast<LazyGrid*> (map->getMyIndex());
+inline void setNDTCellToMap(lslgeneric::NDTMap *map, lslgeneric::NDTCell* cell) {
+  lslgeneric::LazyGrid* lz = dynamic_cast<lslgeneric::LazyGrid*> (map->getMyIndex());
   if (lz != NULL) {
-    NDTCell* nd = (NDTCell*)cell->clone();
+    lslgeneric::NDTCell* nd = (lslgeneric::NDTCell*)cell->clone();
     // Is there already a cell here?
-    NDTCell* c = NULL;
+    lslgeneric::NDTCell* c = NULL;
     
     Eigen::Vector3d mean = cell->getMean();
     pcl::PointXYZ pt_mean;
@@ -221,8 +221,8 @@ inline Eigen::Vector3d computeLocalCentroid(const Eigen::Vector3d &map_centroid,
   return local_centroid;
 }
 
-inline bool discardCell(NDTMap &map, const pcl::PointXYZ &pt) {
-  NDTCell *cell;
+inline bool discardCell(lslgeneric::NDTMap &map, const pcl::PointXYZ &pt) {
+  lslgeneric::NDTCell *cell;
   if (map.getCellAtPoint(pt, cell)) {
     cell->hasGaussian_ = false;
     return true;

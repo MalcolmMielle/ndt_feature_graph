@@ -8,42 +8,42 @@
 
 // For serialization...
 #include <iostream>
-#include <ndt_feature/serialization.hpp>
-#include <boost/archive/binary_iarchive.hpp>
-#include <boost/archive/binary_oarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
-#include <boost/archive/text_iarchive.hpp>
+// #include <ndt_feature/serialization.hpp>
+// #include <boost/archive/binary_iarchive.hpp>
+// #include <boost/archive/binary_oarchive.hpp>
+// #include <boost/archive/text_oarchive.hpp>
+// #include <boost/archive/text_iarchive.hpp>
 
 namespace ndt_feature {
 
 inline bool saveInterestPointVec(const InterestPointVec &pts, const std::string &fileName) {
-  std::ofstream ofs(fileName.c_str());
-  boost::archive::binary_oarchive ar(ofs);
-  ar & pts;
-  // size_t s = pts.size();
-  // ar & s;
-  // for (size_t i = 0; i < s; i++) {
-  //   ar & *(pts[i]);
-  // }
-  ofs.close();
-  return true; // Check for throws.
+//   std::ofstream ofs(fileName.c_str());
+//   boost::archive::binary_oarchive ar(ofs);
+//   ar & pts;
+//   // size_t s = pts.size();
+//   // ar & s;
+//   // for (size_t i = 0; i < s; i++) {
+//   //   ar & *(pts[i]);
+//   // }
+//   ofs.close();
+//   return true; // Check for throws.
 }
 
 inline bool loadInterestPointVec(InterestPointVec &pts, const std::string &fileName) {
-  std::ifstream ifs(fileName.c_str());
-  boost::archive::binary_iarchive ar(ifs);
-  ar & pts;
-  // size_t s;
-  // ar & s;
-  // std::cout << "Loading : " << s << " feature ...." << std::endl;
-  // for (size_t i = 0; i < s; i++) {
-  //   InterestPoint* pt = new InterestPoint();
-  //   ar & *(pt);
-  //   pts.push_back(pt);
-  // }
-  // std::cout << "... done." << std::endl;
-  ifs.close();
-  return true; // Check for throws.
+//   std::ifstream ifs(fileName.c_str());
+//   boost::archive::binary_iarchive ar(ifs);
+//   ar & pts;
+//   // size_t s;
+//   // ar & s;
+//   // std::cout << "Loading : " << s << " feature ...." << std::endl;
+//   // for (size_t i = 0; i < s; i++) {
+//   //   InterestPoint* pt = new InterestPoint();
+//   //   ar & *(pt);
+//   //   pts.push_back(pt);
+//   // }
+//   // std::cout << "... done." << std::endl;
+//   ifs.close();
+//   return true; // Check for throws.
 }
 
 
@@ -117,7 +117,7 @@ inline double matchFeatureMap(const NDTFeatureMap &ref, const NDTFeatureMap &mov
     return std::numeric_limits<double>::max();
   }
   ndt_feature::convertOrientedPoint2DToEigen(transform, T);
-  lslgeneric::printTransf(T);
+  ndt_feature::printTransf(T);
   return score;
 }
 

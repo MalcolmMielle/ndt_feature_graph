@@ -6,9 +6,9 @@
 #include <ndt_feature/utils.h>
 
 
-namespace lslgeneric {
+namespace ndt_feature {
 
-Eigen::MatrixXd computeHessianMahalanobis(const Eigen::MatrixXd &C) {
+inline Eigen::MatrixXd computeHessianMahalanobis(const Eigen::MatrixXd &C) {
   // Compute the Hessian for the mahalanobis distance C = the inverse of the covariance matrix(!)
   Eigen::MatrixXd H(6,6);
   H << C(0,0)+C(0,0), C(1,0)+C(0,1), C(2,0)+C(0,2), C(3,0)+C(0,3), C(4,0)+C(0,4), C(5,0)+C(0,5),
@@ -21,12 +21,12 @@ Eigen::MatrixXd computeHessianMahalanobis(const Eigen::MatrixXd &C) {
   return H;
 }
 
-double computeScoreMahalanobis(const Eigen::Matrix<double,6,1> &x,
+inline double computeScoreMahalanobis(const Eigen::Matrix<double,6,1> &x,
                                const Eigen::MatrixXd &C) {
   return x.transpose()*C*x;
 }
 
-Eigen::Matrix<double,6,1> computeGradientMahalanobis(const Eigen::Matrix<double,6,1> &x,
+inline Eigen::Matrix<double,6,1> computeGradientMahalanobis(const Eigen::Matrix<double,6,1> &x,
                                                      const Eigen::MatrixXd &C) {
   return computeHessianMahalanobis(C)*x;
 }
@@ -34,13 +34,13 @@ Eigen::Matrix<double,6,1> computeGradientMahalanobis(const Eigen::Matrix<double,
 
 // ---------------------------------------------------------
 
-double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
-                                  std::vector<NDTCell*> &sourceNDT,
-                                  NDTMap &targetNDT,
-                                  std::vector<NDTCell*> &sourceNDT_feat,
-                                  NDTMap &targetNDT_feat,
-                                  NDTMatcherD2D &matcher_d2d,
-                                  NDTMatcherFeatureD2D &matcher_feat_d2d,
+inline double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
+                                  std::vector<lslgeneric::NDTCell*> &sourceNDT,
+                                  lslgeneric::NDTMap &targetNDT,
+                                  std::vector<lslgeneric::NDTCell*> &sourceNDT_feat,
+                                  lslgeneric::NDTMap &targetNDT_feat,
+                                  lslgeneric::NDTMatcherD2D &matcher_d2d,
+                                  lslgeneric::NDTMatcherFeatureD2D &matcher_feat_d2d,
                                   const Eigen::Matrix<double,6,1> &localpose,
                                   const Eigen::MatrixXd &C)
 {
@@ -57,7 +57,7 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
     double xtol = 0.01; //window of uncertainty around the optimal step
 
     //my temporary variables
-    std::vector<NDTCell*> sourceNDTHere, sourceNDTHere_feat;
+    std::vector<lslgeneric::NDTCell*> sourceNDTHere, sourceNDTHere_feat;
     double score_init = 0.0;
 
     Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> ps;
@@ -151,8 +151,8 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
         // interval of uncertainty.
         if (brackt)
         {
-            stmin = NDTMatcherD2D::MoreThuente::min(stx, sty);
-            stmax = NDTMatcherD2D::MoreThuente::max(stx, sty);
+            stmin = lslgeneric::NDTMatcherD2D::MoreThuente::min(stx, sty);
+            stmax = lslgeneric::NDTMatcherD2D::MoreThuente::max(stx, sty);
         }
         else
         {
@@ -161,8 +161,8 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
         }
 
         // Force the step to be within the bounds stpmax and stpmin.
-        stp = NDTMatcherD2D::MoreThuente::max(stp, stpmin);
-        stp = NDTMatcherD2D::MoreThuente::min(stp, stpmax);
+        stp = lslgeneric::NDTMatcherD2D::MoreThuente::max(stp, stpmin);
+        stp = lslgeneric::NDTMatcherD2D::MoreThuente::min(stp, stpmax);
 
         // If an unusual termination is to occur then let stp be the
         // lowest point obtained so far.
@@ -201,14 +201,14 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
         sourceNDTHere_feat.clear();
         for(unsigned int i=0; i<sourceNDT.size(); i++)
         {
-            NDTCell *cell = sourceNDT[i];
+            lslgeneric::NDTCell *cell = sourceNDT[i];
             if(cell!=NULL)
             {
                 Eigen::Vector3d mean = cell->getMean();
                 Eigen::Matrix3d cov = cell->getCov();
                 mean = ps*mean;
                 cov = ps.rotation()*cov*ps.rotation().transpose();
-                NDTCell* nd = (NDTCell*)cell->copy();
+                lslgeneric::NDTCell* nd = (lslgeneric::NDTCell*)cell->copy();
                 nd->setMean(mean);
                 nd->setCov(cov);
                 sourceNDTHere.push_back(nd);
@@ -216,14 +216,14 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
         }
         for(unsigned int i=0; i<sourceNDT_feat.size(); i++)
         {
-            NDTCell *cell = sourceNDT_feat[i];
+            lslgeneric::NDTCell *cell = sourceNDT_feat[i];
             if(cell!=NULL)
             {
                 Eigen::Vector3d mean = cell->getMean();
                 Eigen::Matrix3d cov = cell->getCov();
                 mean = ps*mean;
                 cov = ps.rotation()*cov*ps.rotation().transpose();
-                NDTCell* nd = (NDTCell*)cell->copy();
+                lslgeneric::NDTCell* nd = (lslgeneric::NDTCell*)cell->copy();
                 nd->setMean(mean);
                 nd->setCov(cov);
                 sourceNDTHere_feat.push_back(nd);
@@ -317,7 +317,7 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
         // In the first stage we seek a step for which the modified
         // function has a nonpositive value and nonnegative derivative.
 
-        if (stage1 && (f <= ftest1) && (dg >= NDTMatcherD2D::MoreThuente::min(ftol, gtol) * dginit))
+        if (stage1 && (f <= ftest1) && (dg >= lslgeneric::NDTMatcherD2D::MoreThuente::min(ftol, gtol) * dginit))
         {
             stage1 = false;
         }
@@ -344,7 +344,7 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
             // and to compute the new step.
 
             //VALGRIND_CHECK_VALUE_IS_DEFINED(dgm);
-            infoc = NDTMatcherD2D::MoreThuente::cstep(stx,fxm,dgxm,sty,fym,dgym,stp,fm,dgm,
+            infoc = lslgeneric::NDTMatcherD2D::MoreThuente::cstep(stx,fxm,dgxm,sty,fym,dgym,stp,fm,dgm,
                                        brackt,stmin,stmax);
 
             // Reset the function and gradient values for f.
@@ -363,7 +363,7 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
             // and to compute the new step.
 
             //VALGRIND_CHECK_VALUE_IS_DEFINED(dg);
-            infoc = NDTMatcherD2D::MoreThuente::cstep(stx,fx,dgx,sty,fy,dgy,stp,f,dg,
+            infoc = lslgeneric::NDTMatcherD2D::MoreThuente::cstep(stx,fx,dgx,sty,fy,dgy,stp,f,dg,
                                        brackt,stmin,stmax);
 
         }
@@ -389,12 +389,12 @@ double lineSearchMTFusionTcov(    Eigen::Matrix<double,6,1> &increment,
 //perform line search to find the best descent rate (More&Thuente)
 inline double lineSearchMTFusion(
     Eigen::Matrix<double,6,1> &increment,
-    std::vector<NDTCell*> &sourceNDT,
-    NDTMap &targetNDT,
-    std::vector<NDTCell*> &sourceNDT_feat,
-    NDTMap &targetNDT_feat,
-    NDTMatcherD2D &matcher_d2d,
-    NDTMatcherFeatureD2D &matcher_feat_d2d)
+    std::vector<lslgeneric::NDTCell*> &sourceNDT,
+    lslgeneric::NDTMap &targetNDT,
+    std::vector<lslgeneric::NDTCell*> &sourceNDT_feat,
+    lslgeneric::NDTMap &targetNDT_feat,
+    lslgeneric::NDTMatcherD2D &matcher_d2d,
+    lslgeneric::NDTMatcherFeatureD2D &matcher_feat_d2d)
 {
     // default params
     double stp = 1.0; //default step
@@ -408,7 +408,7 @@ inline double lineSearchMTFusion(
     double xtol = 0.01; //window of uncertainty around the optimal step
 
     //my temporary variables
-    std::vector<NDTCell*> sourceNDTHere, sourceNDTHere_feat;
+    std::vector<lslgeneric::NDTCell*> sourceNDTHere, sourceNDTHere_feat;
     double score_init = 0.0;
 
     Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor> ps;
@@ -526,8 +526,8 @@ inline double lineSearchMTFusion(
         // interval of uncertainty.
         if (brackt)
         {
-            stmin = NDTMatcherD2D::MoreThuente::min(stx, sty);
-            stmax = NDTMatcherD2D::MoreThuente::max(stx, sty);
+            stmin = lslgeneric::NDTMatcherD2D::MoreThuente::min(stx, sty);
+            stmax = lslgeneric::NDTMatcherD2D::MoreThuente::max(stx, sty);
         }
         else
         {
@@ -536,8 +536,8 @@ inline double lineSearchMTFusion(
         }
 
         // Force the step to be within the bounds stpmax and stpmin.
-        stp = NDTMatcherD2D::MoreThuente::max(stp, stpmin);
-        stp = NDTMatcherD2D::MoreThuente::min(stp, stpmax);
+        stp = lslgeneric::NDTMatcherD2D::MoreThuente::max(stp, stpmin);
+        stp = lslgeneric::NDTMatcherD2D::MoreThuente::min(stp, stpmax);
 
         // If an unusual termination is to occur then let stp be the
         // lowest point obtained so far.
@@ -574,14 +574,14 @@ inline double lineSearchMTFusion(
         sourceNDTHere_feat.clear();
         for(unsigned int i=0; i<sourceNDT.size(); i++)
         {
-            NDTCell *cell = sourceNDT[i];
+            lslgeneric::NDTCell *cell = sourceNDT[i];
             if(cell!=NULL)
             {
                 Eigen::Vector3d mean = cell->getMean();
                 Eigen::Matrix3d cov = cell->getCov();
                 mean = ps*mean;
                 cov = ps.rotation()*cov*ps.rotation().transpose();
-                NDTCell* nd = (NDTCell*)cell->copy();
+                lslgeneric::NDTCell* nd = (lslgeneric::NDTCell*)cell->copy();
                 nd->setMean(mean);
                 nd->setCov(cov);
                 sourceNDTHere.push_back(nd);
@@ -589,14 +589,14 @@ inline double lineSearchMTFusion(
         }
         for(unsigned int i=0; i<sourceNDT_feat.size(); i++)
         {
-            NDTCell *cell = sourceNDT_feat[i];
+            lslgeneric::NDTCell *cell = sourceNDT_feat[i];
             if(cell!=NULL)
             {
                 Eigen::Vector3d mean = cell->getMean();
                 Eigen::Matrix3d cov = cell->getCov();
                 mean = ps*mean;
                 cov = ps.rotation()*cov*ps.rotation().transpose();
-                NDTCell* nd = (NDTCell*)cell->copy();
+                lslgeneric::NDTCell* nd = (lslgeneric::NDTCell*)cell->copy();
                 nd->setMean(mean);
                 nd->setCov(cov);
                 sourceNDTHere_feat.push_back(nd);
@@ -726,7 +726,7 @@ inline double lineSearchMTFusion(
         // In the first stage we seek a step for which the modified
         // function has a nonpositive value and nonnegative derivative.
 
-        if (stage1 && (f <= ftest1) && (dg >= NDTMatcherD2D::MoreThuente::min(ftol, gtol) * dginit))
+        if (stage1 && (f <= ftest1) && (dg >= lslgeneric::NDTMatcherD2D::MoreThuente::min(ftol, gtol) * dginit))
         {
             stage1 = false;
         }
@@ -753,7 +753,7 @@ inline double lineSearchMTFusion(
             // and to compute the new step.
 
             //VALGRIND_CHECK_VALUE_IS_DEFINED(dgm);
-            infoc = NDTMatcherD2D::MoreThuente::cstep(stx,fxm,dgxm,sty,fym,dgym,stp,fm,dgm,
+            infoc = lslgeneric::NDTMatcherD2D::MoreThuente::cstep(stx,fxm,dgxm,sty,fym,dgym,stp,fm,dgm,
                                        brackt,stmin,stmax);
 
             // Reset the function and gradient values for f.
@@ -772,7 +772,7 @@ inline double lineSearchMTFusion(
             // and to compute the new step.
 
             //VALGRIND_CHECK_VALUE_IS_DEFINED(dg);
-            infoc = NDTMatcherD2D::MoreThuente::cstep(stx,fx,dgx,sty,fy,dgy,stp,f,dg,
+            infoc = lslgeneric::NDTMatcherD2D::MoreThuente::cstep(stx,fx,dgx,sty,fy,dgy,stp,f,dg,
                                        brackt,stmin,stmax);
 
         }
@@ -794,10 +794,10 @@ inline double lineSearchMTFusion(
 
 
 // TODO - wrap this up and write a new class in ndt_registration
-inline  bool matchFusion( NDTMap& targetNDT,
-		    NDTMap& sourceNDT,
-		    NDTMap& targetNDT_feat,
-		    NDTMap& sourceNDT_feat,
+inline  bool matchFusion( lslgeneric::NDTMap& targetNDT,
+		    lslgeneric::NDTMap& sourceNDT,
+		    lslgeneric::NDTMap& targetNDT_feat,
+		    lslgeneric::NDTMap& sourceNDT_feat,
 		    const std::vector<std::pair<int, int> > &corr_feat,
 		    Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T,
                     const Eigen::MatrixXd& Tcov,
@@ -808,8 +808,8 @@ inline  bool matchFusion( NDTMap& targetNDT,
   // Combines two different NDT maps at once. One which holds NDT derrived from features with known correspondance (obtained earlier through RANSAC or similar) with two standard NDT maps (target could very well be obtained from the fuser).
   
   // Create matching objects. The matching is done below but this is only used to get access to compute derrivatives etc.
-  NDTMatcherD2D matcher_d2d;
-  NDTMatcherFeatureD2D matcher_feat_d2d(corr_feat);
+  lslgeneric::NDTMatcherD2D matcher_d2d;
+  lslgeneric::NDTMatcherFeatureD2D matcher_feat_d2d(corr_feat);
 
   matcher_d2d.n_neighbours = n_neighbours;
 
@@ -837,8 +837,8 @@ inline  bool matchFusion( NDTMap& targetNDT,
     Tlocal.setIdentity();
     pose_local_v.setZero();
 
-    std::vector<NDTCell*> nextNDT = sourceNDT.pseudoTransformNDT(T);
-    std::vector<NDTCell*> nextNDT_feat = sourceNDT_feat.pseudoTransformNDT(T);
+    std::vector<lslgeneric::NDTCell*> nextNDT = sourceNDT.pseudoTransformNDT(T);
+    std::vector<lslgeneric::NDTCell*> nextNDT_feat = sourceNDT_feat.pseudoTransformNDT(T);
 
 
     // Tikhonov variables... - NOT USED.
@@ -1156,10 +1156,10 @@ inline  bool matchFusion( NDTMap& targetNDT,
 
 
 
-inline  bool matchFusion2d( NDTMap& targetNDT,
-                      NDTMap& sourceNDT,
-                      NDTMap& targetNDT_feat,
-                      NDTMap& sourceNDT_feat,
+inline  bool matchFusion2d( lslgeneric::NDTMap& targetNDT,
+                      lslgeneric::NDTMap& sourceNDT,
+                      lslgeneric::NDTMap& targetNDT_feat,
+                      lslgeneric::NDTMap& sourceNDT_feat,
                       const std::vector<std::pair<int, int> > &corr_feat,
                       Eigen::Transform<double,3,Eigen::Affine,Eigen::ColMajor>& T ,
                       bool useInitialGuess, bool useNDT, bool useFeat, bool step_control, int ITR_MAX = 30, int n_neighbours = 2, double DELTA_SCORE = 10e-4)
@@ -1167,7 +1167,7 @@ inline  bool matchFusion2d( NDTMap& targetNDT,
     std::cerr << "matchFusion2d()" << " useNDT : " << useNDT << " useFeat : " << useFeat << " step_control : " << step_control << std::endl;
     
     // Only use the standard NDT mapping to start with.
-    NDTMatcherD2D_2D matcher_d2d_2d;
+    lslgeneric::NDTMatcherD2D_2D matcher_d2d_2d;
     matcher_d2d_2d.n_neighbours = n_neighbours;
     matcher_d2d_2d.step_control = step_control;
     matcher_d2d_2d.ITR_MAX = ITR_MAX;

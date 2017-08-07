@@ -96,6 +96,9 @@ include_directories(${Boost_INCLUDE_DIRS})
 include_directories(/usr/local/include/flirtlib)
 
 
+add_subdirectory(src/ndt_feature_src)
+
+
 # target_link_libraries(ndt_feature2d_view ${Boost_LIBRARIES} ${catkin_LIBRARIES} -L/usr/local/lib/flirtlib -lfeature -lgeometry 
 # #-lgui 
 # -lsensors -lsensorstream -lutils_flirt -lutils)
@@ -168,12 +171,12 @@ catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
     CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs message_runtime eigen_conversions geometry_msgs
     INCLUDE_DIRS include /usr/local/include/flirtlib
-    LIBRARIES # TODO
+    LIBRARIES ndt_feature_lib # TODO
 )
 
 
 add_executable(publish_graph_message src/publish_graph_message.cpp)
-target_link_libraries(publish_graph_message 
+target_link_libraries(publish_graph_message ndt_feature_lib
 ${catkin_LIBRARIES} 
 # ${bettergraph_LIBRARIES} 
 ${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod 
