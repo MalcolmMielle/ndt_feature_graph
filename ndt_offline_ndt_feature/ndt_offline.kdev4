@@ -1,0 +1,3 @@
+[Project]
+Manager=KDevCMakeManager
+Name=ndt_offline
