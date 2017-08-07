@@ -160,7 +160,7 @@ add_subdirectory(src/ndt_feature_src)
 set(CMAKE_CXX_STANDARD 11)
 
 
-set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry 
+set(NDT_FEATURE_DEP_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry 
 #-lgui 
 -lsensors -lsensorstream -lutils_flirt -lutils)
 
@@ -169,9 +169,9 @@ set(NDT_FEATURE_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry
 ## ATTENTION flirtlib_ros was removed from CATKIN_DEPEND for the visualisation tool.
 catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
-    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs message_runtime eigen_conversions geometry_msgs
+    CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs message_runtime eigen_conversions geometry_msgs flirtlib_ros 
     INCLUDE_DIRS include /usr/local/include/flirtlib
-    LIBRARIES ndt_feature_lib # TODO
+    LIBRARIES ndt_feature_lib
 )
 
 
@@ -179,7 +179,7 @@ add_executable(publish_graph_message src/publish_graph_message.cpp)
 target_link_libraries(publish_graph_message ndt_feature_lib
 ${catkin_LIBRARIES} 
 # ${bettergraph_LIBRARIES} 
-${NDT_FEATURE_LIBS} /usr/local/lib/libisam.a -lcholmod 
+${NDT_FEATURE_DEP_LIBS} /usr/local/lib/libisam.a -lcholmod 
 # tutorial_slam2d_library_real 
 # ${G2O_LIBS}
 ${OpenCV_LIBS} 
