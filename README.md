@@ -14,3 +14,10 @@ check out README file in each package :).
 
 * [perception_oru](https://github.com/OrebroUniversity/perception_oru)
 * [flirtlib](https://github.com/tipaldi/flirtlib)
+* [asim](https://github.com/robotperception/isam)
+
+## FAQ
+
+1. I have problem building the gui of flirtlib, what do I do ?
+
+Just don't build it :). In the flirtlib package, go into the cmake folder and open the file `Config.cmake.in`. Then on line 9, in the `foreach`, remove `gui`. Done.
