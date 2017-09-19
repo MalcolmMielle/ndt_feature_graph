@@ -14,7 +14,7 @@ check out README file in each package :).
 
 * [perception_oru](https://github.com/OrebroUniversity/perception_oru)
 * [flirtlib](https://github.com/tipaldi/flirtlib)
-* [asim](https://github.com/robotperception/isam)
+* [isam](https://github.com/robotperception/isam)
 
 ## FAQ
 
