@@ -21,6 +21,8 @@ include_directories(include)
 ## System dependencies are found with CMake's conventions
  find_package(Boost REQUIRED COMPONENTS system serialization)
 
+ find_package(FLIRT)
+ include_directories(${FLIRT_INCLUDE_DIRS})
 
 ## Uncomment this if the package has a setup.py. This macro ensures
 ## modules and global scripts declared therein get installed
@@ -92,8 +94,8 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS include
-  LIBRARIES flirtlib_ros
+  INCLUDE_DIRS include ${FLIRT_INCLUDE_DIRS}
+  LIBRARIES flirtlib_ros ${FLIRT_LIBRARIES}
   CATKIN_DEPENDS roscpp rospy std_msgs message_runtime sensor_msgs tf tf_conversions
   DEPENDS system_lib
 )
@@ -132,21 +134,21 @@ add_dependencies(flirtlib_ros_test2 flirtlib_ros_generate_messages_cpp flirtlib_
 ## Specify libraries to link a library or executable target against
 target_link_libraries(flirtlib_ros_test
    ${catkin_LIBRARIES}
-   flirtlib_ros
-   -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt
+   flirtlib_ros ${FLIRT_LIBRARIES}
+#    -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt
 )
 
 target_link_libraries(flirtlib_ros_test2
    ${catkin_LIBRARIES}
-   flirtlib_ros
-   -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt
+   flirtlib_ros ${FLIRT_LIBRARIES}
+#    -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt
 )
 
 target_link_libraries(flirt_serialization_test
   ${Boost_LIBRARIES} 
    ${catkin_LIBRARIES}
-   flirtlib_ros
-   -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt
+   flirtlib_ros ${FLIRT_LIBRARIES}
+#    -L/usr/local/lib/flirtlib -lfeature -lgeometry -lgui -lsensors -lsensorstream -lutils_flirt
 )
 
 

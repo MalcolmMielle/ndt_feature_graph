@@ -93,7 +93,7 @@ ENDIF (VTK_FOUND)
 
 include_directories(${Boost_INCLUDE_DIRS})
 
-include_directories(/usr/local/include/flirtlib)
+# include_directories(/usr/local/include/flirtlib)
 
 
 add_subdirectory(src/ndt_feature_src)
@@ -160,9 +160,9 @@ add_subdirectory(src/ndt_feature_src)
 set(CMAKE_CXX_STANDARD 11)
 
 
-set(NDT_FEATURE_DEP_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry 
+# set(NDT_FEATURE_DEP_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry 
 #-lgui 
--lsensors -lsensorstream -lutils_flirt -lutils)
+# -lsensors -lsensorstream -lutils_flirt -lutils)
 
 # ADD_LIBRARY(tutorial_slam2d_library_real malcolm_addons/Test/simulator.h malcolm_addons/Test/simulator.cpp ${G2O_LIBS})
 
@@ -170,7 +170,7 @@ set(NDT_FEATURE_DEP_LIBS -L/usr/local/lib/flirtlib -lfeature -lgeometry
 catkin_package(
     DEPENDS eigen libpcl-all-dev mrpt glut libxmu-dev 
     CATKIN_DEPENDS ndt_registration ndt_map ndt_mcl laser_geometry sensor_msgs ndt_visualisation std_srvs message_runtime eigen_conversions geometry_msgs flirtlib_ros 
-    INCLUDE_DIRS include /usr/local/include/flirtlib
+    INCLUDE_DIRS include
     LIBRARIES ndt_feature_lib
 )
 
