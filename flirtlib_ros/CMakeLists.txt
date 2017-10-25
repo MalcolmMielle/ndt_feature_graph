@@ -110,7 +110,7 @@ catkin_package(
 include_directories(
   ${Boost_INCLUDE_DIRS}
   ${catkin_INCLUDE_DIRS}
-  /usr/local/include/flirtlib
+  ${FLIRT_INCLUDE_DIRS}
   include
 )
 

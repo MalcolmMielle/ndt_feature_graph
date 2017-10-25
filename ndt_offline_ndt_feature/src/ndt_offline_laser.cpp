@@ -530,7 +530,7 @@ int main(int argc, char **argv){
 							mesg.header.frame_id = "/velodyne";
 							mesg.header.stamp = ros::Time::now();
 							laserpub.publish<sensor_msgs::PointCloud2>(mesg);
-							sensor_msgs::LaserScan::ConstPtr mesg_laser = vreader.getLastLaserScan();
+							sensor_msgs::LaserScan::ConstPtr mesg_laser = vreader.getLastMsg();
 							sensor_msgs::LaserScan mes_laser_tmp = *mesg_laser;
 // 							mes_laser_tmp.header.stamp = ros::Time::now();
 							laserpub_real.publish<sensor_msgs::LaserScan>(mes_laser_tmp);

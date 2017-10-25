@@ -603,7 +603,7 @@ int main(int argc, char **argv){
 // 						laserpub.publish<sensor_msgs::LaserScan>(*(vreader.getLastLaserScan()));
 						
 						InterestPointVec pts;
-						ros::Time time = vreader.getTimeStampOfLastSensorMsg();
+						ros::Time time = vreader.getTimeStampOfLastMsg();
 						Eigen::Affine3d Todo = ndtgraph.update(added_motion, cloud, pts, time);
 						
 						added_motion.setIdentity();
@@ -645,7 +645,7 @@ int main(int argc, char **argv){
 							mesg.header.frame_id = "/velodyne";
 							mesg.header.stamp = ros::Time::now();
 							laserpub.publish<sensor_msgs::PointCloud2>(mesg);
-							sensor_msgs::LaserScan::ConstPtr mesg_laser = vreader.getLastMsgScan();
+							sensor_msgs::LaserScan::ConstPtr mesg_laser = vreader.getLastMsg();
 							sensor_msgs::LaserScan mes_laser_tmp = *mesg_laser;
 // 							mes_laser_tmp.header.stamp = ros::Time::now();
 							laserpub_real.publish<sensor_msgs::LaserScan>(mes_laser_tmp);
