@@ -300,9 +300,12 @@ bool ndt_feature::NDTFeatureGraph::fullInit()
 	else{
 		std::cout << "NOTHING HAPPENED Creating a identity matrix" << std::endl;
 		cov = Eigen::MatrixXd::Identity(6, 6);
-		cov << 	0.02, 	0, 		0,
-				0, 		0.02, 	0,
-				0, 		0, 		0.02;
+		cov << 	0.02, 	0, 		0,    0,    0,    0,
+				0, 		0.02, 	0,    0,    0,    0,
+				0, 		0, 		0.02, 0,    0,    0,
+				0, 		0, 		0,	  0.02, 0,    0,
+				0, 		0,	 	0,	  0,    0.02, 0,
+				0, 		0, 		0,	  0,    0,    0.02;
 // 		exit(0);
 	}
 	std::cout << "Size of Covariance : " << cov.rows() << " AND COLS " << cov.cols() << std::endl;
